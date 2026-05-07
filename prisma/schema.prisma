@@ -11,3 +11,408 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+
+enum Tamano {
+  GRANDE
+  MEDIANO
+  PEQUENO
+  MICRO
+}
+
+enum Sector {
+  ACUICULTURA
+  ADMINISTRACION_PUBLICA
+  AGRICOLA
+  AGROALIMENTARIA
+  AGROPECUARIO
+  ALIMENTARIA
+  ASESORIA
+  BANCA_Y_SEGUROS
+  CONSTRUCCION
+  CONSULTORIA
+  COOPERACION_TECNICA
+  EDUCACION
+  ENERGIA
+  FERRETERIA
+  FINANZAS
+  FORESTAL
+  GANADERIA
+  INFORMATICA
+  MANUFACTURA
+  MINERIA
+  OTROS
+  PESCA
+  SALUD
+  TECNOLOGIA
+  TEXTIL
+  TRANSFORMACION
+  TURISMO
+}
+
+enum TipoEmpresa {
+  ACADEMIA
+  EMPRESA_INTERNACIONAL
+  EMPRESA_NACIONAL
+  GOBIERNO_NACIONAL
+  INDEPENDIENTE
+  ONG
+  ORGANISMO_INTERNACIONAL
+}
+
+enum Vocativo {
+  SR
+  SRA
+  SRTA
+}
+
+enum LeadState {
+  EN_PROSPECTO
+  OFERTADO
+  CIERRE_CON_VENTA
+  CIERRE_SIN_VENTA
+}
+
+enum TipoActividad {
+  REUNION
+  LLAMADA
+  EMAIL
+  OTRO
+}
+
+enum EstadoActividad {
+  PENDIENTE
+  REALIZADA
+  CANCELADA
+  REPROGRAMADA
+}
+
+enum EstadoSecuencia {
+  PROGRAMADA
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+}
+
+enum EstadoPaso {
+  PENDIENTE
+  ENVIADO
+  CANCELADO
+  FALLIDO
+}
+
+enum TipoMoneda {
+  PEN
+  USD
+}
+
+enum EstadoCot {
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+  PENDIENTE
+}
+
+enum Role {
+  ADMINISTRADOR
+  TRABAJADOR
+}
+
+enum UserStatus {
+  PENDIENTE
+  ACTIVO
+  SUSPENDIDO
+}
+
+enum TokenPurpose {
+  INVITACION
+  RESET_PASSWORD
+}
+
+enum TokenStatus {
+  PENDIENTE
+  CONSUMIDO
+  EXPIRADO
+}
+
+enum EstadoNotificacion {
+  NO_LEIDA
+  LEIDA
+}
+
+model Usuario {
+  id            Int       @id @default(autoincrement())
+  nombres       String    @db.VarChar(90)
+  apellidos     String    @db.VarChar(90)
+  rol           Role      @default(TRABAJADOR)
+  estado        UserStatus @default(PENDIENTE)
+  correo        String    @unique @db.VarChar(254)
+  password      String    @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organizacionesCreadas Organizacion[]
+  contactosCreados      Contacto[]
+  leadsCreados          Lead[]
+  actividadesAsignadas  Actividad[] @relation("ResponsableActividad")
+  cotizacionesEmitidas  Cotizacion[]
+  tokensInvitados       UserToken[] @relation("Invitador")
+  integracionMicrosoft  IntegracionMicrosoft?
+  notificaciones        Notificacion[]
+}
+
+model Organizacion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  codigoCliente       String   @unique @db.VarChar(20)
+  nombre              String   @unique @db.VarChar(120)
+  nombreComercial     String   @db.VarChar(100)
+  subArea             String?  @db.VarChar(60)
+  ruc                 String?  @db.VarChar(11)
+  tipo                TipoEmpresa
+  linkedin            String?  @db.VarChar(255)
+  ubicacion           String?  @db.VarChar(100)
+  sector              Sector?
+  tamano              Tamano
+  actividadEconomica  String?  @db.VarChar(120)
+  alianzasEstrategicas String? @db.VarChar(300)
+
+  idContactoActivo Int?
+  contactoActivo   Contacto? @relation("ContactoActivo", fields: [idContactoActivo], references: [id])
+
+  idAuthor Int
+  author   Usuario @relation(fields: [idAuthor], references: [id])
+
+  contactos Contacto[]
+  leads     Lead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contacto {
+  id          Int      @id @default(autoincrement())
+  nombres     String   @db.VarChar(90)
+  apellidos   String?  @db.VarChar(90)
+  vocativo    Vocativo?
+  cargo       String?  @db.VarChar(120)
+  correo      String   @unique @db.VarChar(254)
+  telefono    String?  @db.VarChar(20)
+  correo2     String?  @db.VarChar(254)
+  comentarios String?  @db.VarChar(500)
+
+  idOrganizacion String
+  organizacion   Organizacion @relation(fields: [idOrganizacion], references: [id])
+
+  organizacionActiva Organizacion[] @relation("ContactoActivo")
+
+  idAuthor Int
+  author   Usuario @relation(fields: [idAuthor], references: [id])
+
+  leads Lead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id                  Int @id @default(autoincrement())
+  estado              LeadState
+  servicioInteres     String @db.VarChar(120)
+  comentarios         String? @db.VarChar(500)
+  desafioOportunidad  String? @db.VarChar(500)
+  notasContacto       String? @db.VarChar(1000)
+  canalCaptacion      String? @db.VarChar(60)
+
+  idOrg String
+  organizacion Organizacion @relation(fields: [idOrg], references: [id])
+
+  idContacto Int?
+  contacto   Contacto? @relation(fields: [idContacto], references: [id])
+
+  idEncargado Int
+  encargado Usuario @relation("LeadEncargado", fields: [idEncargado], references: [id])
+
+  idAuthor Int
+  author Usuario @relation(fields: [idAuthor], references: [id])
+
+  actividades  Actividad[]
+  cotizaciones Cotizacion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Actividad {
+  id                 Int @id @default(autoincrement())
+  nombreActividad    String @db.VarChar(90)
+  fechaInicio        DateTime
+  fechaFin           DateTime
+  tipo               TipoActividad
+  estado             EstadoActividad @default(PENDIENTE)
+  notas              String? @db.VarChar(1000)
+
+  outlookEventId     String? @db.VarChar(255)
+  outlookImported    Boolean @default(false)
+  teamsMeetingUrl    String?
+  seguimientoAutomatico Boolean @default(false)
+
+  idLead Int
+  lead   Lead @relation(fields: [idLead], references: [id])
+
+  idResponsable Int
+  responsable Usuario @relation("ResponsableActividad", fields: [idResponsable], references: [id])
+
+  secuencia    SecuenciaSeguimiento?
+  recordatorios RecordatorioActividad[]
+  notificaciones Notificacion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SecuenciaSeguimiento {
+  id Int @id @default(autoincrement())
+
+  idActividad Int @unique
+  actividad Actividad @relation(fields: [idActividad], references: [id])
+
+  estado EstadoSecuencia @default(PROGRAMADA)
+
+  fechaActivacion DateTime?
+  fechaFinalizacion DateTime?
+
+  pasos PasoSeguimiento[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PasoSeguimiento {
+  id Int @id @default(autoincrement())
+
+  orden Int
+  esperarDias Int
+  jobId String? @db.VarChar(120)
+
+  fechaProgramada DateTime?
+  fechaEnviado DateTime?
+
+  estado EstadoPaso @default(PENDIENTE)
+
+  idSecuencia Int
+  secuencia SecuenciaSeguimiento @relation(fields: [idSecuencia], references: [id])
+
+  idTemplate Int
+  template TemplateEmail @relation(fields: [idTemplate], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model TemplateEmail {
+  id Int @id @default(autoincrement())
+  nombre String @db.VarChar(100)
+  asunto String @db.VarChar(255)
+  cuerpo String
+  activo Boolean @default(true)
+
+  pasos PasoSeguimiento[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RecordatorioActividad {
+  id Int @id @default(autoincrement())
+
+  minutosAntes Int
+  enviado Boolean @default(false)
+  jobId String? @db.VarChar(120)
+
+  idActividad Int
+  actividad Actividad @relation(fields: [idActividad], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Cotizacion {
+  id Int @id @default(autoincrement())
+
+  fechaCot DateTime
+  dirigido String @db.VarChar(90)
+  cliente String @db.VarChar(120)
+  producto String? @db.VarChar(120)
+  nombreRemitente String @db.VarChar(120)
+  nombreServicio String @db.VarChar(150)
+  monto Decimal @db.Decimal(12,2)
+  tipo TipoMoneda
+  estado EstadoCot
+  observacion String? @db.VarChar(1000)
+  linkPropuesta String? @db.VarChar(500)
+
+  idLead Int
+  lead Lead @relation(fields: [idLead], references: [id])
+
+  idRemitente Int
+  remitente Usuario @relation(fields: [idRemitente], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IntegracionMicrosoft {
+  id Int @id @default(autoincrement())
+
+  idUsuario Int @unique
+  usuario Usuario @relation(fields: [idUsuario], references: [id])
+
+  microsoftEmail String @unique @db.VarChar(254)
+  microsoftOid String @unique @db.VarChar(255)
+
+  refreshToken String?
+  tokenExpiresAt DateTime?
+
+  conectado Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserToken {
+  id Int @id @default(autoincrement())
+
+  correo String @db.VarChar(254)
+  tokenHash String @unique @db.VarChar(255)
+
+  proposito TokenPurpose
+  estado TokenStatus @default(PENDIENTE)
+
+  rol Role?
+
+  expiresAt DateTime
+  consumedAt DateTime?
+
+  idUsuario Int?
+  usuario Usuario? @relation(fields: [idUsuario], references: [id])
+
+  invitadorId Int?
+  invitador Usuario? @relation("Invitador", fields: [invitadorId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Notificacion {
+  id Int @id @default(autoincrement())
+
+  titulo String @db.VarChar(120)
+  mensaje String @db.VarChar(300)
+  estado EstadoNotificacion @default(NO_LEIDA)
+
+  idUsuario Int
+  usuario Usuario @relation(fields: [idUsuario], references: [id])
+
+  idActividad Int
+  actividad Actividad @relation(fields: [idActividad], references: [id])
+
+  createdAt DateTime @default(now())
+}
