@@ -1,20 +1,42 @@
-node {
-  stage('SCM') {
-    checkout scm
-  }
+pipeline {
+    agent any
 
-  stage('Install') {
-    sh 'npm install'
-  }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
-  stage('Test & Coverage') {
-    sh 'npm run test -- --coverage --coverageReporters=lcov'
-  }
+        stage('Install & Test') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'npm install'
+                sh 'npm run test -- --coverage --coverageReporters=lcov'
+            }
+        }
 
-  stage('SonarQube Analysis') {
-    def scannerHome = tool 'SonarScanner'
-    withSonarQubeEnv() {
-      sh "${scannerHome}/bin/sonar-scanner"
+        stage('SonarQube Analysis') {
+            steps {
+                def scannerHome = tool 'SonarScanner'
+                withSonarQubeEnv('sonarqube-server') {
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
+        }
     }
-  }
+
+    post {
+        success {
+            echo '✅ Pipeline completado correctamente'
+        }
+        failure {
+            echo '❌ Pipeline falló'
+        }
+    }
 }
