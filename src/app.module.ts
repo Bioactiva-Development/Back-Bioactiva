@@ -2,7 +2,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
+import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.interceptor';
 
 @Module({
     imports: [],
