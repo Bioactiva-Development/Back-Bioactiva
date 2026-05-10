@@ -7,11 +7,11 @@ export class InvitationToken {
         public readonly correo: string,
         public readonly token: string,
         public readonly rol: UserRole,
-        public readonly invitadorId: number,
+        public readonly invitador_id: number,
         public estado: TokenStatus = TokenStatus.PENDIENTE,
-        public readonly createdAt: Date,
-        public consumedAt: Date | null,
-        public expiredAt: Date,
+        public readonly created_at: Date,
+        public consumed_at: Date | null,
+        public expired_at: Date,
     ) {}
 
     consume() {
@@ -20,6 +20,6 @@ export class InvitationToken {
         }
 
         this.estado = TokenStatus.CONSUMIDO;
-        this.consumedAt = new Date();
+        this.consumed_at = new Date();
     }
 }

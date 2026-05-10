@@ -8,10 +8,10 @@ export class User {
         public apellidos: string,
         public correo: string,
         public password: string,
-        public readonly createdAt: Date,
+        public readonly created_at: Date,
         public readonly role: UserRole,
         public estado: UserState,
-        public updatedAt: Date,
+        public updated_at: Date,
     ) {}
     deactivate() {
         if (this.estado === UserState.SUSPENDIDO) {
