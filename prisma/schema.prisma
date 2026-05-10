@@ -86,7 +86,6 @@ enum EstadoActividad {
   PENDIENTE
   REALIZADA
   CANCELADA
-  REPROGRAMADA
 }
 
 enum EstadoSecuencia {
