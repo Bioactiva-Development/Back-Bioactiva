@@ -1,5 +1,5 @@
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserRole } from '@/modules/users/domain/enums/rol';
+import { UserRole } from '@/shared/enums/rol';
 
 export class User {
     constructor(
