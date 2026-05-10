@@ -5,14 +5,14 @@ import { AppService } from './app.service';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: HttpLoggingInterceptor,
-    },
-  ],
+    imports: [],
+    controllers: [AppController],
+    providers: [
+        AppService,
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: HttpLoggingInterceptor,
+        },
+    ],
 })
 export class AppModule {}

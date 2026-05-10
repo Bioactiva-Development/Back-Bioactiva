@@ -1,0 +1,10 @@
+{
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "js/ts.preferences.quoteStyle": "single",
+
+    "js/ts.format.enabled": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "js/ts.preferences.importModuleSpecifier": "non-relative"
+}
