@@ -298,7 +298,6 @@ model PasoSeguimiento {
 
   orden Int
   esperarDias Int
-  jobId String? @db.VarChar(120)
 
   fechaProgramada DateTime?
   fechaEnviado DateTime?
