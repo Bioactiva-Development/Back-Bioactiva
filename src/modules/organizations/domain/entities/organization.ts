@@ -1,4 +1,4 @@
-import { EnterpriseType } from '@/modules/organizations/domain/enums/organization_type';
+import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { Size } from '@/modules/organizations/domain/enums/size';
 
