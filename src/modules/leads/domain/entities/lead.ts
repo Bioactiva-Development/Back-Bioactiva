@@ -12,8 +12,26 @@ export class Lead {
         public notas_contacto: string | null,
         public id_encargado: number,
         public canal_captacion: string | null,
-        public id_author: string,
+        public id_author: number,
         public created_at: Date,
         public updated_at: Date,
     ) {}
+
+    changeState(estado: LeadState) {
+        this.estado = estado;
+        this.updated_at = new Date();
+    }
+
+    assignResponsible(idEncargado: number) {
+        if (this.id_encargado === idEncargado) {
+            throw new Error('El encargado ya está asignado');
+        }
+        this.id_encargado = idEncargado;
+        this.updated_at = new Date();
+    }
+
+    attachContact(idContacto: number | null) {
+        this.id_contacto = idContacto;
+        this.updated_at = new Date();
+    }
 }

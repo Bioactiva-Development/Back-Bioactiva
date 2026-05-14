@@ -1,4 +1,5 @@
 import { Vocative } from '@/modules/contacts/domain/enums/vocative';
+import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 
 export class Contact {
     constructor(
@@ -12,8 +13,22 @@ export class Contact {
         public correo2: string | null,
         public comentarios: string | null,
         public id_organizacion: string,
-        public id_author: string,
+        public id_author: number,
         public created_at: Date,
         public updated_at: Date,
+        public estado_correo: EstadoCorreo = EstadoCorreo.VIGENTE,
     ) {}
+
+    changeEmail(correo: string) {
+        if (!correo.trim()) {
+            throw new Error('El correo no puede estar vacío');
+        }
+        this.correo = correo;
+        this.updated_at = new Date();
+    }
+
+    markExpired() {
+        this.estado_correo = EstadoCorreo.VENCIDO;
+        this.updated_at = new Date();
+    }
 }
