@@ -5,7 +5,7 @@ import {
 import {
     AUTH_USER_REPOSITORY,
     type AuthUserRepositoryPort,
-} from '@/modules/auth/domain/ports/user-auth-repository.port.ts';
+} from '@/modules/auth/domain/ports/user-auth-repository.port';
 import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { Inject } from '@nestjs/common';

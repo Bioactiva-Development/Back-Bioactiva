@@ -4,7 +4,7 @@ import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import {
     AUTH_USER_REPOSITORY,
     type AuthUserRepositoryPort,
-} from '@/modules/auth/domain/ports/user-auth-repository.port.ts';
+} from '@/modules/auth/domain/ports/user-auth-repository.port';
 import {
     PASSWORD_HASHER,
     type PasswordHasherPort,
