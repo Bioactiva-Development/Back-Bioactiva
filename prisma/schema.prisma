@@ -22,6 +22,11 @@ enum Tamano {
   MICRO
 }
 
+enum EstadoCorreo {
+    VIGENTE
+    VENCIDO
+}
+
 enum Sector {
   ACUICULTURA
   ADMINISTRACION_PUBLICA
@@ -217,6 +222,7 @@ model Contacto {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  estado_correo EstadoCorreo @default(VIGENTE)
 }
 
 model Lead {
