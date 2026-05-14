@@ -34,4 +34,7 @@ export class User {
         this.password = password;
         this.updated_at = new Date();
     }
+    public canAuthenticate(): boolean {
+        return this.estado === UserState.ACTIVO;
+    }
 }
