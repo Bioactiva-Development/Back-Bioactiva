@@ -1,4 +1,4 @@
-import { Inject } from '@shared/dependency-inyection/inyectable';
+import { Inject } from '@/shared/dependency-inyection/inyect';
 import { LoginCredentials } from '@/modules/auth/domain/value-objects/login_credentials';
 import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import {
