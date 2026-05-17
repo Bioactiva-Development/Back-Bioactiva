@@ -1,12 +1,14 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
+    app.use(cookieParser())
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true, // Convierte los payloads al tipo de objeto del DTO
