@@ -10,7 +10,7 @@ async function bootstrap() {
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true, // Convierte los payloads al tipo de objeto del DTO
-            disableErrorMessages: true, // Cambia a true si no quieres mostrar detalles del error en producción
+            disableErrorMessages: false, // Cambia a true si no quieres mostrar detalles del error en producción
             whitelist: true, // Elimina propiedades del objeto que no estén en el DTO
             forbidNonWhitelisted: true, // Lanza un error si envían propiedades no permitidas
         }),

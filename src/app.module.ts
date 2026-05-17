@@ -6,11 +6,13 @@ import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.inter
 import { PrismaModule } from '@/modules/common/prisma/prisma.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from '@/modules/users/user.module';
 
 @Module({
     imports: [
         PrismaModule,
         AuthModule,
+        UsersModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
