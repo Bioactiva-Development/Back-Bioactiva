@@ -59,4 +59,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 ##For nixos
 .direnv/
+
+##For personal reasons
+docs/
 coverage/

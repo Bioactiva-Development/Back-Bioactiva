@@ -22,6 +22,11 @@ enum Tamano {
   MICRO
 }
 
+enum EstadoCorreo {
+    VIGENTE
+    VENCIDO
+}
+
 enum Sector {
   ACUICULTURA
   ADMINISTRACION_PUBLICA
@@ -86,7 +91,6 @@ enum EstadoActividad {
   PENDIENTE
   REALIZADA
   CANCELADA
-  REPROGRAMADA
 }
 
 enum EstadoSecuencia {
@@ -203,7 +207,7 @@ model Contacto {
   cargo       String?  @db.VarChar(120)
   correo      String   @unique @db.VarChar(254)
   telefono    String?  @db.VarChar(20)
-  correo2     String?  @db.VarChar(254)
+  correo2     String?  @db.VarChar(254) @unique
   comentarios String?  @db.VarChar(500)
 
   idOrganizacion String @db.Uuid
@@ -218,6 +222,7 @@ model Contacto {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  estado_correo EstadoCorreo @default(VIGENTE)
 }
 
 model Lead {
@@ -298,7 +303,6 @@ model PasoSeguimiento {
 
   orden Int
   esperarDias Int
-  jobId String? @db.VarChar(120)
 
   fechaProgramada DateTime?
   fechaEnviado DateTime?
@@ -316,7 +320,7 @@ model PasoSeguimiento {
 
 model TemplateEmail {
   id Int @id @default(autoincrement())
-  nombre String @db.VarChar(100)
+  nombre String @db.VarChar(100) @unique
   asunto String @db.VarChar(255)
   cuerpo String
   activo Boolean @default(true)
