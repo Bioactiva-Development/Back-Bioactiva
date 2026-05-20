@@ -6,11 +6,17 @@ export interface AuthenticatedRequest extends Request {
     user?: User;
 }
 
+export function currentUserFromRequest(
+    req: AuthenticatedRequest,
+): User | undefined {
+    return req?.user;
+}
+
 export const CurrentUser = createParamDecorator(
     (_: unknown, context: ExecutionContext) => {
         const request = context
             .switchToHttp()
             .getRequest<AuthenticatedRequest>();
-        return request.user;
+        return currentUserFromRequest(request);
     },
 );
