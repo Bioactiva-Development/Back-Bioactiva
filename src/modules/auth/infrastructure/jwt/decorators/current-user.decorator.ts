@@ -1,16 +1,20 @@
-import { User } from '@/modules/users/domain/entities/user';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
 
-export interface AuthenticatedRequest extends Request {
-    user?: User;
+interface RequestWithCookies extends Request {
+    cookies: Record<string, string | undefined>;
 }
 
-export const CurrentUser = createParamDecorator(
-    (_: unknown, context: ExecutionContext) => {
-        const request = context
-            .switchToHttp()
-            .getRequest<AuthenticatedRequest>();
-        return request.user;
+export function extractCookieFromRequest(
+    cookieName: string,
+    req: RequestWithCookies,
+) {
+    return req?.cookies?.[cookieName] ?? null;
+}
+
+export const ExtractCookie = createParamDecorator(
+    (cookieName: string, ctx: ExecutionContext) => {
+        const request = ctx.switchToHttp().getRequest<RequestWithCookies>();
+        return extractCookieFromRequest(cookieName, request);
     },
 );
