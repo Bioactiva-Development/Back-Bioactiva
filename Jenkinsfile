@@ -32,6 +32,7 @@ pipeline {
                 docker {
                     image 'node:22-slim'
                     reuseNode true 
+                    args '-u root'
                 }
             }
             environment {
