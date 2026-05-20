@@ -13,3 +13,5 @@ export interface InvitationsRepositoryPort {
     findPendingByEmail(correo: string): Promise<InvitationToken | null>;
     save(invitation: InvitationToken): Promise<InvitationToken>;
 }
+
+export const INVITATIONS_REPOSITORY = Symbol('INVITATIONS_REPOSITORY');

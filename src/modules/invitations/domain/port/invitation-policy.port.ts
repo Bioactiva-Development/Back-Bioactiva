@@ -6,3 +6,5 @@ export interface InvitationPolicyPort {
     isAllowedRole(role: UserRole): boolean;
     canCreateInvitation(actor: User): boolean;
 }
+
+export const INVITATION_POLICY = Symbol('INVITATION_POLICY');

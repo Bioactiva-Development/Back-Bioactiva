@@ -8,3 +8,7 @@ export interface InvitationNotificationPort {
         invitedBy: number;
     }): Promise<void>;
 }
+
+export const INVITATION_NOTIFICATION_PORT = Symbol(
+    'INVITATION_NOTIFICATION_PORT',
+);
