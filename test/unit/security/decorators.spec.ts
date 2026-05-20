@@ -1,0 +1,43 @@
+// Responsable de: Security testing
+// STATUS: pending
+
+import { extractCookieFromRequest } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
+import { currentUserFromRequest } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
+import { User } from '@/modules/users/domain/entities/user';
+
+describe('security decorators helpers', () => {
+    describe('extractCookieFromRequest', () => {
+        it('returns cookie value when present', () => {
+            const req = { cookies: { token: 'abc123' } };
+            const result = extractCookieFromRequest('token', req as any);
+            expect(result).toBe('abc123');
+        });
+
+        it('returns null when cookie is missing', () => {
+            const req = { cookies: {} };
+            const result = extractCookieFromRequest('token', req as any);
+            expect(result).toBeNull();
+        });
+
+        it('returns null when request has no cookies', () => {
+            const req = {};
+            const result = extractCookieFromRequest('token', req as any);
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('currentUserFromRequest', () => {
+        it('returns request.user when present', () => {
+            const mockUser = { id: 'u1', email: 'a@x.com' } as unknown as User;
+            const req = { user: mockUser };
+            const result = currentUserFromRequest(req as any);
+            expect(result).toBe(mockUser);
+        });
+
+        it('returns undefined when request.user is absent', () => {
+            const req = {};
+            const result = currentUserFromRequest(req as any);
+            expect(result).toBeUndefined();
+        });
+    });
+});
