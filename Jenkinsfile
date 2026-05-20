@@ -28,6 +28,12 @@ pipeline {
         }
         
         stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'node:22-slim'
+                    reuseNode true 
+                }
+            }
             environment {
                 scannerHome = tool 'SonarScanner'
             }
