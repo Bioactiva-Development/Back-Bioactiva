@@ -41,7 +41,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        apt-get update && apt-get install -y openjdk-21-jre-headless
+                        apt-get update && apt-get install -y openjdk-17-jre-headless
                         ${scannerHome}/bin/sonar-scanner
                     '''
                 }
