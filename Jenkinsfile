@@ -1,44 +1,60 @@
 pipeline {
     agent any
 
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Repo') {
             steps {
                 checkout scm
             }
         }
-
-        stage('Install & Test') {
+        
+        stage('Test') {
             agent {
                 docker {
-                    image 'node:22-alpine'
-                    reuseNode true
+                    image 'node:22-slim'
+                    reuseNode true 
                 }
             }
             steps {
-                sh 'npm install'
-                sh 'npm run test -- --coverage --coverageReporters=lcov'
+                sh '''
+                    npm ci
+                    npm run test:cov
+                '''
             }
         }
-
+        
         stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'SonarScanner'
+            }
             steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('sonarqube-server') {
-                        sh "${scannerHome}/bin/sonar-scanner"
-                    }
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
         }
-    }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
-    post {
-        success {
-            echo '✅ Pipeline completado correctamente'
-        }
-        failure {
-            echo '❌ Pipeline falló'
-        }
+        // stage('Deploy (Docker Compose)') {
+        //     steps {
+        //         withCredentials([string(credentialsId: 'KEY1', variable: 'KEY1')]) {
+        //             sh '''
+        //                 docker compose down
+        //                 docker compose up -d --build
+        //             '''
+        //         }
+        //     }
+        // }
     }
 }
