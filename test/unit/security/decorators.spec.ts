@@ -1,10 +1,15 @@
-// Responsable de: Security testing
-// STATUS: pending
-
 import { extractCookieFromRequest } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
 import { currentUserFromRequest } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
 
+/**
+ * Security testing
+ * ----------
+ * Responsable de:
+ * - helpers de extracción de cookie
+ * - helpers de extracción de usuario autenticado
+ */
+// STATUS: Implementación parcial (helpers de decoradores para aumentar cobertura unitária).
 describe('security decorators helpers', () => {
     describe('extractCookieFromRequest', () => {
         it('returns cookie value when present', () => {
