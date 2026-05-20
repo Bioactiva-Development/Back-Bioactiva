@@ -36,7 +36,9 @@ export class Actividad {
 
     reschedule(fechaInicio: Date, fechaFin: Date) {
         if (fechaFin < fechaInicio) {
-            throw new Error('La fecha fin no puede ser anterior a la fecha inicio');
+            throw new Error(
+                'La fecha fin no puede ser anterior a la fecha inicio',
+            );
         }
 
         this.fecha_inicio = fechaInicio;

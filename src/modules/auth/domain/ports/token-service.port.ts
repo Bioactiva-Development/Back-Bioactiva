@@ -11,3 +11,5 @@ export interface TokenServicePort {
         token: string,
     ): Promise<RefreshJwtClaims> | RefreshJwtClaims;
 }
+
+export const TOKEN_SERVICE = Symbol('TOKEN_SERVICE');
