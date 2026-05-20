@@ -8,7 +8,7 @@ import {
 } from '@/modules/auth/domain/ports/user-auth-repository.port';
 import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
-import { Inject } from '@shared/dependency-inyection/inyect';
+import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 
 export class RefreshSessionUseCase {
     constructor(

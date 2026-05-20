@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient, Usuario as PrismaUsuario } from '@prisma/client';
 import { AuthUserRepositoryPort } from '@/modules/auth/domain/ports/user-auth-repository.port';
 import { User } from '@/modules/users/domain/entities/user';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 

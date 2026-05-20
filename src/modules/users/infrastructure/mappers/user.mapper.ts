@@ -1,6 +1,6 @@
 import { User } from '@/modules/users/domain/entities/user';
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import type {
     Role as PrismaRole,
     Usuario as PrismaUsuario,

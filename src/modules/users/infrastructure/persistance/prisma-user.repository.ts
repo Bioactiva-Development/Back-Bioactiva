@@ -3,7 +3,7 @@ import { UserRepositoryPort } from '@/modules/users/domain/ports/user-repository
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient, Usuario as PrismaUsuario } from '@prisma/client';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
 
 @Injectable()

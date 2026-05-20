@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import { AuthenticatedRequest } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 
 @Injectable()
