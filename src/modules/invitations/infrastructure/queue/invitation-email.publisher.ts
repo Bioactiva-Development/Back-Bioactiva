@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { InvitationNotificationPort } from '@/modules/invitations/domain/port/invitation-notification.port';
 import { UserRole } from '@/shared/domain/enums/rol';
@@ -8,7 +9,7 @@ export const INVITATION_EMAIL_QUEUE = 'INVITATION_EMAIL_QUEUE';
 @Injectable()
 export class InvitationEmailPublisher implements InvitationNotificationPort {
     constructor(
-        @Inject(INVITATION_EMAIL_QUEUE) private readonly queue: Queue,
+        @InjectQueue(INVITATION_EMAIL_QUEUE) private readonly queue: Queue,
     ) {}
 
     async enqueueInvitationEmail(input: {

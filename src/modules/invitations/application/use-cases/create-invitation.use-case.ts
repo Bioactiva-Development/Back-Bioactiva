@@ -43,7 +43,7 @@ export class CreateInvitationUseCase {
         actor: User,
         correo: string,
         rol: UserRole,
-    ): Promise<{ invitation: InvitationToken; token: string }> {
+    ): Promise<{ ok: boolean }> {
         if (!this.invitationPolicy.canCreateInvitation(actor)) {
             throw new NotAuthorizedException('No autorizado');
         }
@@ -88,8 +88,7 @@ export class CreateInvitationUseCase {
             new Date(),
         );
         await this.userRepository.save(newUser);
-        const savedInvitation =
-            await this.invitationsRepository.save(invitation);
+        await this.invitationsRepository.save(invitation);
         await this.invitationNotification.enqueueInvitationEmail({
             correo: correo,
             token,
@@ -97,8 +96,7 @@ export class CreateInvitationUseCase {
             invitedBy: actor.id,
         });
         return {
-            invitation: savedInvitation,
-            token,
+            ok: true,
         };
     }
 }

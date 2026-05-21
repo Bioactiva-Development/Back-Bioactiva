@@ -14,6 +14,7 @@ import { InvitationEmailQueueModule } from '@/modules/invitations/infrastructure
 import { PrismaInvitationsRepository } from '@/modules/invitations/infrastructure/persistance/prisma-invitation.repository';
 import { InvitationPolicyService } from '@/modules/invitations/infrastructure/service/invitation-policy.service';
 import { UsersModule } from '@/modules/users/user.module';
+import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
 import { Module } from '@nestjs/common';
@@ -35,6 +36,7 @@ import { InvitationEmailPublisher } from './infrastructure/queue/invitation-emai
         RevokeInvitationUseCase,
         PrismaInvitationsRepository,
         InvitationPolicyService,
+        AllowedEmailDomainsConfig,
         Sha256HashService,
         {
             provide: INVITATIONS_REPOSITORY,
