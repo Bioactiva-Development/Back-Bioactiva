@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from '@shared/infrastructure/dependency-inyection/inyectable';
 import { Inject } from '@shared/infrastructure/dependency-inyection/inyect';
 import {
     INVITATIONS_REPOSITORY,
@@ -21,7 +20,6 @@ import {
     type InvitationNotificationPort,
 } from '@/modules/invitations/domain/port/invitation-notification.port';
 
-@Injectable()
 export class CreateInvitationUseCase {
     constructor(
         @Inject(INVITATIONS_REPOSITORY)
@@ -36,19 +34,19 @@ export class CreateInvitationUseCase {
 
     async execute(
         actor: User,
-        input: { correo: string; rol: UserRole },
+        correo: string,
+        rol: UserRole,
     ): Promise<{ invitation: InvitationToken; token: string }> {
         if (!this.invitationPolicy.canCreateInvitation(actor)) {
             throw new NotAuthorizedException('No autorizado');
         }
 
-        if (!this.invitationPolicy.isAllowedDomain(input.correo)) {
+        if (!this.invitationPolicy.isAllowedDomain(correo)) {
             throw new InvalidInvitationDomainException('Dominio no permitido');
         }
 
-        const existing = await this.invitationsRepository.findPendingByEmail(
-            input.correo,
-        );
+        const existing =
+            await this.invitationsRepository.findPendingByEmail(correo);
         if (existing) {
             throw new InvalidInvitationDomainException(
                 'Ya existe una invitación pendiente',
@@ -59,10 +57,10 @@ export class CreateInvitationUseCase {
         const tokenHash = this.hashService.hash(token);
 
         const invitation = new InvitationToken(
-            randomUUID(),
-            input.correo,
+            null,
+            correo,
             tokenHash,
-            input.rol,
+            rol,
             actor.id,
             TokenStatus.PENDIENTE,
             new Date(),
@@ -73,9 +71,9 @@ export class CreateInvitationUseCase {
         const savedInvitation =
             await this.invitationsRepository.save(invitation);
         await this.invitationNotification.enqueueInvitationEmail({
-            correo: input.correo,
+            correo: correo,
             token,
-            rol: input.rol,
+            rol: rol,
             invitedBy: actor.id,
         });
         return {

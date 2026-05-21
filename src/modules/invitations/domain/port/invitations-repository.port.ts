@@ -3,12 +3,12 @@ import { InvitationToken } from '@modules/invitations/domain/entities/invitation
 
 export interface InvitationsRepositoryPort {
     list(
-        page?: number | null,
+        page?: number,
         limit?: number,
         term?: string,
-        estado?: TokenStatus | null,
+        estado?: TokenStatus,
     ): Promise<InvitationToken[]>;
-    findById(id: string): Promise<InvitationToken | null>;
+    findById(id: number): Promise<InvitationToken | null>;
     findByToken(token: string): Promise<InvitationToken | null>;
     findPendingByEmail(correo: string): Promise<InvitationToken | null>;
     save(invitation: InvitationToken): Promise<InvitationToken>;

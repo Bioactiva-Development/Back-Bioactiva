@@ -1,4 +1,3 @@
-import { Injectable } from '@shared/infrastructure/dependency-inyection/inyectable';
 import { Inject } from '@shared/infrastructure/dependency-inyection/inyect';
 import {
     INVITATIONS_REPOSITORY,
@@ -6,7 +5,6 @@ import {
 } from '@/modules/invitations/domain/port/invitations-repository.port';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
 
-@Injectable()
 export class ListInvitationsUseCase {
     constructor(
         @Inject(INVITATIONS_REPOSITORY)

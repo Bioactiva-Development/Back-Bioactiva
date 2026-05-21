@@ -28,6 +28,15 @@ export class UserMapper {
         }
     }
 
+    static mapRoleToPrisma(role: UserRole): PrismaRole {
+        switch (role) {
+            case UserRole.ADMINISTRADOR:
+                return 'ADMINISTRADOR';
+            case UserRole.TRABAJADOR:
+                return 'TRABAJADOR';
+        }
+    }
+
     static toDomain(record: PrismaUsuario): User {
         return new User(
             record.id,

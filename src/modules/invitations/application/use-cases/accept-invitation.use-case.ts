@@ -12,6 +12,7 @@ import { InvalidInvitationTokenException } from '@/modules/invitations/domain/ex
 import { InvitationExpiredException } from '@/modules/invitations/domain/exceptions/invitation-expired.exception';
 import { InvitationAlreadyAcceptedException } from '@/modules/invitations/domain/exceptions/invitation-already-accepted.exception';
 import { InvalidInvitationDomainException } from '@/modules/invitations/domain/exceptions/invalid-invitation-domain.exception';
+import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 
 @Injectable()
 export class AcceptInvitationUseCase {
@@ -20,12 +21,14 @@ export class AcceptInvitationUseCase {
         private readonly invitationsRepository: InvitationsRepositoryPort,
         @Inject(INVITATION_POLICY)
         private readonly invitationPolicy: InvitationPolicyPort,
+        @Inject(HashServicePort)
+        private readonly hashService: HashServicePort,
     ) {}
 
     async execute(input: { token: string; correo: string; password: string }) {
-        const invitation = await this.invitationsRepository.findByToken(
-            input.token,
-        );
+        const token_hash = this.hashService.hash(input.token);
+        const invitation =
+            await this.invitationsRepository.findByToken(token_hash);
 
         if (!invitation) {
             throw new InvalidInvitationTokenException('Token inválido');

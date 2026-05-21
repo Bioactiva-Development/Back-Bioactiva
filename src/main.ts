@@ -8,7 +8,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
-    app.use(cookieParser())
+    app.use(cookieParser());
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true, // Convierte los payloads al tipo de objeto del DTO

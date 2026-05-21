@@ -6,7 +6,7 @@ import { TokenStatus } from '@/shared/domain/enums/token_estado';
 
 export class InvitationToken {
     constructor(
-        public readonly id: string,
+        public readonly id: number | null,
         public readonly correo: string,
         public readonly token: string,
         public readonly rol: UserRole,
