@@ -10,11 +10,16 @@ export class ExpireInvitationUseCase {
         private readonly invitationsRepository: InvitationsRepositoryPort,
     ) {}
 
-    async execute(id: number) {
+    async execute(id: number): Promise<boolean> {
         const invitation = await this.invitationsRepository.findById(id);
-        if (!invitation) throw new Error('Invitación no encontrada');
+        if (!invitation) return false;
+
+        if (!invitation.isPending()) {
+            return false;
+        }
 
         invitation.expire();
-        return this.invitationsRepository.save(invitation);
+        await this.invitationsRepository.save(invitation);
+        return true;
     }
 }

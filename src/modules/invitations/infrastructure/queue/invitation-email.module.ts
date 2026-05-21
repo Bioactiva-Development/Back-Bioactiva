@@ -6,6 +6,11 @@ import {
     INVITATION_EMAIL_QUEUE,
 } from './invitation-email.publisher';
 import { InvitationEmailProcessor } from '../mail/invitation-email.processor';
+import {
+    InvitationExpirationPublisher,
+    INVITATION_EXPIRATION_QUEUE,
+} from './invitation-expiration.publisher';
+import { InvitationExpirationProcessor } from '../mail/invitation-expiration.processor';
 import { MailModule } from '@/modules/common/mail/mail.module';
 
 @Module({
@@ -29,8 +34,16 @@ import { MailModule } from '@/modules/common/mail/mail.module';
         BullModule.registerQueue({
             name: INVITATION_EMAIL_QUEUE,
         }),
+        BullModule.registerQueue({
+            name: INVITATION_EXPIRATION_QUEUE,
+        }),
     ],
-    providers: [InvitationEmailPublisher, InvitationEmailProcessor],
-    exports: [InvitationEmailPublisher],
+    providers: [
+        InvitationEmailPublisher,
+        InvitationEmailProcessor,
+        InvitationExpirationPublisher,
+        InvitationExpirationProcessor,
+    ],
+    exports: [InvitationEmailPublisher, InvitationExpirationPublisher],
 })
 export class InvitationEmailQueueModule {}

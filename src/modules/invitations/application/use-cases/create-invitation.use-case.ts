@@ -20,6 +20,10 @@ import {
     type InvitationNotificationPort,
 } from '@/modules/invitations/domain/port/invitation-notification.port';
 import {
+    INVITATION_EXPIRATION_SCHEDULER_PORT,
+    type InvitationExpirationSchedulerPort,
+} from '@/modules/invitations/domain/port/invitation-expiration-scheduler.port';
+import {
     USER_REPOSITORY,
     type UserRepositoryPort,
 } from '@/modules/users/domain/ports/user-repository.port';
@@ -35,6 +39,8 @@ export class CreateInvitationUseCase {
         private readonly hashService: HashServicePort,
         @Inject(INVITATION_NOTIFICATION_PORT)
         private readonly invitationNotification: InvitationNotificationPort,
+        @Inject(INVITATION_EXPIRATION_SCHEDULER_PORT)
+        private readonly invitationExpirationScheduler: InvitationExpirationSchedulerPort,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: UserRepositoryPort,
     ) {}
@@ -89,6 +95,10 @@ export class CreateInvitationUseCase {
         );
         await this.userRepository.save(newUser);
         await this.invitationsRepository.save(invitation);
+        await this.invitationExpirationScheduler.scheduleExpiration({
+            invitationId: invitation.id!,
+            expiresAt: invitation.expired_at,
+        });
         await this.invitationNotification.enqueueInvitationEmail({
             correo: correo,
             token,

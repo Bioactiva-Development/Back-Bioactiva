@@ -7,6 +7,7 @@ import { ListInvitationsUseCase } from '@/modules/invitations/application/use-ca
 import { ObtainInfoUseCase } from '@/modules/invitations/application/use-cases/obtain-info-use-case';
 import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-cases/revoke-invitation.use-case';
 import { INVITATION_NOTIFICATION_PORT } from '@/modules/invitations/domain/port/invitation-notification.port';
+import { INVITATION_EXPIRATION_SCHEDULER_PORT } from '@/modules/invitations/domain/port/invitation-expiration-scheduler.port';
 import { INVITATION_POLICY } from '@/modules/invitations/domain/port/invitation-policy.port';
 import { INVITATIONS_REPOSITORY } from '@/modules/invitations/domain/port/invitations-repository.port';
 import { InvitationController } from '@/modules/invitations/infrastructure/http/invitation.controller';
@@ -19,6 +20,7 @@ import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
 import { Module } from '@nestjs/common';
 import { InvitationEmailPublisher } from './infrastructure/queue/invitation-email.publisher';
+import { InvitationExpirationPublisher } from './infrastructure/queue/invitation-expiration.publisher';
 
 @Module({
     imports: [
@@ -49,6 +51,10 @@ import { InvitationEmailPublisher } from './infrastructure/queue/invitation-emai
         {
             provide: INVITATION_NOTIFICATION_PORT,
             useExisting: InvitationEmailPublisher,
+        },
+        {
+            provide: INVITATION_EXPIRATION_SCHEDULER_PORT,
+            useExisting: InvitationExpirationPublisher,
         },
         {
             provide: HashServicePort,

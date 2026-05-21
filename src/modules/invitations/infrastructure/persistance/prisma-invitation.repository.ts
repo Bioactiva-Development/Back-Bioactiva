@@ -38,6 +38,21 @@ export class PrismaInvitationsRepository implements InvitationsRepositoryPort {
         return tokens.map((token) => InvitationMapper.toDomain(token));
     }
 
+    async findPendingExpired(before: Date): Promise<InvitationToken[]> {
+        const tokens = await this.prisma.userToken.findMany({
+            where: {
+                proposito: PrismaTokenPurpose.INVITACION,
+                estado: PrismaTokenStatus.PENDIENTE,
+                expiresAt: {
+                    lte: before,
+                },
+            },
+            orderBy: { expiresAt: 'asc' },
+        });
+
+        return tokens.map((token) => InvitationMapper.toDomain(token));
+    }
+
     async findById(id: number): Promise<InvitationToken | null> {
         const token = await this.prisma.userToken.findUnique({
             where: { id },
