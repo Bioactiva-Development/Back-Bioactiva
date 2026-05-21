@@ -6,19 +6,21 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout Repo') {
             steps {
                 checkout scm
             }
         }
-        
+
         stage('Test') {
             agent {
                 docker {
                     image 'node:22-slim'
-                    reuseNode true 
+                    reuseNode true
                 }
             }
+
             steps {
                 sh '''
                     npm ci
@@ -26,18 +28,20 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('SonarQube Analysis') {
             agent {
                 docker {
                     image 'node:22-slim'
-                    reuseNode true 
+                    reuseNode true
                     args '-u root'
                 }
             }
+
             environment {
                 scannerHome = tool 'SonarScanner'
             }
+
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
@@ -47,7 +51,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
@@ -56,15 +60,19 @@ pipeline {
             }
         }
 
-        // stage('Deploy (Docker Compose)') {
-        //     steps {
-        //         withCredentials([string(credentialsId: 'KEY1', variable: 'KEY1')]) {
-        //             sh '''
-        //                 docker compose down
-        //                 docker compose up -d --build
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Deploy (Docker Compose)') {
+            steps {
+
+                withCredentials([
+                    string(credentialsId: 'DB_BIOACTIVA', variable: 'DB_BIOACTIVA'),
+                    string(credentialsId: 'REDIS_BIOACTIVA', variable: 'REDIS_BIOACTIVA')
+                ]) {
+
+                    sh '''
+                        docker compose up -d --build
+                    '''
+                }
+            }
+        }
     }
 }
