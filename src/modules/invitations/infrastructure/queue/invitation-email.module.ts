@@ -6,10 +6,11 @@ import {
     INVITATION_EMAIL_QUEUE,
 } from './invitation-email.publisher';
 import { InvitationEmailProcessor } from '../mail/invitation-email.processor';
-import { MailService } from '../mail/mail.service';
+import { MailModule } from '@/modules/common/mail/mail.module';
 
 @Module({
     imports: [
+        MailModule,
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
@@ -29,11 +30,7 @@ import { MailService } from '../mail/mail.service';
             name: INVITATION_EMAIL_QUEUE,
         }),
     ],
-    providers: [
-        InvitationEmailPublisher,
-        InvitationEmailProcessor,
-        MailService,
-    ],
+    providers: [InvitationEmailPublisher, InvitationEmailProcessor],
     exports: [InvitationEmailPublisher],
 })
 export class InvitationEmailQueueModule {}

@@ -16,6 +16,10 @@ import { InvalidInvitationDomainException } from '@/modules/invitations/domain/e
 import { InvitationToken } from '@/modules/invitations/domain/entities/invitation_token';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
+import {
+    INVITATION_NOTIFICATION_PORT,
+    type InvitationNotificationPort,
+} from '@/modules/invitations/domain/port/invitation-notification.port';
 
 @Injectable()
 export class CreateInvitationUseCase {
@@ -26,6 +30,8 @@ export class CreateInvitationUseCase {
         private readonly invitationPolicy: InvitationPolicyPort,
         @Inject(HashServicePort)
         private readonly hashService: HashServicePort,
+        @Inject(INVITATION_NOTIFICATION_PORT)
+        private readonly invitationNotification: InvitationNotificationPort,
     ) {}
 
     async execute(
@@ -66,7 +72,12 @@ export class CreateInvitationUseCase {
 
         const savedInvitation =
             await this.invitationsRepository.save(invitation);
-
+        await this.invitationNotification.enqueueInvitationEmail({
+            correo: input.correo,
+            token,
+            rol: input.rol,
+            invitedBy: actor.id,
+        });
         return {
             invitation: savedInvitation,
             token,
