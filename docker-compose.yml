@@ -1,54 +1,55 @@
 services:
-
-  db:
+  database:
     profiles:
       - local
 
     image: postgres:17-alpine
 
-    container_name: back-bioactiva-db
+    container_name: back-bioactiva-database
 
     restart: unless-stopped
 
+    env_file:
+      - .env
+
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-back_bioactiva}
-      POSTGRES_USER: ${POSTGRES_USER:-back_bioactiva}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-back_bioactiva}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "5432:5432"
 
     volumes:
-      - back_bioactiva_pgdata:/var/lib/postgresql/data
+      - ./docker-data/postgres:/var/lib/postgresql/data
 
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-back_bioactiva} -d ${POSTGRES_DB:-back_bioactiva}",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
         ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 10s
 
-  app:
+  bioactiva-backend-local:
     build:
       context: .
       dockerfile: Dockerfile
 
-    container_name: back-bioactiva-api
+    container_name: bioactiva-backend-local
 
     restart: unless-stopped
 
     profiles:
       - local
-      - default
 
     depends_on:
-      db:
+      database:
         condition: service_healthy
-        required: false
+        required: true
 
     ports:
       - "3000:3000"
@@ -57,15 +58,66 @@ services:
       - .env
 
     environment:
-      NODE_ENV: production
-      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
 
-      DATABASE_URL: ${DB_BIOACTIVA:-${DATABASE_URL}}
-      REDIS_URL: ${REDIS_BIOACTIVA:-${REDIS_URL}}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
 
     command: >
       sh -c "pnpm prisma migrate deploy &&
              exec node -r tsconfig-paths/register dist/main"
 
-volumes:
-  back_bioactiva_pgdata:
+  bioactiva-backend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: bioactiva-backend-prod
+
+    restart: unless-stopped
+
+    profiles:
+      - prod
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
+
+      DATABASE_URL: ${DB_BIOACTIVA}
+      REDIS_URL: ${REDIS_BIOACTIVA}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
+
+    command: >
+      sh -c "pnpm prisma migrate deploy &&
+             exec node -r tsconfig-paths/register dist/main"
