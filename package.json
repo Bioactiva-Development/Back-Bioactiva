@@ -20,6 +20,8 @@
         "test:e2e": "jest --config ./test/jest-e2e.json"
     },
     "dependencies": {
+        "@azure/msal-node": "^5.2.2",
+        "@microsoft/microsoft-graph-client": "^3.0.7",
         "@nestjs/bullmq": "^11.0.4",
         "@nestjs/common": "^11.0.1",
         "@nestjs/config": "^4.0.4",
@@ -35,6 +37,7 @@
         "class-validator": "^0.15.1",
         "cookie-parser": "^1.4.7",
         "ioredis": "^5.10.1",
+        "nodemailer": "^8.0.7",
         "passport": "^0.7.0",
         "passport-jwt": "^4.0.1",
         "pg": "^8.20.0",
@@ -52,6 +55,7 @@
         "@types/jest": "^30.0.0",
         "@types/mocha": "^10.0.10",
         "@types/node": "^24.0.0",
+        "@types/nodemailer": "^8.0.0",
         "@types/passport-jwt": "^4.0.1",
         "@types/pg": "^8.20.0",
         "@types/supertest": "^7.0.0",
