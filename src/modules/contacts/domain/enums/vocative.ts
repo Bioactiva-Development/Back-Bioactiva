@@ -1,5 +1,5 @@
 export enum Vocative {
-    SR,
-    SRA,
-    SRTA,
+    SR = 'SR',
+    SRA = 'SRA',
+    SRTA = 'SRTA',
 }
