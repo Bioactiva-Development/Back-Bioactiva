@@ -12,11 +12,11 @@ export class Contact {
         public telefono: string | null,
         public correo2: string | null,
         public comentarios: string | null,
-        public id_organizacion: string,
-        public id_author: number,
-        public created_at: Date,
-        public updated_at: Date,
-        public estado_correo: EstadoCorreo = EstadoCorreo.VIGENTE,
+        public idOrganizacion: string, // Cambiado de id_organizacion a camelCase para hacer match con el SQL
+        public idAuthor: number, // Cambiado de id_author a camelCase
+        public createdAt: Date, // Cambiado de created_at a camelCase
+        public updatedAt: Date, // Cambiado de updated_at a camelCase
+        public estado_correo: EstadoCorreo = EstadoCorreo.VIGENTE, // Mantiene snake_case como tu SQL
     ) {}
 
     changeEmail(correo: string) {
@@ -24,11 +24,11 @@ export class Contact {
             throw new Error('El correo no puede estar vacío');
         }
         this.correo = correo;
-        this.updated_at = new Date();
+        this.updatedAt = new Date();
     }
 
     markExpired() {
         this.estado_correo = EstadoCorreo.VENCIDO;
-        this.updated_at = new Date();
+        this.updatedAt = new Date();
     }
 }
