@@ -64,12 +64,14 @@ pipeline {
             steps {
 
                 withCredentials([
+                    string(credentialsId: 'FRONTED_BIOACTIVA', variable: 'FRONTED_BIOACTIVA'),
                     string(credentialsId: 'DB_BIOACTIVA', variable: 'DB_BIOACTIVA'),
                     string(credentialsId: 'REDIS_BIOACTIVA', variable: 'REDIS_BIOACTIVA')
                 ]) {
 
                     sh '''
-                        docker compose up -d --build
+                        docker compose --profile prod down
+                        docker compose --profile prod up -d --build bioactiva-backend-prod
                     '''
                 }
             }
