@@ -18,7 +18,7 @@ import { UsersModule } from '@/modules/users/user.module';
 import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { InvitationEmailPublisher } from './infrastructure/queue/invitation-email.publisher';
 import { InvitationExpirationPublisher } from './infrastructure/queue/invitation-expiration.publisher';
 
@@ -26,7 +26,7 @@ import { InvitationExpirationPublisher } from './infrastructure/queue/invitation
     imports: [
         AuthModule,
         UsersModule,
-        InvitationEmailQueueModule,
+        forwardRef(() => InvitationEmailQueueModule),
         PrismaModule,
     ],
     providers: [
@@ -61,6 +61,7 @@ import { InvitationExpirationPublisher } from './infrastructure/queue/invitation
             useExisting: Sha256HashService,
         },
     ],
+    exports: [ExpireInvitationUseCase],
     controllers: [InvitationController],
 })
 export class InvitationsModule {}
