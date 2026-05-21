@@ -3,6 +3,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { MailProviderPort } from '@/modules/common/mail/mail-provider.port';
+import { renderInvitationEmailTemplate } from '@/modules/common/mail/invitation-email.renderer';
 
 @Injectable()
 export class GraphMailProvider implements MailProviderPort {
@@ -35,14 +36,13 @@ export class GraphMailProvider implements MailProviderPort {
         invitedBy: number;
     }): Promise<void> {
         const client = this.createGraphClient();
-        const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?token=${input.token}`;
 
         await client.api(`/users/${process.env.MAIL_FROM}/sendMail`).post({
             message: {
                 subject: 'Invitación a Back Bioactiva',
                 body: {
                     contentType: 'HTML',
-                    content: `<p>Has sido invitado.</p><p><a href="${invitationLink}">Aceptar invitación</a></p>`,
+                    content: renderInvitationEmailTemplate(input),
                 },
                 toRecipients: [
                     {

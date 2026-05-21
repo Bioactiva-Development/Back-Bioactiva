@@ -1,14 +1,15 @@
-import { UserRole } from '@/shared/domain/enums/rol';
 import { Resend } from 'resend';
+import { UserRole } from '@/shared/domain/enums/rol';
+import { renderInvitationEmailTemplate } from './invitation-email.renderer';
 
 export class ResendMailProvider {
-    constructor() {
-        if (!ResendMailProvider.instance) {
-            ResendMailProvider.instance = new Resend(process.env.RESEND_TOKEN);
+    private static readonly instance: Resend = (() => {
+        const token = process.env.RESEND_TOKEN;
+        if (!token) {
+            throw new Error('RESEND_TOKEN is required');
         }
-    }
-
-    private static instance: Resend;
+        return new Resend(token);
+    })();
 
     async sendInvitationEmail(input: {
         correo: string;
@@ -16,14 +17,13 @@ export class ResendMailProvider {
         rol: UserRole;
         invitedBy: number;
     }): Promise<void> {
-        const resend = ResendMailProvider.instance;
-        const invitationLink = `${process.env.FRONTEND_URL}/accept-invitation?token=${input.token}`;
-        console.log('Sending email to:', input.correo);
+        const resend: Resend = ResendMailProvider.instance;
+
         await resend.emails.send({
-            from: 'Bioactiva <onboarding@resend.dev>',
+            from: 'Bioactiva <no-reply@yiu.lat>',
             to: input.correo,
             subject: 'Invitación a Back Bioactiva',
-            html: `<p>Has sido invitado.</p><p><a href="${invitationLink}">Aceptar invitación</a></p>`,
+            html: renderInvitationEmailTemplate(input),
         });
     }
 }

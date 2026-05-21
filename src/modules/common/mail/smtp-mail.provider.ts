@@ -13,6 +13,7 @@ export class SmtpMailProvider implements MailProviderPort {
         rol: UserRole;
         invitedBy: number;
     }): Promise<void> {
+        //Now we are going to use the resend provider, but we can switch to nodemailer if needed, just need to uncomment the code and add the mailtrap token to the env variables, also need to install the mailtrap package and nodemailer
         /* const transporter = nodemailer.createTransport(
             MailtrapTransport({
                 token: process.env.MAILTRAP_TOKEN || '',
