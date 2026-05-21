@@ -82,7 +82,7 @@ services:
 
     command: >
       sh -c "pnpm prisma migrate deploy &&
-             exec node -r tsconfig-paths/register dist/main"
+             exec node -r tsconfig-paths/register dist/src/main"
 
   bioactiva-backend-prod:
     build:
@@ -120,4 +120,4 @@ services:
 
     command: >
       sh -c "pnpm prisma migrate deploy &&
-             exec node -r tsconfig-paths/register dist/main"
+             exec node -r tsconfig-paths/register dist/src/main"

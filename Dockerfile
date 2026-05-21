@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 
 WORKDIR /app
 
@@ -6,6 +6,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="${PNPM_HOME}:${PATH}"
 
 RUN corepack enable
+RUN corepack prepare pnpm@10.32.1 --activate
 
 FROM base AS deps
 
@@ -34,4 +35,4 @@ COPY prisma.config.ts ./
 
 EXPOSE 3000
 
-CMD ["node", "-r", "tsconfig-paths/register", "dist/main"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/src/main"]
