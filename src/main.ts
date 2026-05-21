@@ -8,24 +8,22 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
-    const allowedOrigins = new Set<string>(['http://localhost:4000']);
-    const frontendOrigin = process.env.FRONTED_BIOACTIVA?.trim();
 
-    if (frontendOrigin) {
-        frontendOrigin
-            .split(',')
-            .map((origin) => origin.trim())
-            .filter(Boolean)
-            .forEach((origin) => allowedOrigins.add(origin));
-    }
+    const allowedOrigin =
+        process.env.FRONTED_BIOACTIVA?.trim() || 'http://localhost:4000';
 
     app.enableCors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.has(origin)) {
+            if (!origin || origin === allowedOrigin) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
                 return callback(null, true);
             }
 
-            return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+            return callback(
+                new Error(`CORS blocked for origin: ${origin}`),
+                false,
+            );
         },
         credentials: true,
     });
