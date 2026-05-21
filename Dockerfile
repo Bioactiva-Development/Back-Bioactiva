@@ -4,7 +4,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="${PNPM_HOME}:${PATH}"
 RUN corepack enable
 RUN corepack prepare pnpm@10.32.1 --activate
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./

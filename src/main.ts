@@ -8,7 +8,29 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
-    app.use(cookieParser())
+    const allowedOrigins = new Set<string>(['http://localhost:4000']);
+    const frontendOrigin = process.env.FRONTED_BIOACTIVA?.trim();
+
+    if (frontendOrigin) {
+        frontendOrigin
+            .split(',')
+            .map((origin) => origin.trim())
+            .filter(Boolean)
+            .forEach((origin) => allowedOrigins.add(origin));
+    }
+
+    app.enableCors({
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.has(origin)) {
+                return callback(null, true);
+            }
+
+            return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+        },
+        credentials: true,
+    });
+
+    app.use(cookieParser());
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true, // Convierte los payloads al tipo de objeto del DTO
