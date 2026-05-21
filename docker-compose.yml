@@ -1,6 +1,5 @@
 services:
-
-  db:
+  bioactiva-database:
     profiles:
       - local
 
@@ -33,6 +32,9 @@ services:
       start_period: 10s
 
   bioactiva-backend-local:
+    profiles:
+      - local
+
     build:
       context: .
       dockerfile: Dockerfile
@@ -41,12 +43,8 @@ services:
 
     restart: unless-stopped
 
-    profiles:
-      - local
-      - default
-
     depends_on:
-      database:
+      bioactiva-database:
         condition: service_healthy
         required: false
 
@@ -95,6 +93,9 @@ services:
              exec node -r tsconfig-paths/register dist/src/main"
 
   bioactiva-backend-prod:
+    profiles:
+      - prod
+
     build:
       context: .
       dockerfile: Dockerfile
@@ -102,9 +103,6 @@ services:
     container_name: bioactiva-backend-prod
 
     restart: unless-stopped
-
-    profiles:
-      - prod
 
     ports:
       - "3000:3000"
