@@ -7,11 +7,21 @@ import { CreateInvitationUseCase } from '@/modules/invitations/application/use-c
 import { ListInvitationsUseCase } from '@/modules/invitations/application/use-cases/list-invitations.use-case';
 import { ObtainInfoUseCase } from '@/modules/invitations/application/use-cases/obtain-info-use-case';
 import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-cases/revoke-invitation.use-case';
+import { AcceptInvitationDto } from '@/modules/invitations/infrastructure/http/dto/accept-invitation.dto.htpp';
 import { CreateInvitationDto } from '@/modules/invitations/infrastructure/http/dto/create-invitation.dto.http';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Post,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 
 @Controller('invitations')
 export class InvitationController {
@@ -52,5 +62,25 @@ export class InvitationController {
     @Get('info/:token')
     async obtainInfo(@Query('token') token: string) {
         return this.obtainInfoUseCase.execute(token);
+    }
+
+    @Post('accept')
+    async acceptInvitation(@Body() body: AcceptInvitationDto) {
+        if (body.password !== body.confirmPassword) {
+            throw new BadRequestException('Las contraseñas no coinciden');
+        }
+        return this.acceptInvitationUseCase.execute(
+            body.token,
+            body.password,
+            body.nombres,
+            body.apellidos,
+        );
+    }
+
+    @Delete(':id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMINISTRADOR)
+    async revokeInvitation(@Query('id') id: number) {
+        return this.revokeInvitationUseCase.execute(id);
     }
 }

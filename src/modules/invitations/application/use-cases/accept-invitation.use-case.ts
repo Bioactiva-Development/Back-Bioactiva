@@ -13,6 +13,16 @@ import { InvitationExpiredException } from '@/modules/invitations/domain/excepti
 import { InvitationAlreadyAcceptedException } from '@/modules/invitations/domain/exceptions/invitation-already-accepted.exception';
 import { InvalidInvitationDomainException } from '@/modules/invitations/domain/exceptions/invalid-invitation-domain.exception';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
+import {
+    USER_REPOSITORY,
+    type UserRepositoryPort,
+} from '@/modules/users/domain/ports/user-repository.port';
+import {
+    PASSWORD_HASHER,
+    type PasswordHasherPort,
+} from '@/modules/auth/domain/ports/password-hasher.port';
+import { User } from '@/modules/users/domain/entities/user';
+import { UserState } from '@/modules/users/domain/enums/estado';
 
 @Injectable()
 export class AcceptInvitationUseCase {
@@ -23,12 +33,30 @@ export class AcceptInvitationUseCase {
         private readonly invitationPolicy: InvitationPolicyPort,
         @Inject(HashServicePort)
         private readonly hashService: HashServicePort,
+        @Inject(USER_REPOSITORY)
+        private readonly userRepository: UserRepositoryPort,
+        @Inject(PASSWORD_HASHER)
+        private readonly passwordHasher: PasswordHasherPort,
     ) {}
 
-    async execute(input: { token: string; correo: string; password: string }) {
-        const token_hash = this.hashService.hash(input.token);
+    async execute(
+        token: string,
+        password: string,
+        nombres: string,
+        apellidos: string,
+    ): Promise<void> {
+        const token_hash = this.hashService.hash(token);
         const invitation =
             await this.invitationsRepository.findByToken(token_hash);
+        const user = await this.userRepository.findByCorreo(
+            invitation?.correo ?? '',
+        );
+
+        if (user && user.estado === UserState.ACTIVO) {
+            throw new InvalidInvitationDomainException(
+                'Ya existe un usuario activo con este correo',
+            );
+        }
 
         if (!invitation) {
             throw new InvalidInvitationTokenException('Token inválido');
@@ -42,11 +70,23 @@ export class AcceptInvitationUseCase {
             throw new InvitationAlreadyAcceptedException('Token ya consumido');
         }
 
-        if (!this.invitationPolicy.isAllowedDomain(input.correo)) {
+        if (!this.invitationPolicy.isAllowedDomain(invitation.correo)) {
             throw new InvalidInvitationDomainException('Dominio no permitido');
         }
 
         invitation.accept();
-        return this.invitationsRepository.save(invitation);
+        await this.invitationsRepository.save(invitation);
+        const activatedUser = new User(
+            user?.id ?? null,
+            nombres,
+            apellidos,
+            invitation.correo,
+            await this.passwordHasher.hash(password),
+            new Date(),
+            invitation.rol,
+            UserState.ACTIVO,
+            new Date(),
+        );
+        await this.userRepository.save(activatedUser);
     }
 }

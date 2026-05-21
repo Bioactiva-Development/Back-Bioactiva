@@ -3,7 +3,7 @@ import { UserRole } from '@/shared/domain/enums/rol';
 
 export class User {
     constructor(
-        public readonly id: number,
+        public readonly id: number | null,
         public nombres: string,
         public apellidos: string,
         public correo: string,

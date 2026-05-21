@@ -38,6 +38,9 @@ export class PrismaUserAuthRepository implements AuthUserRepositoryPort {
     }
 
     async save(user: User): Promise<User> {
+        if (user.id === null) {
+            throw new Error('User ID cannot be null when saving');
+        }
         const record: PrismaUsuario = await this.prismaClient.usuario.update({
             where: { id: user.id },
             data: {

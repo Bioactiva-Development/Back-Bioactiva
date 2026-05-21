@@ -19,6 +19,11 @@ import {
     INVITATION_NOTIFICATION_PORT,
     type InvitationNotificationPort,
 } from '@/modules/invitations/domain/port/invitation-notification.port';
+import {
+    USER_REPOSITORY,
+    type UserRepositoryPort,
+} from '@/modules/users/domain/ports/user-repository.port';
+import { UserState } from '@/modules/users/domain/enums/estado';
 
 export class CreateInvitationUseCase {
     constructor(
@@ -30,6 +35,8 @@ export class CreateInvitationUseCase {
         private readonly hashService: HashServicePort,
         @Inject(INVITATION_NOTIFICATION_PORT)
         private readonly invitationNotification: InvitationNotificationPort,
+        @Inject(USER_REPOSITORY)
+        private readonly userRepository: UserRepositoryPort,
     ) {}
 
     async execute(
@@ -55,7 +62,9 @@ export class CreateInvitationUseCase {
 
         const token = randomUUID();
         const tokenHash = this.hashService.hash(token);
-
+        if (actor.id === null) {
+            throw new NotAuthorizedException('Usuario no válido');
+        }
         const invitation = new InvitationToken(
             null,
             correo,
@@ -67,7 +76,18 @@ export class CreateInvitationUseCase {
             null,
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         );
-
+        const newUser = new User(
+            null,
+            '',
+            '',
+            correo,
+            '',
+            new Date(),
+            rol,
+            UserState.PENDIENTE,
+            new Date(),
+        );
+        await this.userRepository.save(newUser);
         const savedInvitation =
             await this.invitationsRepository.save(invitation);
         await this.invitationNotification.enqueueInvitationEmail({
