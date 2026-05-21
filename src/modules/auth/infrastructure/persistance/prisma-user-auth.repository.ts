@@ -5,11 +5,12 @@ import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
+import { PRISMA_SERVICE } from '@/modules/common/prisma/prisma.service';
 
 @Injectable()
 export class PrismaUserAuthRepository implements AuthUserRepositoryPort {
     constructor(
-        @Inject('PRISMA_SERVICE')
+        @Inject(PRISMA_SERVICE)
         private readonly prismaClient: PrismaClient,
     ) {}
 

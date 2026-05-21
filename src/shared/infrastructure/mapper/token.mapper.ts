@@ -9,6 +9,8 @@ export class TokenMapper {
                 return TokenStatus.CONSUMIDO;
             case 'EXPIRADO':
                 return TokenStatus.EXPIRADO;
+            default:
+                throw new Error(`Unsupported Prisma token status`);
         }
     }
 
@@ -20,6 +22,8 @@ export class TokenMapper {
                 return 'CONSUMIDO';
             case TokenStatus.EXPIRADO:
                 return 'EXPIRADO';
+            default:
+                throw new Error(`Unsupported token status`);
         }
     }
 }

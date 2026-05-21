@@ -33,6 +33,6 @@ import { PrismaUserAuthRepository } from '@/modules/auth/infrastructure/persista
             useExisting: PrismaUserAuthRepository,
         },
     ],
-    exports: [PASSWORD_HASHER],
+    exports: [PASSWORD_HASHER, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

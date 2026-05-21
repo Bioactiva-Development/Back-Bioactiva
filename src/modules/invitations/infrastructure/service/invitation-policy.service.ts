@@ -1,6 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
-import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { InvitationPolicyPort } from '@/modules/invitations/domain/port/invitation-policy.port';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
@@ -9,8 +8,6 @@ import { UserRole } from '@/shared/domain/enums/rol';
 export class InvitationPolicyService implements InvitationPolicyPort {
     constructor(
         private readonly allowedEmailDomainsConfig: AllowedEmailDomainsConfig,
-        @Inject(HashServicePort)
-        private readonly hashService: HashServicePort,
     ) {}
 
     isAllowedDomain(correo: string): boolean {
@@ -26,9 +23,5 @@ export class InvitationPolicyService implements InvitationPolicyPort {
 
     canCreateInvitation(actor: User): boolean {
         return actor.canAuthenticate() && actor.role === UserRole.ADMINISTRADOR;
-    }
-
-    hashToken(token: string): string {
-        return this.hashService.hash(token);
     }
 }

@@ -18,6 +18,8 @@ import {
     Controller,
     Delete,
     Get,
+    Param,
+    ParseIntPipe,
     Post,
     Query,
     UseGuards,
@@ -60,7 +62,7 @@ export class InvitationController {
     }
 
     @Get('info/:token')
-    async obtainInfo(@Query('token') token: string) {
+    async obtainInfo(@Param('token') token: string) {
         return this.obtainInfoUseCase.execute(token);
     }
 
@@ -80,7 +82,7 @@ export class InvitationController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMINISTRADOR)
-    async revokeInvitation(@Query('id') id: number) {
+    async revokeInvitation(@Param('id', ParseIntPipe) id: number) {
         return this.revokeInvitationUseCase.execute(id);
     }
 }

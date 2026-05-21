@@ -4,11 +4,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { UserRole } from '@/shared/domain/enums/rol';
+import { PRISMA_SERVICE } from '@/modules/common/prisma/prisma.service';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepositoryPort {
     constructor(
-        @Inject('PRISMA_SERVICE')
+        @Inject(PRISMA_SERVICE)
         private readonly prismaClient: PrismaClient,
     ) {}
 
