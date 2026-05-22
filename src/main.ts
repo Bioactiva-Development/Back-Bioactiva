@@ -9,22 +9,8 @@ async function bootstrap() {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
 
-    const allowedOrigin =
-        process.env.FRONTEND_BIOACTIVA?.trim() || 'http://localhost:4000';
-
     app.enableCors({
-        origin: (origin, callback) => {
-            if (!origin || origin === allowedOrigin) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-                return callback(null, true);
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-            return callback(
-                new Error(`CORS blocked for origin: ${origin}`),
-                false,
-            );
-        },
+        origin: process.env.FRONTEND_BIOACTIVA || 'http://localhost:4000',
         credentials: true,
     });
 
