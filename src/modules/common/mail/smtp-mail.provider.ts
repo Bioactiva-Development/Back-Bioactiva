@@ -42,4 +42,12 @@ export class SmtpMailProvider implements MailProviderPort {
             html: `<p>Has sido invitado.</p><p><a href="${invitationLink}">Aceptar invitación</a></p>`,
         }); */
     }
+
+    async sendResetPasswordEmail(input: {
+        correo: string;
+        token: string;
+    }): Promise<void> {
+        const resendProvider = new ResendMailProvider();
+        await resendProvider.sendResetPasswordEmail(input);
+    }
 }

@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { renderInvitationEmailTemplate } from './invitation-email.renderer';
+import { renderResetPasswordEmailTemplate } from './reset-password-email.renderer';
 
 export class ResendMailProvider {
     private static instance: Resend | null = null;
@@ -33,6 +34,20 @@ export class ResendMailProvider {
             to: input.correo,
             subject: 'Invitación a Back Bioactiva',
             html: renderInvitationEmailTemplate(input),
+        });
+    }
+
+    async sendResetPasswordEmail(input: {
+        correo: string;
+        token: string;
+    }): Promise<void> {
+        const resend = ResendMailProvider.getInstance();
+
+        await resend.emails.send({
+            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+            to: input.correo,
+            subject: 'Restablecer contraseña - Bioactiva',
+            html: renderResetPasswordEmailTemplate(input),
         });
     }
 }

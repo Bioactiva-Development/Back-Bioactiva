@@ -16,4 +16,13 @@ export class MockMailProvider implements MailProviderPort {
         this.logger.log(`Mock mail to ${input.correo} -> ${invitationLink}`);
         await new Promise((resolve) => setTimeout(resolve, 100)); // Simula un pequeño retraso // Para evitar el ruido de eslint
     }
+
+    async sendResetPasswordEmail(input: {
+        correo: string;
+        token: string;
+    }): Promise<void> {
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${input.token}`;
+        this.logger.log(`Mock reset password mail to ${input.correo} -> ${resetLink}`);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
 }

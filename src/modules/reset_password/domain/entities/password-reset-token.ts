@@ -2,7 +2,7 @@ import { TokenStatus } from '@/shared/domain/enums/token_estado';
 
 export class PasswordResetToken {
     constructor(
-        public readonly id: string,
+        public readonly id: number | null,
         public readonly user_id: number,
         public readonly token: string,
         public estado: TokenStatus = TokenStatus.PENDIENTE,

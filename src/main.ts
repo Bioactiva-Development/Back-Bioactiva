@@ -10,10 +10,9 @@ async function bootstrap() {
     });
 
     const allowedOrigin =
-        process.env.FRONTED_BIOACTIVA?.trim() || 'http://localhost:4000';
-
+        process.env.FRONTEND_URL?.trim() || 'http://localhost:3120';
     app.enableCors({
-        origin: (origin, callback) => {
+        /*origin: (origin, callback) => {
             if (!origin || origin === allowedOrigin) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
                 return callback(null, true);
@@ -24,7 +23,8 @@ async function bootstrap() {
                 new Error(`CORS blocked for origin: ${origin}`),
                 false,
             );
-        },
+        },*/
+        origin: allowedOrigin,
         credentials: true,
     });
     app.use(cookieParser());

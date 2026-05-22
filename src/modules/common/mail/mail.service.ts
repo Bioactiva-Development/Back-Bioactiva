@@ -30,4 +30,21 @@ export class MailService {
 
         return this.mockProvider.sendInvitationEmail(input);
     }
+
+    async sendResetPasswordEmail(input: {
+        correo: string;
+        token: string;
+    }): Promise<void> {
+        const provider = process.env.MAIL_PROVIDER ?? 'mock';
+
+        if (provider === 'graph') {
+            return this.graphProvider.sendResetPasswordEmail(input);
+        }
+
+        if (provider === 'smtp') {
+            return this.smtpProvider.sendResetPasswordEmail(input);
+        }
+
+        return this.mockProvider.sendResetPasswordEmail(input);
+    }
 }

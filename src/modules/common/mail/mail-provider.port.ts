@@ -7,4 +7,9 @@ export interface MailProviderPort {
         rol: UserRole;
         invitedBy: number;
     }): Promise<void>;
+
+    sendResetPasswordEmail(input: {
+        correo: string;
+        token: string;
+    }): Promise<void>;
 }
