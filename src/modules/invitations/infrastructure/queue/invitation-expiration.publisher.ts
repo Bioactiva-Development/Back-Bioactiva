@@ -23,7 +23,7 @@ export class InvitationExpirationPublisher implements InvitationExpirationSchedu
                 invitationId: input.invitationId,
             },
             {
-                jobId: `expire-invitation:${input.invitationId}`,
+                jobId: `expire-invitation-${input.invitationId}`,
                 delay,
                 attempts: 1,
                 removeOnComplete: true,
