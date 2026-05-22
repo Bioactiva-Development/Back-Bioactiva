@@ -1,4 +1,5 @@
 # compiled output
+/docker-data
 /dist
 /node_modules
 /build
@@ -21,6 +22,7 @@ lerna-debug.log*
 
 # IDEs and editors
 /.idea
+.context
 .project
 .classpath
 .c9/
@@ -61,6 +63,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .direnv/
 
 ##For personal reasons
+/.context
 docs/
 cookies.txt
 coverage/

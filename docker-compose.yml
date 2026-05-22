@@ -1,0 +1,121 @@
+services:
+  bioactiva-database:
+    profiles:
+      - local
+
+    image: postgres:17-alpine
+
+    container_name: back-bioactiva-db
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-back_bioactiva}
+      POSTGRES_USER: ${POSTGRES_USER:-back_bioactiva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-back_bioactiva}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - back_bioactiva_pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  bioactiva-backend-local:
+    profiles:
+      - local
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: back-bioactiva-api
+
+    restart: unless-stopped
+
+    depends_on:
+      bioactiva-database:
+        condition: service_healthy
+        required: false
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
+
+      FRONTED_URL: ${FRONTED_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
+
+    command: >
+      sh -c "pnpm prisma migrate deploy &&
+             exec node -r tsconfig-paths/register dist/src/main"
+
+  bioactiva-backend-prod:
+    profiles:
+      - prod
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: bioactiva-backend-prod
+
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
+
+      FRONTED_URL: ${FRONTED_BIOACTIVA}
+      DATABASE_URL: ${DB_BIOACTIVA}
+      REDIS_URL: ${REDIS_BIOACTIVA}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
+
+    command: >
+      sh -c "pnpm prisma migrate deploy &&
+             exec node -r tsconfig-paths/register dist/src/main"
+
+volumes:
+  back_bioactiva_pgdata:
