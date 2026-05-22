@@ -55,27 +55,12 @@ services:
       - .env
 
     environment:
-      NODE_ENV: production
-      PORT: 3000
-
-      DATABASE_URL: ${DB_BIOACTIVA:-${DATABASE_URL}}
-      REDIS_URL: ${REDIS_BIOACTIVA:-${REDIS_URL}}
-
-    command: >
-      sh -c "pnpm prisma migrate deploy &&
-             exec node -r tsconfig-paths/register dist/main"
-
-    environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
 
       FRONTED_URL: ${FRONTED_URL}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
-
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
@@ -131,3 +116,6 @@ services:
     command: >
       sh -c "pnpm prisma migrate deploy &&
              exec node -r tsconfig-paths/register dist/src/main"
+
+volumes:
+  back_bioactiva_pgdata:
