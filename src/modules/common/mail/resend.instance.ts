@@ -29,7 +29,7 @@ export class ResendMailProvider {
         const resend = ResendMailProvider.getInstance();
 
         await resend.emails.send({
-            from: 'Bioactiva <no-reply@yiu.lat>',
+            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
             to: input.correo,
             subject: 'Invitación a Back Bioactiva',
             html: renderInvitationEmailTemplate(input),
