@@ -19,4 +19,12 @@ export class PasswordResetToken {
         this.estado = TokenStatus.CONSUMIDO;
         this.consumed_at = new Date();
     }
+
+    expire() {
+        if (this.estado !== TokenStatus.PENDIENTE) {
+            return;
+        }
+
+        this.estado = TokenStatus.EXPIRADO;
+    }
 }

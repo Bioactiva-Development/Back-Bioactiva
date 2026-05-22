@@ -10,6 +10,16 @@ import { TokenMapper } from '@/shared/infrastructure/mapper/token.mapper';
 export class PrismaPasswordResetRepository implements PasswordResetRepositoryPort {
     constructor(private readonly prisma: PrismaService) {}
 
+    async findById(id: number): Promise<PasswordResetToken | null> {
+        const record = await this.prisma.userToken.findUnique({
+            where: { id },
+        });
+        if (!record || record.proposito !== PrismaTokenPurpose.RESET_PASSWORD) {
+            return null;
+        }
+        return record ? PasswordResetMapper.toDomain(record) : null;
+    }
+
     async findByToken(token: string): Promise<PasswordResetToken | null> {
         const record = await this.prisma.userToken.findFirst({
             where: {

@@ -9,6 +9,10 @@ import {
     type PasswordResetNotificationPort,
 } from '@/modules/reset_password/domain/ports/password-reset-notification.port';
 import {
+    PASSWORD_RESET_EXPIRATION_SCHEDULER_PORT,
+    type PasswordResetExpirationSchedulerPort,
+} from '@/modules/reset_password/domain/ports/password-reset-expiration-scheduler.port';
+import {
     USER_REPOSITORY,
     type UserRepositoryPort,
 } from '@/modules/users/domain/ports/user-repository.port';
@@ -26,6 +30,8 @@ export class RequestPasswordResetUseCase {
         private readonly passwordResetNotification: PasswordResetNotificationPort,
         @Inject(HashServicePort)
         private readonly hashService: HashServicePort,
+        @Inject(PASSWORD_RESET_EXPIRATION_SCHEDULER_PORT)
+        private readonly expirationScheduler: PasswordResetExpirationSchedulerPort,
     ) {}
 
     async execute(correo: string): Promise<{ ok: boolean }> {
@@ -51,7 +57,13 @@ export class RequestPasswordResetUseCase {
             expiresAt,
         );
 
-        await this.passwordResetRepository.save(resetToken);
+        const savedToken = await this.passwordResetRepository.save(resetToken);
+
+        // Agendar expiración automática diferida
+        await this.expirationScheduler.scheduleExpiration({
+            resetTokenId: savedToken.id!,
+            expiresAt: savedToken.expired_at,
+        });
 
         // Enviar la notificación por correo electrónico de forma asíncrona a través de la cola
         await this.passwordResetNotification.sendResetPasswordEmail(
