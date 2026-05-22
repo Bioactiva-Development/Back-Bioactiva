@@ -1,4 +1,4 @@
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
 
 export interface JwtClaims {

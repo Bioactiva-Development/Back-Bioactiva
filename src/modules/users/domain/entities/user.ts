@@ -1,9 +1,9 @@
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 
 export class User {
     constructor(
-        public readonly id: number,
+        public readonly id: number | null,
         public nombres: string,
         public apellidos: string,
         public correo: string,

@@ -1,4 +1,4 @@
-import { TokenStatus } from '@/shared/enums/token_estado';
+import { TokenStatus } from '@/shared/domain/enums/token_estado';
 
 export class PasswordResetToken {
     constructor(

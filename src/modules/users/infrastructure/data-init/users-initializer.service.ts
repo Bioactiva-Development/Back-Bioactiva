@@ -7,7 +7,7 @@ import {
     USER_REPOSITORY,
     type UserRepositoryPort,
 } from '@/modules/users/domain/ports/user-repository.port';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 import {
     PASSWORD_HASHER,
     type PasswordHasherPort,

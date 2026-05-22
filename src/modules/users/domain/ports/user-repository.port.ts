@@ -1,5 +1,5 @@
 import { User } from '@/modules/users/domain/entities/user';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '@/shared/domain/enums/rol';
 
 export interface UserRepositoryPort {
     findByCorreo(correo: string): Promise<User | null>;
