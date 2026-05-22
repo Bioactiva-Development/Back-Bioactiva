@@ -10,7 +10,7 @@ async function bootstrap() {
     });
 
     const allowedOrigin =
-        process.env.FRONTED_BIOACTIVA?.trim() || 'http://localhost:4000';
+        process.env.FRONTEND_BIOACTIVA?.trim() || 'http://localhost:4000';
 
     app.enableCors({
         origin: (origin, callback) => {
