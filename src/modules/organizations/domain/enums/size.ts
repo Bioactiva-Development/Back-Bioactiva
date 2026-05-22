@@ -1,6 +1,6 @@
 export enum Size {
-    GRANDE,
-    MEDIANO,
-    PEQUENO,
-    MICRO,
+    GRANDE = 'GRANDE',
+    MEDIANO = 'MEDIANO',
+    PEQUENO = 'PEQUENO',
+    MICRO = 'MICRO',
 }
