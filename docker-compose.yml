@@ -1,3 +1,4 @@
+name: back-bioactiva
 services:
   bioactiva-database:
     profiles:

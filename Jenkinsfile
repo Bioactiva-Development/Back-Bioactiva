@@ -80,8 +80,17 @@ pipeline {
                 ]) {
 
                     sh '''
-                        docker compose --profile prod down
-                        docker compose --profile prod up -d --build bioactiva-backend-prod
+                        docker compose \
+                            -p back-bioactiva \
+                            -f docker-compose.yml \
+                            --profile prod \
+                            down
+
+                        docker compose \
+                            -p back-bioactiva \
+                            -f docker-compose.yml \
+                            --profile prod \
+                            up -d --build bioactiva-backend-prod
                     '''
                 }
             }
