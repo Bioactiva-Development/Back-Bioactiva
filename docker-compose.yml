@@ -1,13 +1,12 @@
 name: back-bioactiva
+
 services:
   bioactiva-database:
     profiles:
       - local
 
     image: postgres:17-alpine
-
     container_name: back-bioactiva-db
-
     restart: unless-stopped
 
     environment:
@@ -15,18 +14,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-back_bioactiva}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-back_bioactiva}
 
-    ports:
-      - "5432:5432"
-
     volumes:
       - back_bioactiva_pgdata:/var/lib/postgresql/data
 
+    networks:
+      - proxy_net
+
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -41,16 +36,12 @@ services:
       dockerfile: Dockerfile
 
     container_name: back-bioactiva-api
-
     restart: unless-stopped
 
     depends_on:
       bioactiva-database:
         condition: service_healthy
         required: false
-
-    ports:
-      - "3000:3000"
 
     env_file:
       - .env
@@ -79,6 +70,9 @@ services:
       sh -c "pnpm prisma migrate deploy &&
              exec node -r tsconfig-paths/register dist/src/main"
 
+    networks:
+      - proxy_net
+
   bioactiva-backend-prod:
     profiles:
       - prod
@@ -88,11 +82,7 @@ services:
       dockerfile: Dockerfile
 
     container_name: bioactiva-backend-prod
-
     restart: unless-stopped
-
-    ports:
-      - "3000:3000"
 
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -118,5 +108,12 @@ services:
       sh -c "pnpm prisma migrate deploy &&
              exec node -r tsconfig-paths/register dist/src/main"
 
+    networks:
+      - proxy_net
+
 volumes:
   back_bioactiva_pgdata:
+
+networks:
+  proxy_net:
+    external: true
