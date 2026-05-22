@@ -64,7 +64,7 @@ pipeline {
             steps {
 
                 withCredentials([
-                    string(credentialsId: 'FRONTED_BIOACTIVA', variable: 'FRONTED_BIOACTIVA'),
+                    string(credentialsId: 'FRONTEND_BIOACTIVA', variable: 'FRONTEND_BIOACTIVA'),
                     string(credentialsId: 'DB_BIOACTIVA', variable: 'DB_BIOACTIVA'),
                     string(credentialsId: 'REDIS_BIOACTIVA', variable: 'REDIS_BIOACTIVA'),
                     string(credentialsId: 'JWT_SECRET_BIOACTIVA', variable: 'JWT_SECRET'),
