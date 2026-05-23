@@ -2,7 +2,11 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+    DocumentBuilder,
+    SwaggerCustomOptions,
+    SwaggerModule,
+} from '@nestjs/swagger';
 
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
@@ -19,9 +23,12 @@ async function bootstrap() {
             scheme: 'bearer',
         })
         .build();
+    const option: SwaggerCustomOptions = {
+        jsonDocumentUrl: '/swagger-json',
+    };
 
     const document = () => SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('swagger', app, document());
+    SwaggerModule.setup('swagger', app, document(), option);
 
     const allowedOrigin =
         process.env.FRONTEND_URL?.trim() || 'http://localhost:3120';
