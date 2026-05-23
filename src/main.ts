@@ -2,12 +2,26 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
     const app = await NestFactory.create(AppModule, {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
+
+    const config = new DocumentBuilder()
+        .setTitle('API de Bioactiva')
+        .setDescription('Documentación de la API de Bioactiva')
+        .setVersion('1.0')
+        .addBearerAuth({
+            type: 'http',
+            scheme: 'bearer',
+        })
+        .build();
+
+    const document = () => SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('swagger', app, document());
 
     const allowedOrigin =
         process.env.FRONTEND_URL?.trim() || 'http://localhost:3120';
@@ -24,7 +38,7 @@ async function bootstrap() {
                 false,
             );
         },*/
-        origin: allowedOrigin,
+        origin: true, // allowedOrigin,
         credentials: true,
     });
     app.use(cookieParser());
