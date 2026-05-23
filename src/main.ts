@@ -38,7 +38,7 @@ async function bootstrap() {
                 false,
             );
         },*/
-        origin: true, // allowedOrigin,
+        origin: allowedOrigin,
         credentials: true,
     });
     app.use(cookieParser());
