@@ -23,9 +23,8 @@ pipeline {
 
             steps {
                 sh '''
-                    corepack enable
-                    pnpm install
-                    pnpm run test:cov
+                    npm install
+                    npm run test:cov
                 '''
             }
         }
