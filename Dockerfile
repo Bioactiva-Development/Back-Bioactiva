@@ -8,7 +8,7 @@ RUN apt-get update -y && apt-get install -y openssl netcat-openbsd && rm -rf /va
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 FROM deps AS builder
 COPY prisma ./prisma
