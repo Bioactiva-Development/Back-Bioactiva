@@ -22,14 +22,7 @@ import { InvitationsModule } from '@/modules/invitations/invitations.module';
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
                 connection: {
-                    host:
-                        configService.get<string>('REDIS_HOST') ?? 'localhost',
-                    port: Number(
-                        configService.get<string>('REDIS_PORT') ?? 6379,
-                    ),
-                    password:
-                        configService.get<string>('REDIS_PASSWORD') ||
-                        undefined,
+                    url: configService.get<string>('REDIS_URL'),
                 },
             }),
         }),
