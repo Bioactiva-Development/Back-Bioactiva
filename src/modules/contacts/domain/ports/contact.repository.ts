@@ -15,7 +15,5 @@ export interface IContactRepository {
 
     // Para el Subpunto 3: Ver todos los contactos en la pestaña principal
     findAll(): Promise<Contact[]>; // Interesante que no solicite nada. ¿Lo usaremos  para filtrar por organizacion o por autor? Por ahora lo dejamos así, pero es algo a considerar para el futuro.
-
-    // Para el Subpunto 4: Eliminar un contacto (soft delete)
-    softDelete(id: number): Promise<void>; //recibe un id de contacto y no retorna nada. Solo marca el contacto como inactivo o eliminado sin borrarlo físicamente de la base de datos.
 } // creo que el ultimo ya l oimplementó cose
+export const IContactRepository = Symbol('IContactRepository');

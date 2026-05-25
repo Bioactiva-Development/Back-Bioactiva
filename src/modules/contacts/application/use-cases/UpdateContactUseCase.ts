@@ -11,7 +11,7 @@ export class UpdateContactUseCase {
 
     async execute(id: number, dto: Partial<Contact>): Promise<Contact> {
         const contact = await this.contactRepository.findById(id);
-        if (!contact) throw new Error('Contacto no encontrado');
+        if (!contact) throw new Error('Contacto no encontrado'); // posible creacoin de un errr
 
         // No duplicidad
         if (dto.correo && dto.correo !== contact.correo) {
