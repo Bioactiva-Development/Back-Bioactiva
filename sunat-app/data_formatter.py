@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from typing import Dict, Any
 
 def clean_and_format_data(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -24,23 +25,27 @@ def clean_and_format_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 def convert_to_snake_case(text: str) -> str:
     """
-    Convierte texto a snake_case.
+    Convierte texto a snake_case (ASCII, sin tildes ni diacríticos).
     """
-    # Reemplazar caracteres especiales y espacios
-    text = re.sub(r'[^\w\s]', '', text)
-    
+    # Normalizar y eliminar diacríticos para que las claves coincidan con FIELD_MAPPING
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join(c for c in text if not unicodedata.combining(c))
+
+    # Reemplazar caracteres especiales y espacios (solo se conservan ASCII word chars y espacios)
+    text = re.sub(r'[^a-zA-Z0-9\s_]', '', text)
+
     # Reemplazar espacios múltiples con uno solo
     text = re.sub(r'\s+', ' ', text).strip()
-    
+
     # Convertir a snake_case
     text = text.lower().replace(' ', '_')
-    
+
     # Limpiar underscores múltiples
     text = re.sub(r'_+', '_', text)
-    
+
     # Remover underscores al inicio y final
     text = text.strip('_')
-    
+
     return text
 
 def clean_value_text(text: str) -> str:

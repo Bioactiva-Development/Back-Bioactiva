@@ -12,12 +12,17 @@ interface PythonScraperResponse {
 }
 
 interface PythonScraperResult {
-    ruc: string;
-    tipo_contribuyente: string;
-    nombre_comercial: string | null;
-    domicilio_fiscal: string | null;
-    actividad_economica: string | null;
+    ruc?: string;
+    numero_de_ruc?: string;
+    'número_de_ruc'?: string;
+    tipo_contribuyente?: string;
+    nombre_comercial?: string | null;
+    domicilio_fiscal?: string | null;
+    actividad_economica?: string | null;
+    actividades_economicas?: string | null;
+    'actividades_económicas'?: string | null;
     error?: string;
+    [key: string]: unknown;
 }
 
 @Injectable()
@@ -115,18 +120,23 @@ export class SunatWebScraperAdapter implements ISunatService {
         try {
             const url = `${this.pythonScraperBaseUrl}/consulta-ruc/${ruc}`;
             const response = await fetch(url, {
-                signal: AbortSignal.timeout(10000),
+                signal: AbortSignal.timeout(60000),
             });
             if (!response.ok) return null;
 
-            const body: PythonScraperResponse =
-                (await response.json()) as PythonScraperResponse;
+            const body = (await response.json()) as PythonScraperResponse;
 
-            const result =
-                body.resultados.length > 0
-                    ? this.mapPythonResultToCompany(body.resultados[0])
-                    : null;
-            return result;
+            if (
+                !Array.isArray(body.resultados) ||
+                body.resultados.length === 0
+            ) {
+                this.logger.warn(
+                    `Respuesta inesperada del scraper Python para RUC ${ruc}: ${JSON.stringify(body).slice(0, 500)}`,
+                );
+                return null;
+            }
+
+            return this.mapPythonResultToCompany(body.resultados[0]);
         } catch (error) {
             this.logger.warn(
                 `Python Scraper no disponible o falló para RUC ${ruc} - Error: ${error instanceof Error ? error.message : String(error)}`,
@@ -141,19 +151,25 @@ export class SunatWebScraperAdapter implements ISunatService {
         try {
             const url = `${this.pythonScraperBaseUrl}/consulta/${encodeURIComponent(razonSocial)}`;
             const response = await fetch(url, {
-                signal: AbortSignal.timeout(15000),
+                signal: AbortSignal.timeout(120000),
             });
             if (!response.ok) return null;
 
-            const body: PythonScraperResponse =
-                (await response.json()) as PythonScraperResponse;
+            const body = (await response.json()) as PythonScraperResponse;
 
-            if (body.resultados.length > 0) {
-                return body.resultados
-                    .map((res) => this.mapPythonResultToCompany(res))
-                    .filter((r): r is SunatCompanyInfo => r !== null);
+            if (
+                !Array.isArray(body.resultados) ||
+                body.resultados.length === 0
+            ) {
+                this.logger.warn(
+                    `Respuesta inesperada del scraper Python para Razón Social ${razonSocial}: ${JSON.stringify(body).slice(0, 500)}`,
+                );
+                return null;
             }
-            return null;
+
+            return body.resultados
+                .map((res) => this.mapPythonResultToCompany(res))
+                .filter((r): r is SunatCompanyInfo => r !== null);
         } catch (error) {
             this.logger.warn(
                 `Python Scraper no disponible o falló para Razón Social ${razonSocial} - Error: ${error instanceof Error ? error.message : String(error)}`,
@@ -170,18 +186,34 @@ export class SunatWebScraperAdapter implements ISunatService {
             return null;
         }
 
-        const rucMatch = res.ruc.match(/^(\d{11})\s*-\s*(.+)$/);
+        const rawRuc =
+            res.ruc ?? res.numero_de_ruc ?? res['número_de_ruc'] ?? undefined;
 
-        const ruc = rucMatch ? rucMatch[1] : res.ruc;
+        if (!rawRuc) {
+            this.logger.warn(
+                `Respuesta del scraper Python sin campo 'ruc': ${JSON.stringify(res).slice(0, 500)}`,
+            );
+            return null;
+        }
+
+        const rucMatch = rawRuc.match(/^(\d{11})\s*-\s*(.+)$/);
+
+        const ruc = rucMatch ? rucMatch[1] : rawRuc;
         const razonSocial = rucMatch ? rucMatch[2].trim() : '';
+
+        const actividadEconomica =
+            res.actividad_economica ??
+            res.actividades_economicas ??
+            res['actividades_económicas'] ??
+            null;
 
         return {
             ruc,
             razonSocial,
             nombreComercial: res.nombre_comercial ?? razonSocial,
-            tipo: this.detectEnterpriseType(res.tipo_contribuyente),
+            tipo: this.detectEnterpriseType(res.tipo_contribuyente ?? ''),
             ubicacion: res.domicilio_fiscal ?? 'LIMA',
-            actividadEconomica: res.actividad_economica ?? null,
+            actividadEconomica,
             tamano: Size.MICRO,
             sector: Sector.OTROS,
         };
