@@ -65,7 +65,14 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 ##For personal reasons
 /.context
 docs/
+ctx_files/
+
 cookies.txt
 coverage/
 scripts/
 skills/
+
+.venv/
+__pycache__/
+## AI context files
+GEMINI.md

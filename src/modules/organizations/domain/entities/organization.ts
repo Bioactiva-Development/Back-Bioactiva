@@ -1,51 +1,56 @@
-import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
-import { Sector } from '@/modules/organizations/domain/enums/sector';
-import { Size } from '@/modules/organizations/domain/enums/size';
+import { EnterpriseType } from '@modules/organizations/domain/enums/organization-type';
+import { Sector } from '@modules/organizations/domain/enums/sector';
+import { Size } from '@modules/organizations/domain/enums/size';
 
-export class Organizacion {
+export class Organization {
     constructor(
         public readonly id: string,
-        public codigo_cliente: string,
+        public codigoCliente: string,
         public nombre: string,
-        public nombre_comercial: string,
-        public sub_area: string | null,
+        public nombreComercial: string,
+        public subArea: string | null,
         public ruc: string | null,
         public tipo: EnterpriseType,
-        public linkedIn: string | null,
+        public linkedin: string | null,
         public ubicacion: string | null,
         public sector: Sector | null,
-        public tamanio: Size,
-        public actividad_economica: string | null,
-        public alianzas_estrategicas: string | null,
-        public id_contacto_activo: number | null,
-        public readonly created_at: Date,
-        public updated_at: Date,
-        public id_author: number,
+        public tamano: Size,
+        public actividadEconomica: string | null,
+        public alianzasEstrategicas: string | null,
+        public idContactoActivo: number | null,
+        public idAuthor: number,
+        public readonly createdAt: Date,
+        public updatedAt: Date,
     ) {}
 
     rename(nombre: string) {
-        if (!nombre.trim()) {
-            throw new Error('El nombre no puede estar vacío');
+        if (!nombre || !nombre.trim()) {
+            throw new Error(
+                'El nombre de la organización (Razón Social) no puede estar vacío',
+            );
         }
         this.nombre = nombre;
-        this.updated_at = new Date();
+        this.updatedAt = new Date();
     }
 
     updateCommercialName(nombreComercial: string) {
-        this.nombre_comercial = nombreComercial;
-        this.updated_at = new Date();
+        if (!nombreComercial || !nombreComercial.trim()) {
+            throw new Error('El nombre comercial no puede estar vacío');
+        }
+        this.nombreComercial = nombreComercial;
+        this.updatedAt = new Date();
     }
 
     selectContact(idContacto: number) {
-        if (this.id_contacto_activo === idContacto) {
-            throw new Error('El contacto ya está seleccionado');
+        if (this.idContactoActivo === idContacto) {
+            throw new Error('El contacto ya está seleccionado como activo');
         }
-        this.id_contacto_activo = idContacto;
-        this.updated_at = new Date();
+        this.idContactoActivo = idContacto;
+        this.updatedAt = new Date();
     }
 
     clearSelectedContact() {
-        this.id_contacto_activo = null;
-        this.updated_at = new Date();
+        this.idContactoActivo = null;
+        this.updatedAt = new Date();
     }
 }
