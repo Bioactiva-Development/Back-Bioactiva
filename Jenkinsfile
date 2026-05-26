@@ -64,9 +64,9 @@ pipeline {
             steps {
 
                 withCredentials([
-                    string(credentialsId: 'FRONTED_BIOACTIVA', variable: 'FRONTED_BIOACTIVA'),
-                    string(credentialsId: 'DB_BIOACTIVA', variable: 'DB_BIOACTIVA'),
-                    string(credentialsId: 'REDIS_BIOACTIVA', variable: 'REDIS_BIOACTIVA'),
+                    string(credentialsId: 'FRONTED_BIOACTIVA', variable: 'FRONTED_URL'),
+                    string(credentialsId: 'DB_BIOACTIVA', variable: 'DATABASE_URL'),
+                    string(credentialsId: 'REDIS_BIOACTIVA', variable: 'REDIS_URL'),
                     string(credentialsId: 'JWT_SECRET_BIOACTIVA', variable: 'JWT_SECRET'),
                     string(credentialsId: 'JWT_EXPIRES_IN_BIOACTIVA', variable: 'JWT_EXPIRES_IN'),
                     string(credentialsId: 'JWT_REFRESH_SECRET_BIOACTIVA', variable: 'JWT_REFRESH_SECRET'),
@@ -76,7 +76,12 @@ pipeline {
                     string(credentialsId: 'BCRYPT_SALT_ROUNDS_BIOACTIVA', variable: 'BCRYPT_SALT_ROUNDS'),
                     string(credentialsId: 'ADMIN_EMAIL_BIOACTIVA', variable: 'ADMIN_EMAIL'),
                     string(credentialsId: 'ADMIN_PASSWORD_BIOACTIVA', variable: 'ADMIN_PASSWORD'),
-                    string(credentialsId: 'REFRESH_TOKEN_COOKIE_NAME_BIOACTIVA', variable: 'REFRESH_TOKEN_COOKIE_NAME')
+                    string(credentialsId: 'REFRESH_TOKEN_COOKIE_NAME_BIOACTIVA', variable: 'REFRESH_TOKEN_COOKIE_NAME'),
+                    string(credentialsId: 'ALLOWED_EMAIL_DOMAINS_BIOACTIVA', variable: 'ALLOWED_EMAIL_DOMAINS'),
+                    string(credentialsId: 'RESEND_TOKEN_BIOACTIVA', variable: 'RESEND_TOKEN'),
+                    string(credentialsId: 'MAIL_PROVIDER_BIOACTIVA', variable: 'MAIL_PROVIDER'),
+                    string(credentialsId: 'MAIL_FROM_BIOACTIVA', variable: 'MAIL_FROM'),
+                    string(credentialsId: 'MAIL_FROM_NAME_BIOACTIVA', variable: 'MAIL_FROM_NAME')
                 ]) {
 
                     sh '''

@@ -62,8 +62,14 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
+
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
+      RESEND_TOKEN: ${RESEND_TOKEN}
+      MAIL_PROVIDER: ${MAIL_PROVIDER}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
     command: >
-      sh -c "pnpm prisma migrate deploy &&
+      sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/src/main"
 
   bioactiva-backend-prod:
@@ -77,9 +83,9 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
 
-      FRONTEND_URL: ${FRONTEND_BIOACTIVA}
-      DATABASE_URL: ${DB_BIOACTIVA}
-      REDIS_URL: ${REDIS_BIOACTIVA}
+      FRONTEND_URL: ${FRONTEND_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
 
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
@@ -92,9 +98,15 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
+
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
+      RESEND_TOKEN: ${RESEND_TOKEN}
+      MAIL_PROVIDER: ${MAIL_PROVIDER}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
     command: >
-      sh -c "pnpm prisma migrate deploy &&
-             exec node -r tsconfig-paths/register dist/src/main"
+      sh -c "npx prisma migrate deploy &&
+            exec node -r tsconfig-paths/register dist/src/main" 
     networks:
       - proxy_net
 

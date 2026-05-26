@@ -1,4 +1,4 @@
-import { Inject } from '@/shared/dependency-inyection/inyect';
+import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
 import { UpdateOrganizationDto } from '@/modules/organizations/application/dtos/update-organization.dto';
