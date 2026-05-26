@@ -66,5 +66,7 @@ ctx_files/
 
 cookies.txt
 
+.venv/
+__pycache__/
 ## AI context files
 GEMINI.md

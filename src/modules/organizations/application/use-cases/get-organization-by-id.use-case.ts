@@ -1,6 +1,6 @@
 import { Inject } from '@/shared/dependency-inyection/inyect';
-import { IOrganizationRepository } from '../../domain/ports/organization.repository';
-import { Organization } from '../../domain/entities/organization';
+import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
 
 export class GetOrganizationByIdUseCase {
     constructor(

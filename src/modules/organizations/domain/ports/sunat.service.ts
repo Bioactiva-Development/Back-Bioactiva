@@ -1,6 +1,6 @@
-import { EnterpriseType } from '../enums/organization-type';
-import { Sector } from '../enums/sector';
-import { Size } from '../enums/size';
+import { EnterpriseType } from '@modules/organizations/domain/enums/organization-type';
+import { Sector } from '@modules/organizations/domain/enums/sector';
+import { Size } from '@modules/organizations/domain/enums/size';
 
 export interface SunatCompanyInfo {
     ruc: string;

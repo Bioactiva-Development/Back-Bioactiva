@@ -1,13 +1,19 @@
-import { Controller, Get, Post, Patch, Body, Param, NotFoundException } from '@nestjs/common';
 import {
-    CreateOrganizationUseCase,
-    UpdateOrganizationUseCase,
-    GetOrganizationByIdUseCase,
-    GetAllOrganizationsUseCase,
-    QuerySunatUseCase,
-} from '../../application/use-cases';
-import { HttpCreateOrganizationDto } from './dto/http-create-organization.dto';
-import { HttpUpdateOrganizationDto } from './dto/http-update-organization.dto';
+    Controller,
+    Get,
+    Post,
+    Patch,
+    Body,
+    Param,
+    NotFoundException,
+} from '@nestjs/common';
+import { CreateOrganizationUseCase } from '@/modules/organizations/application/use-cases/create-organization.use-case';
+import { UpdateOrganizationUseCase } from '@/modules/organizations/application/use-cases/update-organization.use-case';
+import { GetOrganizationByIdUseCase } from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
+import { GetAllOrganizationsUseCase } from '@/modules/organizations/application/use-cases/get-all-organizations.use-case';
+import { QuerySunatUseCase } from '@/modules/organizations/application/use-cases/query-sunat.use-case';
+import { HttpCreateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/create-organization.dto.http';
+import { HttpUpdateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/update-organization.dto.http';
 
 @Controller('organizations')
 export class OrganizationController {
@@ -33,7 +39,9 @@ export class OrganizationController {
     async querySunat(@Param('query') query: string) {
         const result = await this.querySunatUseCase.execute(query);
         if (!result || (Array.isArray(result) && result.length === 0)) {
-            throw new NotFoundException('No se encontraron resultados en SUNAT para la organización consultada.');
+            throw new NotFoundException(
+                'No se encontraron resultados en SUNAT para la organización consultada.',
+            );
         }
         return result;
     }

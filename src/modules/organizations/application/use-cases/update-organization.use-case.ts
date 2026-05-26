@@ -1,10 +1,10 @@
 import { Inject } from '@/shared/dependency-inyection/inyect';
-import { IOrganizationRepository } from '../../domain/ports/organization.repository';
-import { ISunatService } from '../../domain/ports/sunat.service';
-import { UpdateOrganizationDto } from '../dtos/update-organization.dto';
-import { Organization } from '../../domain/entities/organization';
-import { OrganizationAlreadyExistsException } from '../../domain/exceptions/organization-already-exists.exception';
-import { InvalidRucException } from '../../domain/exceptions/invalid-ruc.exception';
+import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
+import { UpdateOrganizationDto } from '@/modules/organizations/application/dtos/update-organization.dto';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
+import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
+import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
 
 export class UpdateOrganizationUseCase {
     constructor(
@@ -14,14 +14,19 @@ export class UpdateOrganizationUseCase {
         private readonly sunatService: ISunatService,
     ) {}
 
-    async execute(id: string, dto: UpdateOrganizationDto): Promise<Organization> {
+    async execute(
+        id: string,
+        dto: UpdateOrganizationDto,
+    ): Promise<Organization> {
         const organization = await this.organizationRepository.findById(id);
         if (!organization) {
             throw new Error('Organización no encontrada');
         }
 
         if (dto.ruc && dto.ruc !== organization.ruc) {
-            const existingOrg = await this.organizationRepository.findByRuc(dto.ruc);
+            const existingOrg = await this.organizationRepository.findByRuc(
+                dto.ruc,
+            );
             if (existingOrg) {
                 throw new OrganizationAlreadyExistsException(dto.ruc);
             }

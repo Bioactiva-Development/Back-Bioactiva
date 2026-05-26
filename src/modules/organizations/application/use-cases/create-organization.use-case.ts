@@ -1,10 +1,10 @@
 import { Inject } from '@/shared/dependency-inyection/inyect';
-import { IOrganizationRepository } from '../../domain/ports/organization.repository';
-import { ISunatService } from '../../domain/ports/sunat.service';
-import { CreateOrganizationDto } from '../dtos/create-organization.dto';
-import { Organization } from '../../domain/entities/organization';
-import { OrganizationAlreadyExistsException } from '../../domain/exceptions/organization-already-exists.exception';
-import { InvalidRucException } from '../../domain/exceptions/invalid-ruc.exception';
+import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
+import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/create-organization.dto';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
+import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
+import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
 
 export class CreateOrganizationUseCase {
     constructor(
@@ -20,12 +20,14 @@ export class CreateOrganizationUseCase {
             if (!/^\d{11}$/.test(dto.ruc)) {
                 throw new InvalidRucException(
                     dto.ruc,
-                    "Ruc no cumple con 11 digitos. Verifique si su ruc es correcto o registre la org con un codigo unico para el sistema"
+                    'Ruc no cumple con 11 digitos. Verifique si su ruc es correcto o registre la org con un codigo unico para el sistema',
                 );
             }
 
             // 2. Verificar duplicados localmente
-            const existingOrg = await this.organizationRepository.findByRuc(dto.ruc);
+            const existingOrg = await this.organizationRepository.findByRuc(
+                dto.ruc,
+            );
             if (existingOrg) {
                 throw new OrganizationAlreadyExistsException(dto.ruc);
             }
@@ -35,7 +37,7 @@ export class CreateOrganizationUseCase {
             if (!isValidRuc) {
                 throw new InvalidRucException(
                     dto.ruc,
-                    "No se encontraron resultados en SUNAT para la organización consultada."
+                    'No se encontraron resultados en SUNAT para la organización consultada.',
                 );
             }
         }

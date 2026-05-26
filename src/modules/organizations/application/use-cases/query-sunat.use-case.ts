@@ -1,5 +1,8 @@
 import { Inject } from '@/shared/dependency-inyection/inyect';
-import { ISunatService, SunatCompanyInfo } from '../../domain/ports/sunat.service';
+import {
+    ISunatService,
+    SunatCompanyInfo,
+} from '@/modules/organizations/domain/ports/sunat.service';
 
 export class QuerySunatUseCase {
     constructor(
@@ -7,8 +10,11 @@ export class QuerySunatUseCase {
         private readonly sunatService: ISunatService,
     ) {}
 
-    async execute(query: string): Promise<SunatCompanyInfo[] | SunatCompanyInfo | null> {
-        if (/^\d{11}$/.test(query)) { // si cumple con los 11 numeros
+    async execute(
+        query: string,
+    ): Promise<SunatCompanyInfo[] | SunatCompanyInfo | null> {
+        if (/^\d{11}$/.test(query)) {
+            // si cumple con los 11 numeros
             return await this.sunatService.getByRuc(query);
         }
         return await this.sunatService.getByRazonSocial(query);

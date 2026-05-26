@@ -6,9 +6,9 @@ import {
     IsNumber,
     Length,
 } from 'class-validator';
-import { EnterpriseType } from '../../../domain/enums/organization-type';
-import { Sector } from '../../../domain/enums/sector';
-import { Size } from '../../../domain/enums/size';
+import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
+import { Sector } from '@/modules/organizations/domain/enums/sector';
+import { Size } from '@/modules/organizations/domain/enums/size';
 
 export class HttpCreateOrganizationDto {
     @IsString()

@@ -1,12 +1,12 @@
-import { EnterpriseType } from '../enums/organization-type';
-import { Sector } from '../enums/sector';
-import { Size } from '../enums/size';
+import { EnterpriseType } from '@modules/organizations/domain/enums/organization-type';
+import { Sector } from '@modules/organizations/domain/enums/sector';
+import { Size } from '@modules/organizations/domain/enums/size';
 
 export class Organization {
     constructor(
         public readonly id: string,
         public codigoCliente: string,
-        public nombre: string, // Representa la Razón Social en el dominio
+        public nombre: string,
         public nombreComercial: string,
         public subArea: string | null,
         public ruc: string | null,
@@ -25,7 +25,9 @@ export class Organization {
 
     rename(nombre: string) {
         if (!nombre || !nombre.trim()) {
-            throw new Error('El nombre de la organización (Razón Social) no puede estar vacío');
+            throw new Error(
+                'El nombre de la organización (Razón Social) no puede estar vacío',
+            );
         }
         this.nombre = nombre;
         this.updatedAt = new Date();

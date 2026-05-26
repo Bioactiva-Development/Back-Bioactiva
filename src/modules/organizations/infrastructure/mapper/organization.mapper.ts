@@ -1,11 +1,15 @@
 import { Organizacion as PrismaOrganizationModel } from '@prisma/client';
-import { Organization } from '../../domain/entities/organization';
-import { EnterpriseType } from '../../domain/enums/organization-type';
-import { Sector } from '../../domain/enums/sector';
-import { Size } from '../../domain/enums/size';
+import type {
+    TipoEmpresa,
+    Tamano as PrismaTamano,
+    Sector as PrismaSector,
+} from '@prisma/client';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
+import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
+import { Sector } from '@/modules/organizations/domain/enums/sector';
+import { Size } from '@/modules/organizations/domain/enums/size';
 
-// Diccionarios de traducción de tipos explícitos
-const enterpriseTypeMapToDomain: Record<string, EnterpriseType> = {
+const enterpriseTypeMapToDomain: Record<TipoEmpresa, EnterpriseType> = {
     ACADEMIA: EnterpriseType.ACADEMIA,
     EMPRESA_INTERNACIONAL: EnterpriseType.EMPRESA_INTERNACIONAL,
     EMPRESA_NACIONAL: EnterpriseType.EMPRESA_NACIONAL,
@@ -15,7 +19,7 @@ const enterpriseTypeMapToDomain: Record<string, EnterpriseType> = {
     ORGANISMO_INTERNACIONAL: EnterpriseType.ORGANISMO_INTERNACIONAL,
 };
 
-const enterpriseTypeMapToPersistence: Record<EnterpriseType, string> = {
+const enterpriseTypeMapToPersistence: Record<EnterpriseType, TipoEmpresa> = {
     [EnterpriseType.ACADEMIA]: 'ACADEMIA',
     [EnterpriseType.EMPRESA_INTERNACIONAL]: 'EMPRESA_INTERNACIONAL',
     [EnterpriseType.EMPRESA_NACIONAL]: 'EMPRESA_NACIONAL',
@@ -25,21 +29,21 @@ const enterpriseTypeMapToPersistence: Record<EnterpriseType, string> = {
     [EnterpriseType.ORGANISMO_INTERNACIONAL]: 'ORGANISMO_INTERNACIONAL',
 };
 
-const sizeMapToDomain: Record<string, Size> = {
+const sizeMapToDomain: Record<PrismaTamano, Size> = {
     GRANDE: Size.GRANDE,
     MEDIANO: Size.MEDIANO,
     PEQUENO: Size.PEQUENO,
     MICRO: Size.MICRO,
 };
 
-const sizeMapToPersistence: Record<Size, string> = {
+const sizeMapToPersistence: Record<Size, PrismaTamano> = {
     [Size.GRANDE]: 'GRANDE',
     [Size.MEDIANO]: 'MEDIANO',
     [Size.PEQUENO]: 'PEQUENO',
     [Size.MICRO]: 'MICRO',
 };
 
-const sectorMapToDomain: Record<string, Sector> = {
+const sectorMapToDomain: Record<PrismaSector, Sector> = {
     ACUICULTURA: Sector.ACUICULTURA,
     ADMINISTRACION_PUBLICA: Sector.ADMINISTRACION_PUBLICA,
     AGRICOLA: Sector.AGRICOLA,
@@ -69,7 +73,7 @@ const sectorMapToDomain: Record<string, Sector> = {
     TURISMO: Sector.TURISMO,
 };
 
-const sectorMapToPersistence: Record<Sector, string> = {
+const sectorMapToPersistence: Record<Sector, PrismaSector> = {
     [Sector.ACUICULTURA]: 'ACUICULTURA',
     [Sector.ADMINISTRACION_PUBLICA]: 'ADMINISTRACION_PUBLICA',
     [Sector.AGRICOLA]: 'AGRICOLA',
@@ -131,11 +135,13 @@ export class OrganizationMapper {
             nombreComercial: domain.nombreComercial,
             subArea: domain.subArea,
             ruc: domain.ruc,
-            tipo: enterpriseTypeMapToPersistence[domain.tipo] as any,
+            tipo: enterpriseTypeMapToPersistence[domain.tipo],
             linkedin: domain.linkedin,
             ubicacion: domain.ubicacion,
-            sector: domain.sector ? (sectorMapToPersistence[domain.sector] as any) : null,
-            tamano: sizeMapToPersistence[domain.tamano] as any,
+            sector: domain.sector
+                ? sectorMapToPersistence[domain.sector]
+                : null,
+            tamano: sizeMapToPersistence[domain.tamano],
             actividadEconomica: domain.actividadEconomica,
             alianzasEstrategicas: domain.alianzasEstrategicas,
             idContactoActivo: domain.idContactoActivo,

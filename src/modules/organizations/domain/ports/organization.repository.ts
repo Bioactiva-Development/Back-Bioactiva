@@ -1,4 +1,4 @@
-import { Organization } from '../entities/organization';
+import { Organization } from '@modules/organizations/domain/entities/organization';
 
 export interface IOrganizationRepository {
     save(organization: Organization): Promise<Organization>;

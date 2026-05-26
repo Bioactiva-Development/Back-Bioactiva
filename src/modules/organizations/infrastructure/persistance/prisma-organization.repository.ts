@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/prisma/prisma.service';
-import { IOrganizationRepository } from '../../domain/ports/organization.repository';
-import { Organization } from '../../domain/entities/organization';
-import { OrganizationMapper } from '../mapper/organization.mapper';
+import { PrismaService } from '@/modules/common/prisma/prisma.service';
+import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
+import { OrganizationMapper } from '@/modules/organizations/infrastructure/mapper/organization.mapper';
 
 @Injectable()
 export class PrismaOrganizationRepository implements IOrganizationRepository {
@@ -41,6 +41,6 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
 
     async findAll(): Promise<Organization[]> {
         const records = await this.prisma.organizacion.findMany();
-        return records.map(OrganizationMapper.toDomain);
+        return records.map((record) => OrganizationMapper.toDomain(record));
     }
 }
