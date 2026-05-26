@@ -1,8 +1,8 @@
-import { TokenStatus } from '@/shared/enums/token_estado';
+import { TokenStatus } from '@/shared/domain/enums/token_estado';
 
 export class PasswordResetToken {
     constructor(
-        public readonly id: string,
+        public readonly id: number | null,
         public readonly user_id: number,
         public readonly token: string,
         public estado: TokenStatus = TokenStatus.PENDIENTE,
@@ -18,5 +18,13 @@ export class PasswordResetToken {
 
         this.estado = TokenStatus.CONSUMIDO;
         this.consumed_at = new Date();
+    }
+
+    expire() {
+        if (this.estado !== TokenStatus.PENDIENTE) {
+            return;
+        }
+
+        this.estado = TokenStatus.EXPIRADO;
     }
 }

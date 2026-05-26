@@ -14,5 +14,6 @@ import { USER_REPOSITORY } from '@/modules/users/domain/ports/user-repository.po
             useExisting: PrismaUserRepository,
         },
     ],
+    exports: [USER_REPOSITORY],
 })
 export class UsersModule {}

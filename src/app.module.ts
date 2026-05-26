@@ -9,6 +9,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from '@/modules/users/user.module';
 import { OrganizationsModule } from '@/modules/organizations/organizations.module';
 import { ContactsModule } from '@/modules/contacts/contacts.module';
+import { InvitationsModule } from '@/modules/invitations/invitations.module';
+import { ResetPasswordModule } from '@/modules/reset_password/reset-password.module';
 
 @Module({
     imports: [
@@ -17,6 +19,8 @@ import { ContactsModule } from '@/modules/contacts/contacts.module';
         UsersModule,
         OrganizationsModule,
         ContactsModule,
+        InvitationsModule,
+        ResetPasswordModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
