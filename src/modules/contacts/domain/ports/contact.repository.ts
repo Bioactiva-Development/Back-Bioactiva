@@ -10,6 +10,9 @@ export interface IContactRepository {
     // Para la regla de negocio: El correo debe ser único (Punto de control de duplicados)
     findByEmail(email: string): Promise<Contact | null>;
 
+    // Control de duplicados para el correo secundario
+    findBySecondaryEmail(email: string): Promise<Contact | null>;
+
     // Para los Puntos 26, 27 y 28: Obtener contactos filtrados por Organización
     findByOrganizationId(idOrganizacion: string): Promise<Contact[]>; //recibe un id de organizacion y de tipo string y luego promete retornar (osea no instatanemante necesariamente pero si lo hará al fin y al cabo) un arreglo de contactos. No sen neceista que sea null proque de por si el arrelo podria esta vacio y basta con ello.
 

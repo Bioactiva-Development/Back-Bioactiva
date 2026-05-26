@@ -12,12 +12,22 @@ export class CreateContactUseCase {
     ) {}
 
     async execute(dto: CreateContactDto): Promise<Contact> {
-        // 2. Aplicar regla de negocio: Validar unicidad del correo
+        // 2. Aplicar regla de negocio: Validar unicidad del correo principal
         const existingContact = await this.contactRepository.findByEmail(
             dto.correo,
         );
         if (existingContact) {
             throw new EmailAlreadyExistsException(dto.correo);
+        }
+
+        // Validar unicidad del correo secundario si se proporciona
+        if (dto.correo2) {
+            const existingContact2 = await this.contactRepository.findBySecondaryEmail(
+                dto.correo2,
+            );
+            if (existingContact2) {
+                throw new EmailAlreadyExistsException(dto.correo2);
+            }
         }
 
         // 3. Instanciar la entidad de dominio con datos limpios

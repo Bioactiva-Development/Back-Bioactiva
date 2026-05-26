@@ -1,4 +1,4 @@
-import { Inject } from '@/shared/dependency-inyection/inyect';
+import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 

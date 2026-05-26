@@ -1,4 +1,4 @@
-import { Inject } from '@/shared/dependency-inyection/inyect';
+import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
     ISunatService,
     SunatCompanyInfo,

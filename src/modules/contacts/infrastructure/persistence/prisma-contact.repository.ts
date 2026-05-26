@@ -41,6 +41,13 @@ export class PrismaContactRepository implements IContactRepository {
         return record ? ContactMapper.toDomain(record) : null;
     }
 
+    async findBySecondaryEmail(email: string): Promise<Contact | null> {
+        const record = await this.prisma.contacto.findFirst({
+            where: { correo2: email },
+        });
+        return record ? ContactMapper.toDomain(record) : null;
+    }
+
     async findByOrganizationId(idOrganizacion: string): Promise<Contact[]> {
         const records = await this.prisma.contacto.findMany({
             where: { idOrganizacion },

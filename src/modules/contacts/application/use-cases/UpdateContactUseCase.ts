@@ -2,6 +2,7 @@ import { Inject } from '@nestjs/common';
 import { IContactRepository } from '../../domain/ports/contact.repository';
 import { Contact } from '../../domain/entities/contact';
 import { EmailAlreadyExistsException } from '../../domain/exceptions/email-already-exists.exception';
+import { ContactNotFoundException } from '../../domain/exceptions/contact-not-found.exception';
 
 export class UpdateContactUseCase {
     constructor(
@@ -11,13 +12,20 @@ export class UpdateContactUseCase {
 
     async execute(id: number, dto: Partial<Contact>): Promise<Contact> {
         const contact = await this.contactRepository.findById(id);
-        if (!contact) throw new Error('Contacto no encontrado'); // posible creacoin de un errr
+        if (!contact) throw new ContactNotFoundException(id);
 
-        // No duplicidad
+        // No duplicidad correo principal
         if (dto.correo && dto.correo !== contact.correo) {
             const emailExists = await this.contactRepository.findByEmail(dto.correo);
             if (emailExists) throw new EmailAlreadyExistsException(dto.correo);
-            contact.changeEmail(dto.correo);
+            contact.correo = dto.correo;
+        }
+
+        // No duplicidad correo secundario
+        if (dto.correo2 && dto.correo2 !== contact.correo2) {
+            const email2Exists = await this.contactRepository.findBySecondaryEmail(dto.correo2);
+            if (email2Exists) throw new EmailAlreadyExistsException(dto.correo2);
+            contact.correo2 = dto.correo2;
         }
 
         // Mutar los campos permitidos
