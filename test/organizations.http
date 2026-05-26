@@ -12,7 +12,25 @@ Content-Type: {{contentType}}
 
 ###
 
-### 2. Crear una Organización
+### 2. Consultar SUNAT por RUC válido (Existe en nuestra base simulada)
+GET {{baseUrl}}/organizations/sunat/20555444332
+Content-Type: {{contentType}}
+
+###
+
+### 3. Consultar SUNAT por Razón Social (Búsqueda parcial de texto)
+GET {{baseUrl}}/organizations/sunat/Bioactiva
+Content-Type: {{contentType}}
+
+###
+
+### 4. Consultar SUNAT por RUC no registrado (Inexistente en SUNAT)
+GET {{baseUrl}}/organizations/sunat/99999999999
+Content-Type: {{contentType}}
+
+###
+
+### 5. Crear una Organización
 # @name createOrganization
 POST {{baseUrl}}/organizations
 Content-Type: {{contentType}}
@@ -32,19 +50,19 @@ Content-Type: {{contentType}}
 # Guarda el ID de la organización creada de la respuesta
 @orgId = {{createOrganization.response.body.id}}
 
-### 3. Listar Todas las Organizaciones (GET /organizations)
+### 6. Listar Todas las Organizaciones (GET /organizations)
 GET {{baseUrl}}/organizations
 Content-Type: {{contentType}}
 
 ###
 
-### 4. Consultar Detalle de Organización por ID (GET /organizations/:id)
+### 7. Consultar Detalle de Organización por ID (GET /organizations/:id)
 GET {{baseUrl}}/organizations/{{orgId}}
 Content-Type: {{contentType}}
 
 ###
 
-### 5. Editar Organización por ID (PATCH /organizations/:id)
+### 8. Editar Organización por ID (PATCH /organizations/:id)
 PATCH {{baseUrl}}/organizations/{{orgId}}
 Content-Type: {{contentType}}
 

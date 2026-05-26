@@ -62,7 +62,66 @@ describe('OrganizationController (e2e)', () => {
         await app.close();
     });
 
-    it('POST /organizations - should create an organization', async () => {
+    it('GET /organizations/sunat/:query - should return company info by valid RUC', async () => {
+        const res = await request(app.getHttpServer())
+            .get('/organizations/sunat/20555444332')
+            .expect(200);
+
+        expect(res.body).toHaveProperty('ruc', '20555444332');
+        expect(res.body).toHaveProperty('razonSocial', 'Organizacion General S.A.');
+    });
+
+    it('GET /organizations/sunat/:query - should return list of matches by Razón Social', async () => {
+        const res = await request(app.getHttpServer())
+            .get('/organizations/sunat/Bioactiva')
+            .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBeGreaterThan(0);
+        expect(res.body[0]).toHaveProperty('ruc', '20999888777');
+    });
+
+    it('GET /organizations/sunat/:query - should return 404 for non-existent RUC', async () => {
+        await request(app.getHttpServer())
+            .get('/organizations/sunat/99999999999')
+            .expect(404);
+    });
+
+    it('POST /organizations - should throw 400 when RUC format is invalid (not 11 digits)', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/organizations')
+            .send({
+                codigoCliente: 'E2E-ORG-FAIL-1',
+                nombre: 'Fail Org 1',
+                nombreComercial: 'Fail 1',
+                tipo: 'EMPRESA_NACIONAL',
+                tamano: 'PEQUENO',
+                ruc: '12345',
+                idAuthor: testUser.id
+            })
+            .expect(400);
+
+        expect(res.body.message).toContain('Ruc no cumple con 11 digitos');
+    });
+
+    it('POST /organizations - should throw 400 when RUC does not exist in SUNAT', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/organizations')
+            .send({
+                codigoCliente: 'E2E-ORG-FAIL-2',
+                nombre: 'Fail Org 2',
+                nombreComercial: 'Fail 2',
+                tipo: 'EMPRESA_NACIONAL',
+                tamano: 'PEQUENO',
+                ruc: '11111111111',
+                idAuthor: testUser.id
+            })
+            .expect(400);
+
+        expect(res.body.message).toContain('No se encontraron resultados en SUNAT para la organización consultada');
+    });
+
+    it('POST /organizations - should create organization with valid RUC', async () => {
         const res = await request(app.getHttpServer())
             .post('/organizations')
             .send({
@@ -79,6 +138,23 @@ describe('OrganizationController (e2e)', () => {
         expect(res.body).toHaveProperty('id');
         expect(res.body.nombre).toBe('E2E Organization Inc');
         createdOrgId = res.body.id;
+    });
+
+    it('POST /organizations - should throw 409 when RUC already exists in local DB', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/organizations')
+            .send({
+                codigoCliente: 'E2E-ORG-200',
+                nombre: 'Another Org Name',
+                nombreComercial: 'Another',
+                tipo: 'EMPRESA_NACIONAL',
+                tamano: 'PEQUENO',
+                ruc: '20123456789',
+                idAuthor: testUser.id
+            })
+            .expect(409);
+
+        expect(res.body.message).toContain('La organización ya se encuentra registrada');
     });
 
     it('GET /organizations - should return all organizations', async () => {

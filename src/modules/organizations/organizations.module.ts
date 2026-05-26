@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { OrganizationController } from './infrastructure/controllers/organization.controller';
-import { PrismaOrganizationRepository } from './infrastructure/persistence/prisma-organization.repository';
-import { SunatWebScraperAdapter } from './infrastructure/external-services/sunat-web-scraper.adapter';
+import { OrganizationController } from './infrastructure/http/organization.controller';
+import { PrismaOrganizationRepository } from './infrastructure/persistance/prisma-organization.repository';
+import { SunatWebScraperAdapter } from './infrastructure/service/sunat-web-scraper.adapter';
 import { IOrganizationRepository } from './domain/ports/organization.repository';
 import { ISunatService } from './domain/ports/sunat.service';
 import {
@@ -9,6 +9,7 @@ import {
     UpdateOrganizationUseCase,
     GetOrganizationByIdUseCase,
     GetAllOrganizationsUseCase,
+    QuerySunatUseCase,
 } from './application/use-cases';
 
 @Module({
@@ -28,6 +29,7 @@ import {
         UpdateOrganizationUseCase,
         GetOrganizationByIdUseCase,
         GetAllOrganizationsUseCase,
+        QuerySunatUseCase,
     ],
     exports: [
         IOrganizationRepository,
@@ -36,6 +38,7 @@ import {
         UpdateOrganizationUseCase,
         GetOrganizationByIdUseCase,
         GetAllOrganizationsUseCase,
+        QuerySunatUseCase,
     ],
 })
 export class OrganizationsModule {}

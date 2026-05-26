@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { IOrganizationRepository } from '../../domain/ports/organization.repository';
 import { Organization } from '../../domain/entities/organization';
-import { OrganizationMapper } from './mappers/organization.mapper';
+import { OrganizationMapper } from '../mapper/organization.mapper';
 
 @Injectable()
 export class PrismaOrganizationRepository implements IOrganizationRepository {
