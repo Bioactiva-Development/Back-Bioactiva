@@ -53,15 +53,16 @@ export class PrismaUserAuthRepository implements AuthUserRepositoryPort {
                     user.role === UserRole.ADMINISTRADOR
                         ? 'ADMINISTRADOR'
                         : 'TRABAJADOR',
-                estado:
-                    user.estado === UserState.PENDIENTE
-                        ? 'PENDIENTE'
-                        : user.estado === UserState.ACTIVO
-                          ? 'ACTIVO'
-                          : 'SUSPENDIDO',
+                estado: this.mapEstadoToString(user.estado),
             },
         });
 
         return UserMapper.toDomain(record);
+    }
+
+    private mapEstadoToString(estado: UserState): string {
+        if (estado === UserState.PENDIENTE) return 'PENDIENTE';
+        if (estado === UserState.ACTIVO) return 'ACTIVO';
+        return 'SUSPENDIDO';
     }
 }
