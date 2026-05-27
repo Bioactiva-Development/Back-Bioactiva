@@ -36,7 +36,7 @@ export class RequestPasswordResetUseCase {
 
     async execute(correo: string): Promise<{ ok: boolean }> {
         const user = await this.userRepository.findByCorreo(correo);
-        if (!user || user.id === null) {
+        if (user?.id == null) {
             return { ok: true };
         }
 

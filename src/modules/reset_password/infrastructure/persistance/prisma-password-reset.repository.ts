@@ -14,7 +14,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
         const record = await this.prisma.userToken.findUnique({
             where: { id },
         });
-        if (!record || record.proposito !== PrismaTokenPurpose.RESET_PASSWORD) {
+        if (record?.proposito !== PrismaTokenPurpose.RESET_PASSWORD) {
             return null;
         }
         return record ? PasswordResetMapper.toDomain(record) : null;

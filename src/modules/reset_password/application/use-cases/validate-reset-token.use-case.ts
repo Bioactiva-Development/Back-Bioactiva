@@ -27,7 +27,7 @@ export class ValidateResetTokenUseCase {
         const resetToken =
             await this.passwordResetRepository.findByToken(tokenHash);
 
-        if (!resetToken || resetToken.estado !== TokenStatus.PENDIENTE) {
+        if (resetToken?.estado !== TokenStatus.PENDIENTE) {
             throw new InvalidResetTokenException();
         }
 
