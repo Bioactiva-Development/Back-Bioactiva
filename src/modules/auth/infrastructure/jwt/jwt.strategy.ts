@@ -33,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             Number(payload.sub),
         );
 
-        if (!user || user.estado !== UserState.ACTIVO) {
+        if (user?.estado !== UserState.ACTIVO) {
             throw new UnauthorizedException('No autorizado');
         }
 
