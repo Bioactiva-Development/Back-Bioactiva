@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Organizacion } from '@/modules/organizations/domain/entities/organization';
+import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { Size } from '@/modules/organizations/domain/enums/size';
@@ -21,25 +21,25 @@ describe('Organizations module', () => {
 		const createdAt = new Date('2024-01-01T00:00:00.000Z');
 
 		const buildOrganizacion = () =>
-			new Organizacion(
-				'org-1',
-				'CLI-001',
-				'TechCorp SA',
-				'TechCorp',
-				'IT',
-				'12345678',
-				EnterpriseType.EMPRESA,
-				'https://linkedin.com/company/techcorp',
-				'Lima, Perú',
-				Sector.TECNOLOGIA,
-				Size.GRANDE,
-				'Desarrollo de software',
-				'Partner de Google Cloud',
-				null,
-				createdAt,
-				createdAt,
-				1,
-			);
+		new Organization(
+			'org-1',
+			'CLI-001',
+			'TechCorp SA',
+			'TechCorp',
+			'IT',
+			'12345678',
+			EnterpriseType.EMPRESA,
+			'https://linkedin.com/company/techcorp',
+			'Lima, Perú',
+			Sector.TECNOLOGIA,
+			Size.GRANDE,
+			'Desarrollo de software',
+			'Partner de Google Cloud',
+			null,
+			1,
+			createdAt,
+			createdAt,
+		);
 
 		it('should rename organization with valid name', () => {
 			const org = buildOrganizacion();
@@ -48,14 +48,14 @@ describe('Organizations module', () => {
 			org.rename(newName);
 
 			expect(org.nombre).toBe('TechCorp Global');
-			expect(org.updated_at).not.toEqual(createdAt);
+			expect(org.updatedAt).not.toEqual(createdAt);
 		});
 
 		it('should throw error when renaming to empty string', () => {
 			const org = buildOrganizacion();
 
 			expect(() => org.rename('')).toThrow(
-				'El nombre no puede estar vacío',
+				'El nombre de la organización (Razón Social) no puede estar vacío',
 			);
 			expect(org.nombre).toBe('TechCorp SA'); // Original name unchanged
 		});
@@ -64,32 +64,32 @@ describe('Organizations module', () => {
 			const org = buildOrganizacion();
 
 			expect(() => org.rename('   ')).toThrow(
-				'El nombre no puede estar vacío',
+				'El nombre de la organización (Razón Social) no puede estar vacío',
 			);
 		});
 
 		it('should update commercial name and timestamp', () => {
 			const org = buildOrganizacion();
-			const oldUpdatedAt = org.updated_at;
+			const oldUpdatedAt = org.updatedAt;
 			const newCommercialName = 'TechCorp Latam';
 
 			org.updateCommercialName(newCommercialName);
 
-			expect(org.nombre_comercial).toBe('TechCorp Latam');
-			expect(org.updated_at.getTime()).toBeGreaterThan(
+			expect(org.nombreComercial).toBe('TechCorp Latam');
+			expect(org.updatedAt.getTime()).toBeGreaterThan(
 				oldUpdatedAt.getTime(),
 			);
 		});
 
 		it('should select new contact and update timestamp', () => {
 			const org = buildOrganizacion();
-			const oldUpdatedAt = org.updated_at;
+			const oldUpdatedAt = org.updatedAt;
 			const contactId = 42;
 
 			org.selectContact(contactId);
 
-			expect(org.id_contacto_activo).toBe(contactId);
-			expect(org.updated_at.getTime()).toBeGreaterThan(
+			expect(org.idContactoActivo).toBe(contactId);
+			expect(org.updatedAt.getTime()).toBeGreaterThan(
 				oldUpdatedAt.getTime(),
 			);
 		});
@@ -99,24 +99,24 @@ describe('Organizations module', () => {
 			const contactId = 42;
 
 			org.selectContact(contactId);
-			const updatedAtAfterFirstSelect = org.updated_at;
+			const updatedAtAfterFirstSelect = org.updatedAt;
 
 			expect(() => org.selectContact(contactId)).toThrow(
-				'El contacto ya está seleccionado',
+				'El contacto ya está seleccionado como activo',
 			);
-			expect(org.id_contacto_activo).toBe(contactId); // Still selected
-			expect(org.updated_at).toEqual(updatedAtAfterFirstSelect); // Timestamp unchanged
+			expect(org.idContactoActivo).toBe(contactId); // Still selected
+			expect(org.updatedAt).toEqual(updatedAtAfterFirstSelect); // Timestamp unchanged
 		});
 
 		it('should clear selected contact and update timestamp', () => {
 			const org = buildOrganizacion();
 			org.selectContact(42); // First select a contact
-			const updatedAtAfterSelect = org.updated_at;
+			const updatedAtAfterSelect = org.updatedAt;
 
 			org.clearSelectedContact();
 
-			expect(org.id_contacto_activo).toBeNull();
-			expect(org.updated_at.getTime()).toBeGreaterThanOrEqual(
+			expect(org.idContactoActivo).toBeNull();
+			expect(org.updatedAt.getTime()).toBeGreaterThanOrEqual(
 				updatedAtAfterSelect.getTime(),
 			);
 		});
@@ -126,13 +126,13 @@ describe('Organizations module', () => {
 			org.selectContact(42);
 
 			org.clearSelectedContact();
-			expect(org.id_contacto_activo).toBeNull();
+			expect(org.idContactoActivo).toBeNull();
 
 			// Should allow clearing again without error
-			const updatedAtBeforeSecondClear = org.updated_at;
+			const updatedAtBeforeSecondClear = org.updatedAt;
 			org.clearSelectedContact();
-			expect(org.id_contacto_activo).toBeNull();
-			expect(org.updated_at.getTime()).toBeGreaterThanOrEqual(
+			expect(org.idContactoActivo).toBeNull();
+			expect(org.updatedAt.getTime()).toBeGreaterThanOrEqual(
 				updatedAtBeforeSecondClear.getTime(),
 			);
 		});
@@ -144,7 +144,7 @@ describe('Organizations module', () => {
 
 			org.selectContact(99); // Select different contact
 
-			expect(org.id_contacto_activo).toBe(99);
+			expect(org.idContactoActivo).toBe(99);
 		});
 	});
 });

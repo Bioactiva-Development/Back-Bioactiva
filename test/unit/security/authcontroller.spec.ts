@@ -10,7 +10,7 @@ import { InvalidCredentialsError } from '@/modules/auth/application/errors/inval
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '../../../src/shared/domain/enums/rol';
 
 describe('Security module', () => {
 	/**

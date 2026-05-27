@@ -4,7 +4,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from '@/modules/auth/infrastructure/jwt/jwt.strategy';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '../../../src/shared/domain/enums/rol';
 
 describe('Security module', () => {
 	/**

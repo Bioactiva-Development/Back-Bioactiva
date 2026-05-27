@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 
 import { PrismaUserAuthRepository } from '@/modules/auth/infrastructure/persistance/prisma-user-auth.repository';
 import { User } from '@/modules/users/domain/entities/user';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '../../../src/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 

@@ -13,9 +13,9 @@
         "start:debug": "nest start --debug --watch",
         "start:prod": "node -r tsconfig-paths/register dist/main",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-        "test": "jest",
-        "test:watch": "jest --watch",
-        "test:cov": "jest --coverage",
+        "test": "prisma generate && jest",
+        "test:watch": "prisma generate && jest --watch",
+        "test:cov": "prisma generate && jest --coverage",
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json"
     },
@@ -93,6 +93,7 @@
             "^@modules/(.*)$": "<rootDir>/src/modules/$1",
             "^@shared/(.*)$": "<rootDir>/src/shared/$1"
         },
+        "preset": "ts-jest",
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
         },

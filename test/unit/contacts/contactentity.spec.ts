@@ -43,7 +43,7 @@ describe('Contacts module', () => {
 			contact.changeEmail(newEmail);
 
 			expect(contact.correo).toBe(newEmail);
-			expect(contact.updated_at).not.toEqual(createdAt);
+			expect(contact.updatedAt).not.toEqual(createdAt);
 		});
 
 		it('should throw error when changing email to empty string', () => {
@@ -65,12 +65,12 @@ describe('Contacts module', () => {
 
 		it('should mark email as expired', () => {
 			const contact = buildContact();
-			const oldUpdatedAt = contact.updated_at;
+			const oldUpdatedAt = contact.updatedAt;
 
 			contact.markExpired();
 
 			expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
-			expect(contact.updated_at.getTime()).toBeGreaterThan(
+			expect(contact.updatedAt.getTime()).toBeGreaterThan(
 				oldUpdatedAt.getTime(),
 			);
 		});
@@ -78,13 +78,13 @@ describe('Contacts module', () => {
 		it('should allow marking email as expired multiple times', () => {
 			const contact = buildContact();
 			contact.markExpired();
-			const firstExpiredAt = contact.updated_at;
+			const firstExpiredAt = contact.updatedAt;
 
 			// Mark expired again
 			contact.markExpired();
 
 			expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
-			expect(contact.updated_at.getTime()).toBeGreaterThanOrEqual(
+			expect(contact.updatedAt.getTime()).toBeGreaterThanOrEqual(
 				firstExpiredAt.getTime(),
 			);
 		});

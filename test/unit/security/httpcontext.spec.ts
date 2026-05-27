@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import { describe, expect, it } from '@jest/globals';
 
 import { Roles, ROLES_KEY } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
-import { UserRole } from '@/shared/enums/rol';
+import { UserRole } from '../../../src/shared/domain/enums/rol';
 
 describe('Security module', () => {
 	/**
