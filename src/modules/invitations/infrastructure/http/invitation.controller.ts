@@ -53,10 +53,10 @@ export class InvitationController {
     @Get()
     async listInvitations(
         @CurrentUser() user: User,
-        @Query() page?: number,
-        @Query() limit?: number,
-        @Query() term?: string,
-        @Query() estado?: TokenStatus,
+        @Query('page', ParseIntPipe) page?: number,
+        @Query('limit', ParseIntPipe) limit?: number,
+        @Query('term') term?: string,
+        @Query('estado') estado?: TokenStatus,
     ) {
         return this.listInvitationsUseCase.execute(page, limit, term, estado);
     }
