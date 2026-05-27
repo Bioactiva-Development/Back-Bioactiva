@@ -14,7 +14,6 @@ export class QuerySunatUseCase {
         query: string,
     ): Promise<SunatCompanyInfo[] | SunatCompanyInfo | null> {
         if (/^\d{11}$/.test(query)) {
-            // si cumple con los 11 numeros
             return await this.sunatService.getByRuc(query);
         }
         return await this.sunatService.getByRazonSocial(query);

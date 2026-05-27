@@ -14,7 +14,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
         const record = await this.prisma.userToken.findUnique({
             where: { id },
         });
-        if (!record || record.proposito !== PrismaTokenPurpose.RESET_PASSWORD) {
+        if (record?.proposito !== PrismaTokenPurpose.RESET_PASSWORD) {
             return null;
         }
         return record ? PasswordResetMapper.toDomain(record) : null;
@@ -44,7 +44,6 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
     }
 
     async save(resetToken: PasswordResetToken): Promise<PasswordResetToken> {
-        // Obtener el correo del usuario si no lo tenemos para persistirlo en UserToken
         const user = await this.prisma.usuario.findUnique({
             where: { id: resetToken.user_id },
             select: { correo: true },
