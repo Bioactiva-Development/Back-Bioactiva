@@ -196,7 +196,7 @@ export class SunatWebScraperAdapter implements ISunatService {
             return null;
         }
 
-        const rucMatch = rawRuc.match(/^(\d{11})\s*-\s*(.+)$/);
+        const rucMatch = rawRuc.match(/^(\d{11})\s*-\s*([^\n\r]+)$/);
 
         const ruc = rucMatch ? rucMatch[1] : rawRuc;
         const razonSocial = rucMatch ? rucMatch[2].trim() : '';
