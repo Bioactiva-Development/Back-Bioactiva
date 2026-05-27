@@ -1,4 +1,4 @@
 export enum EstadoCorreo {
-    VIGENTE,
-    VENCIDO,
+    VIGENTE = 'VIGENTE',
+    VENCIDO = 'VENCIDO',
 }
