@@ -1,7 +1,7 @@
-import { Inject } from '@nestjs/common';
-import { IContactRepository } from '../../domain/ports/contact.repository';
-import { Contact } from '../../domain/entities/contact';
-import { ContactNotFoundException } from '../../domain/exceptions/contact-not-found.exception';
+import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
+import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
+import { Contact } from '@/modules/contacts/domain/entities/contact';
+import { ContactNotFoundException } from '@/modules/contacts/domain/exceptions/contact-not-found.exception';
 
 export class GetContactByIdUseCase {
     constructor(
