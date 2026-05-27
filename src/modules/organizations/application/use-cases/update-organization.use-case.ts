@@ -23,21 +23,40 @@ export class UpdateOrganizationUseCase {
             throw new Error('Organización no encontrada');
         }
 
-        if (dto.ruc && dto.ruc !== organization.ruc) {
-            const existingOrg = await this.organizationRepository.findByRuc(
-                dto.ruc,
-            );
-            if (existingOrg) {
-                throw new OrganizationAlreadyExistsException(dto.ruc);
-            }
+        await this.handleRucUpdate(dto, organization);
+        this.applyUpdates(dto, organization);
+        organization.updatedAt = new Date();
 
-            const isValidRuc = await this.sunatService.validateRuc(dto.ruc);
-            if (!isValidRuc) {
-                throw new InvalidRucException(dto.ruc);
-            }
-            organization.ruc = dto.ruc;
+        return await this.organizationRepository.save(organization);
+    }
+
+    private async handleRucUpdate(
+        dto: UpdateOrganizationDto,
+        organization: Organization,
+    ): Promise<void> {
+        if (!dto.ruc || dto.ruc === organization.ruc) {
+            return;
         }
 
+        const existingOrg = await this.organizationRepository.findByRuc(
+            dto.ruc,
+        );
+        if (existingOrg) {
+            throw new OrganizationAlreadyExistsException(dto.ruc);
+        }
+
+        const isValidRuc = await this.sunatService.validateRuc(dto.ruc);
+        if (!isValidRuc) {
+            throw new InvalidRucException(dto.ruc);
+        }
+
+        organization.ruc = dto.ruc;
+    }
+
+    private applyUpdates(
+        dto: UpdateOrganizationDto,
+        organization: Organization,
+    ): void {
         if (dto.nombre) {
             organization.rename(dto.nombre);
         }
@@ -74,9 +93,5 @@ export class UpdateOrganizationUseCase {
         if (dto.idContactoActivo !== undefined) {
             organization.idContactoActivo = dto.idContactoActivo;
         }
-
-        organization.updatedAt = new Date();
-
-        return await this.organizationRepository.save(organization);
     }
 }
