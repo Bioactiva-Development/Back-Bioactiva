@@ -37,15 +37,12 @@ export class RequestPasswordResetUseCase {
     async execute(correo: string): Promise<{ ok: boolean }> {
         const user = await this.userRepository.findByCorreo(correo);
         if (!user || user.id === null) {
-            // Retorno silencioso por seguridad (previene la enumeración de usuarios)
             return { ok: true };
         }
 
-        // Generar un token aleatorio seguro
         const rawToken = randomUUID();
         const tokenHash = this.hashService.hash(rawToken);
 
-        // Crear y guardar el token (expiración en 2 horas)
         const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
         const resetToken = new PasswordResetToken(
             null,
@@ -59,13 +56,11 @@ export class RequestPasswordResetUseCase {
 
         const savedToken = await this.passwordResetRepository.save(resetToken);
 
-        // Agendar expiración automática diferida
         await this.expirationScheduler.scheduleExpiration({
             resetTokenId: savedToken.id!,
             expiresAt: savedToken.expired_at,
         });
 
-        // Enviar la notificación por correo electrónico de forma asíncrona a través de la cola
         await this.passwordResetNotification.sendResetPasswordEmail(
             correo,
             rawToken,

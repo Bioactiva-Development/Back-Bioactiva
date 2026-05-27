@@ -54,16 +54,6 @@ export class SunatWebScraperAdapter implements ISunatService {
             return pythonInfo;
         }
 
-        // const decolectaInfo = await this.queryDecolecta(ruc);
-        // if (decolectaInfo) {
-        //     return decolectaInfo;
-        // }
-
-        // const apiPeruInfo = await this.queryApiPeru(ruc);
-        // if (apiPeruInfo) {
-        //     return apiPeruInfo;
-        // }
-
         return null;
     }
 
@@ -74,45 +64,8 @@ export class SunatWebScraperAdapter implements ISunatService {
             return pythonResults;
         }
 
-        // if (this.apiPeruToken) {
-        //     try {
-        //         this.logger.log(
-        //             `[SUNAT Scraper] Consultando APIPeru por Razón Social: ${razonSocial}`,
-        //         );
-        //         const response = await fetch(
-        //             'https://apiperu.dev/api/ruc/search',
-        //             {
-        //                 method: 'POST',
-        //                 headers: {
-        //                     'Accept': 'application/json',
-        //                     'Content-Type': 'application/json',
-        //                     'Authorization': `Bearer ${this.apiPeruToken}`,
-        //                 },
-        //                 body: JSON.stringify({ razon_social: razonSocial }),
-        //             },
-        //         );
-
-        //         if (response.ok) {
-        //             const json: any = await response.json();
-        //             const items = json.data || json;
-        //             if (Array.isArray(items)) {
-        //                 return items
-        //                     .slice(0, 10)
-        //                     .map((item: any) => this.mapApiPeruToCompany(item));
-        //             }
-        //         }
-        //     } catch (error) {
-        //         this.logger.error(
-        //             `Error buscando Razón Social en APIPeru:`,
-        //             error,
-        //         );
-        //     }
-        // }
-
         return [];
     }
-
-    // --- MÉTODOS DE INTEGRACIÓN CON EL SCRAPER EN PYTHON ---
 
     private async queryPythonScraperByRuc(
         ruc: string,
@@ -218,119 +171,6 @@ export class SunatWebScraperAdapter implements ISunatService {
             sector: Sector.OTROS,
         };
     }
-
-    // // --- MÉTODOS DE INTEGRACIÓN CON APIS DE CONTINGENCIA (DECOLECTA / APIPERU) ---
-
-    // private async queryDecolecta(
-    //     ruc: string,
-    // ): Promise<SunatCompanyInfo | null> {
-    //     const token = this.decolectaToken;
-    //     if (!token) return null;
-
-    //     try {
-    //         const url = `https://api.decolecta.com/v1/sunat/ruc/full?numero=${ruc}`;
-    //         const res = await fetch(url, {
-    //             headers: {
-    //                 'Authorization': `Bearer ${token}`,
-    //                 'x-api-key': token,
-    //                 'Accept': 'application/json',
-    //             },
-    //         });
-
-    //         if (!res.ok) {
-    //             return null;
-    //         }
-
-    //         const json: any = await res.json();
-    //         const data = json.data || json;
-
-    //         if (data && (data.ruc || data.numero)) {
-    //             return {
-    //                 ruc: data.ruc || data.numero,
-    //                 razonSocial:
-    //                     data.razonSocial ||
-    //                     data.razon_social ||
-    //                     data.nombre ||
-    //                     '',
-    //                 nombreComercial:
-    //                     data.nombreComercial ||
-    //                     data.nombre_comercial ||
-    //                     data.razonSocial ||
-    //                     '',
-    //                 tipo: this.detectEnterpriseType(
-    //                     data.tipoContribuyente || data.tipo_contribuyente || '',
-    //                 ),
-    //                 ubicacion: data.direccion || data.ubicacion || 'LIMA',
-    //                 actividadEconomica:
-    //                     data.actividadEconomica ||
-    //                     data.actividad_economica ||
-    //                     '',
-    //                 tamano: Size.MICRO,
-    //                 sector: Sector.OTROS,
-    //             };
-    //         }
-
-    //         return null;
-    //     } catch (error) {
-    //         this.logger.error(`Error consultando API Decolecta:`, error);
-    //         return null;
-    //     }
-    // }
-
-    // private async queryApiPeru(ruc: string): Promise<SunatCompanyInfo | null> {
-    //     const token = this.apiPeruToken;
-    //     if (!token) return null;
-
-    //     try {
-    //         const url = 'https://apiperu.dev/api/ruc';
-    //         const res = await fetch(url, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Accept': 'application/json',
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${token}`,
-    //             },
-    //             body: JSON.stringify({ ruc }),
-    //         });
-
-    //         if (!res.ok) {
-    //             return null;
-    //         }
-
-    //         const json: any = await res.json();
-    //         const data = json.data || json;
-
-    //         if (data && (data.ruc || data.numero)) {
-    //             return this.mapApiPeruToCompany(data);
-    //         }
-
-    //         return null;
-    //     } catch (error) {
-    //         this.logger.error(`Error consultando APIPeru.dev:`, error);
-    //         return null;
-    //     }
-    // }
-
-    // private mapApiPeruToCompany(data: any): SunatCompanyInfo {
-    //     const ruc = data.ruc || data.numero || '';
-    //     const razonSocial =
-    //         data.nombre_o_razon_social ||
-    //         data.razon_social ||
-    //         data.nombre ||
-    //         '';
-    //     const tipoContribuyente = data.tipo_contribuyente || data.tipo || '';
-
-    //     return {
-    //         ruc,
-    //         razonSocial,
-    //         nombreComercial: data.nombre_comercial || razonSocial,
-    //         tipo: this.detectEnterpriseType(tipoContribuyente),
-    //         ubicacion: data.direccion || data.ubicacion || 'LIMA',
-    //         actividadEconomica: data.actividad_economica || '',
-    //         tamano: Size.MICRO,
-    //         sector: Sector.OTROS,
-    //     };
-    // }
 
     private detectEnterpriseType(tipoContribuyente: string): EnterpriseType {
         const clean = tipoContribuyente.toUpperCase();

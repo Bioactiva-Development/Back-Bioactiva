@@ -32,7 +32,6 @@ export class ResetPasswordUseCase {
         token: string,
         newPassword: string,
     ): Promise<{ ok: boolean }> {
-        // Calcular el hash del token recibido para buscarlo en base de datos
         const tokenHash = this.hashService.hash(token);
 
         const resetToken =
@@ -42,7 +41,6 @@ export class ResetPasswordUseCase {
             throw new InvalidResetTokenException();
         }
 
-        // Verificar expiración del token
         if (resetToken.expired_at < new Date()) {
             resetToken.estado = TokenStatus.EXPIRADO;
             await this.passwordResetRepository.save(resetToken);
@@ -56,14 +54,11 @@ export class ResetPasswordUseCase {
             );
         }
 
-        // Encriptar la nueva contraseña
         const hashedPassword = await this.passwordHasher.hash(newPassword);
 
-        // Actualizar contraseña y guardar
         user.updatePassword(hashedPassword);
         await this.userRepository.save(user);
 
-        // Consumir el token y guardar su estado
         resetToken.consume();
         await this.passwordResetRepository.save(resetToken);
 

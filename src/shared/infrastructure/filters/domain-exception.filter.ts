@@ -1,4 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+    ExceptionFilter,
+    Catch,
+    ArgumentsHost,
+    HttpException,
+    HttpStatus,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { DOMAIN_ERROR_MAP } from './domain-error-map';
 
@@ -19,18 +25,18 @@ export class DomainExceptionFilter implements ExceptionFilter {
             });
         }
 
-        // Si es una excepción de NestJS (HttpException), conservamos su código y estructura
         if (exception instanceof HttpException) {
             const status = exception.getStatus();
             const res = exception.getResponse();
-            return response.status(status).json(
-                typeof res === 'string'
-                    ? { statusCode: status, message: res }
-                    : res
-            );
+            return response
+                .status(status)
+                .json(
+                    typeof res === 'string'
+                        ? { statusCode: status, message: res }
+                        : res,
+                );
         }
 
-        // Error genérico del servidor (500)
         return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
             message: exception.message || 'Internal server error',
