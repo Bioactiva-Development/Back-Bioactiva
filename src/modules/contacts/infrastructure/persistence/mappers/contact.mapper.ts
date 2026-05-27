@@ -1,10 +1,9 @@
 import { Contacto as PrismaContactModel } from '@prisma/client';
-import { Contact } from '../../../domain/entities/contact';
-import { Vocative } from '../../../domain/enums/vocative';
-import { EstadoCorreo } from '../../../domain/enums/estado-correo';
+import { Contact } from '@/modules/contacts/domain/entities/contact';
+import { Vocative } from '@/modules/contacts/domain/enums/vocative';
+import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 
 export class ContactMapper {
-    // Convierte lo que devuelve Prisma en una entidad de nuestro dominio
     static toDomain(raw: PrismaContactModel): Contact {
         return new Contact(
             raw.id,
@@ -24,7 +23,6 @@ export class ContactMapper {
         );
     }
 
-    // Convierte nuestra entidad de dominio en un objeto plano compatible con Prisma
     static toPersistence(
         domain: Contact,
     ): Omit<PrismaContactModel, 'id' | 'createdAt' | 'updatedAt'> {

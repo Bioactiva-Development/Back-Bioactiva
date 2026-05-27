@@ -1,4 +1,4 @@
-import { Vocative } from '../../domain/enums/vocative';
+import { Vocative } from '@/modules/contacts/domain/enums/vocative';
 
 export class CreateContactDto {
     constructor(

@@ -13,7 +13,7 @@ export class GetContactsByOrganizationUseCase {
         const variable =
             this.contactRepository.findByOrganizationId(idOrganization);
         return variable;
-        //observacion : la implementacion es equivalente. 
+        //observacion : la implementacion es equivalente.
         // return await this.contactRepository.findByOrganizationId(idOrganization);
     }
 }
