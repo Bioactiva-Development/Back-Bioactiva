@@ -1,6 +1,7 @@
-export class InvalidInvitationDomainException extends Error {
+import { ValidationDomainException } from '@/shared/domain/exceptions/validation-domain.exception';
+
+export class InvalidInvitationDomainException extends ValidationDomainException {
     constructor(message: string) {
         super(message);
-        this.name = 'InvalidInvitationDomainException';
     }
 }

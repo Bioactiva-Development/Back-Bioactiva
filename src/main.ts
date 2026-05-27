@@ -8,8 +8,6 @@ import {
     SwaggerModule,
 } from '@nestjs/swagger';
 
-import { DomainExceptionFilter } from '@/shared/infrastructure/filters';
-
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
 
@@ -49,8 +47,6 @@ async function bootstrap() {
             forbidNonWhitelisted: true,
         }),
     );
-
-    app.useGlobalFilters(new DomainExceptionFilter());
 
     app.useLogger(logger);
 
