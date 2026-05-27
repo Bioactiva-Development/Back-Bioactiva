@@ -1,8 +1,9 @@
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.interceptor';
+import { GlobalExceptionFilter } from '@/shared/infrastructure/filters/global-exception.filter';
 import { PrismaModule } from '@/modules/common/prisma/prisma.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
@@ -32,6 +33,10 @@ import { ResetPasswordModule } from '@/modules/reset_password/reset-password.mod
         {
             provide: APP_INTERCEPTOR,
             useClass: HttpLoggingInterceptor,
+        },
+        {
+            provide: APP_FILTER,
+            useClass: GlobalExceptionFilter,
         },
     ],
 })

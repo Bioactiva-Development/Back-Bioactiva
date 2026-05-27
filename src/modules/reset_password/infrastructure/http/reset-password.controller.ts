@@ -12,8 +12,6 @@ import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/
 import { RequestResetDto } from './dto/request-reset.dto.http';
 import { ResetPasswordDto } from './dto/reset-password.dto.http';
 import { ValidateTokenDto } from './dto/validate-token.dto.http';
-import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
-import { ResetTokenExpiredException } from '@/modules/reset_password/domain/exeptions/reset-token-expired.exception';
 
 @Controller('reset-password')
 export class ResetPasswordController {
@@ -36,35 +34,12 @@ export class ResetPasswordController {
             throw new BadRequestException('Las contraseñas no coinciden');
         }
 
-        try {
-            return await this.resetPasswordUseCase.execute(
-                body.token,
-                body.password,
-            );
-        } catch (error) {
-            if (error instanceof InvalidResetTokenException) {
-                throw new BadRequestException(error.message);
-            }
-            if (error instanceof ResetTokenExpiredException) {
-                throw new BadRequestException(error.message);
-            }
-            throw error;
-        }
+        return this.resetPasswordUseCase.execute(body.token, body.password);
     }
 
     @Post('validate')
     @HttpCode(HttpStatus.OK)
     async validateToken(@Body() body: ValidateTokenDto) {
-        try {
-            return await this.validateResetTokenUseCase.execute(body.token);
-        } catch (error) {
-            if (error instanceof InvalidResetTokenException) {
-                throw new BadRequestException(error.message);
-            }
-            if (error instanceof ResetTokenExpiredException) {
-                throw new BadRequestException(error.message);
-            }
-            throw error;
-        }
+        return this.validateResetTokenUseCase.execute(body.token);
     }
 }

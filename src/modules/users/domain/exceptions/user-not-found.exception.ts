@@ -1,6 +1,7 @@
-export class UserNotFoundException extends Error {
+import { NotFoundDomainException } from '@/shared/domain/exceptions/not-found-domain.exception';
+
+export class UserNotFoundException extends NotFoundDomainException {
     constructor(message: string) {
         super(message);
-        this.name = 'UserNotFoundException';
     }
 }

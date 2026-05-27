@@ -13,8 +13,6 @@ import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/au
 import { RefreshSessionUseCase } from '@/modules/auth/application/use-cases/refresh-session.use-case';
 import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
 import { LoginCredentials } from '@/modules/auth/domain/value-objects/login_credentials';
-import { InvalidCredentialsError } from '@/modules/auth/application/errors/invalid-credentials.error';
-import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { ExtractCookie } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
@@ -35,20 +33,16 @@ export class AuthController {
         @Body() body: LoginDto,
         @Res({ passthrough: true }) response: Response,
     ): Promise<AuthResponseDto> {
-        try {
-            const tokenPair = await this.authenticateUserUseCase.execute(
-                new LoginCredentials(body.correo, body.password),
-            );
+        const tokenPair = await this.authenticateUserUseCase.execute(
+            new LoginCredentials(body.correo, body.password),
+        );
 
-            this.setRefreshTokenCookie(response, tokenPair.refreshToken);
+        this.setRefreshTokenCookie(response, tokenPair.refreshToken);
 
-            return AuthResponseDto.fromTokenPair(
-                tokenPair.accessToken,
-                tokenPair.accessTokenExpiresIn,
-            );
-        } catch (error: unknown) {
-            this.rethrowAsHttpError(error);
-        }
+        return AuthResponseDto.fromTokenPair(
+            tokenPair.accessToken,
+            tokenPair.accessTokenExpiresIn,
+        );
     }
 
     @Post('refresh')
@@ -58,41 +52,26 @@ export class AuthController {
         @ExtractCookie(REFRESH_TOKEN_COOKIE_NAME)
         refreshTokenFromCookie: string | null,
     ): Promise<AuthResponseDto> {
-        try {
-            if (!refreshTokenFromCookie) {
-                throw new UnauthorizedException('No autorizado');
-            }
-
-            const tokenPair = await this.refreshSessionUseCase.execute(
-                refreshTokenFromCookie,
-            );
-
-            this.setRefreshTokenCookie(response, tokenPair.refreshToken);
-
-            return AuthResponseDto.fromTokenPair(
-                tokenPair.accessToken,
-                tokenPair.accessTokenExpiresIn,
-            );
-        } catch (error: unknown) {
-            this.rethrowAsHttpError(error);
+        if (!refreshTokenFromCookie) {
+            throw new UnauthorizedException('No autorizado');
         }
+
+        const tokenPair = await this.refreshSessionUseCase.execute(
+            refreshTokenFromCookie,
+        );
+
+        this.setRefreshTokenCookie(response, tokenPair.refreshToken);
+
+        return AuthResponseDto.fromTokenPair(
+            tokenPair.accessToken,
+            tokenPair.accessTokenExpiresIn,
+        );
     }
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
     me(@CurrentUser() user: User): User {
         return user;
-    }
-
-    private rethrowAsHttpError(error: unknown): never {
-        if (
-            error instanceof NotAuthorizedException ||
-            error instanceof InvalidCredentialsError
-        ) {
-            throw new UnauthorizedException(error.message);
-        }
-
-        throw error;
     }
 
     private setRefreshTokenCookie(response: Response, refreshToken: string) {
