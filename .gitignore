@@ -3,6 +3,7 @@
 /dist
 /node_modules
 /build
+*.tsbuildinfo
 
 # Logs
 logs
@@ -43,6 +44,7 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.off
 .env.deploy
 
 # temp directory
@@ -77,3 +79,6 @@ skills/
 __pycache__/
 ## AI context files
 GEMINI.md
+
+# symlink para importar sunat-app como módulo Python
+sunat_app

@@ -24,7 +24,7 @@ export class Organization {
     ) {}
 
     rename(nombre: string) {
-        if (!nombre || !nombre.trim()) {
+        if (!nombre?.trim()) {
             throw new Error(
                 'El nombre de la organización (Razón Social) no puede estar vacío',
             );
@@ -34,7 +34,7 @@ export class Organization {
     }
 
     updateCommercialName(nombreComercial: string) {
-        if (!nombreComercial || !nombreComercial.trim()) {
+        if (!nombreComercial?.trim()) {
             throw new Error('El nombre comercial no puede estar vacío');
         }
         this.nombreComercial = nombreComercial;

@@ -2,8 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient, Usuario as PrismaUsuario } from '@prisma/client';
 import { AuthUserRepositoryPort } from '@/modules/auth/domain/ports/user-auth-repository.port';
 import { User } from '@/modules/users/domain/entities/user';
-import { UserRole } from '@/shared/domain/enums/rol';
-import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { PRISMA_SERVICE } from '@/modules/common/prisma/prisma.service';
 
@@ -44,22 +42,7 @@ export class PrismaUserAuthRepository implements AuthUserRepositoryPort {
         }
         const record: PrismaUsuario = await this.prismaClient.usuario.update({
             where: { id: user.id },
-            data: {
-                nombres: user.nombres,
-                apellidos: user.apellidos,
-                correo: user.correo,
-                password: user.password,
-                rol:
-                    user.role === UserRole.ADMINISTRADOR
-                        ? 'ADMINISTRADOR'
-                        : 'TRABAJADOR',
-                estado:
-                    user.estado === UserState.PENDIENTE
-                        ? 'PENDIENTE'
-                        : user.estado === UserState.ACTIVO
-                          ? 'ACTIVO'
-                          : 'SUSPENDIDO',
-            },
+            data: UserMapper.toPersistence(user),
         });
 
         return UserMapper.toDomain(record);

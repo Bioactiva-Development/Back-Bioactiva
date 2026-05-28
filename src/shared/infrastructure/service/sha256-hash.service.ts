@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';

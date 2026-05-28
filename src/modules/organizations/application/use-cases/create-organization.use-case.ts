@@ -16,7 +16,6 @@ export class CreateOrganizationUseCase {
 
     async execute(dto: CreateOrganizationDto): Promise<Organization> {
         if (dto.ruc) {
-            // 1. Validar longitud del RUC
             if (!/^\d{11}$/.test(dto.ruc)) {
                 throw new InvalidRucException(
                     dto.ruc,
@@ -24,7 +23,6 @@ export class CreateOrganizationUseCase {
                 );
             }
 
-            // 2. Verificar duplicados localmente
             const existingOrg = await this.organizationRepository.findByRuc(
                 dto.ruc,
             );
@@ -32,7 +30,6 @@ export class CreateOrganizationUseCase {
                 throw new OrganizationAlreadyExistsException(dto.ruc);
             }
 
-            // 3. Validar existencia en SUNAT
             const isValidRuc = await this.sunatService.validateRuc(dto.ruc);
             if (!isValidRuc) {
                 throw new InvalidRucException(

@@ -22,7 +22,6 @@ export class ObtainInfoUseCase {
             throw new Error('Token no encontrado');
         }
         let correo = invitation.correo;
-        // We have to mask a part of the email for security reasons
         const [localPart, domain] = correo.split('@');
         const maskedLocalPart =
             localPart.length <= 2

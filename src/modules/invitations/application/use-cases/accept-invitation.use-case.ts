@@ -52,7 +52,7 @@ export class AcceptInvitationUseCase {
             invitation?.correo ?? '',
         );
 
-        if (user && user.estado === UserState.ACTIVO) {
+        if (user?.estado === UserState.ACTIVO) {
             throw new InvalidInvitationDomainException(
                 'Ya existe un usuario activo con este correo',
             );

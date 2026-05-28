@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-      
+
   bioactiva-redis:
     profiles: ["local"]
     image: redis:7-alpine
@@ -33,6 +33,36 @@ services:
       timeout: 3s
       retries: 5
 
+  bioactiva-sunat-local:
+    profiles: ["local"]
+    build:
+      context: ./sunat-app
+      dockerfile: Dockerfile
+    ports:
+      - "${SUNAT_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  bioactiva-sunat-prod:
+    profiles: ["prod"]
+    build:
+      context: ./sunat-app
+      dockerfile: Dockerfile
+    container_name: bioactiva-sunat-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - proxy_net
+
   bioactiva-backend-local:
     profiles: ["local"]
     build:
@@ -42,6 +72,8 @@ services:
       bioactiva-database:
         condition: service_healthy
       bioactiva-redis:
+        condition: service_healthy
+      bioactiva-sunat-local:
         condition: service_healthy
     ports:
       - "${PORT:-3000}:3000"
@@ -70,6 +102,7 @@ services:
       MAIL_PROVIDER: ${MAIL_PROVIDER}
       MAIL_FROM: ${MAIL_FROM}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/src/main"
@@ -84,11 +117,15 @@ services:
       dockerfile: Dockerfile
     container_name: bioactiva-backend-prod
     restart: unless-stopped
+    depends_on:
+      bioactiva-sunat-prod:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
+      PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-prod:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/src/main"
