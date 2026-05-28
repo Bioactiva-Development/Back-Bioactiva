@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
 import { CreateContactDto } from '@/modules/contacts/application/dtos/create-contact.dto';
+import { ContactResponseDto } from '@/modules/contacts/infrastructure/http/dtos/contact-response.dto';
 
 @ApiTags('contacts')
 @ApiBearerAuth()
@@ -41,7 +42,7 @@ export class ContactController {
 
     @Post()
     @ApiOperation({ summary: 'Registrar un nuevo contacto' })
-    @ApiResponse({ status: 201, description: 'Contacto creado exitosamente' })
+    @ApiResponse({ status: 201, description: 'Contacto creado exitosamente', type: ContactResponseDto })
     @ApiResponse({
         status: 409,
         description: 'El correo electrónico ya existe',
@@ -49,7 +50,7 @@ export class ContactController {
     async create(
         @Body() httpDto: HttpCreateContactDto,
         @CurrentUser() user: User,
-    ) {
+    ): Promise<ContactResponseDto> {
         const createDto = new CreateContactDto(
             httpDto.nombres,
             httpDto.apellidos,
@@ -62,14 +63,16 @@ export class ContactController {
             httpDto.idOrganizacion,
             user.id!,
         );
-        return await this.createContactUseCase.execute(createDto);
+        const enriched = await this.createContactUseCase.execute(createDto);
+        return new ContactResponseDto(enriched);
     }
 
     @Get()
     @ApiOperation({ summary: 'Listar todos los contactos' })
-    @ApiResponse({ status: 200, description: 'Listado de contactos obtenido' })
-    async findAll() {
-        return await this.getAllContactsUseCase.execute();
+    @ApiResponse({ status: 200, description: 'Listado de contactos obtenido', type: [ContactResponseDto] })
+    async findAll(): Promise<ContactResponseDto[]> {
+        const result = await this.getAllContactsUseCase.execute();
+        return result.map((r) => new ContactResponseDto(r));
     }
 
     @Get('organization/:idOrganizacion')
@@ -77,17 +80,20 @@ export class ContactController {
     @ApiResponse({
         status: 200,
         description: 'Listado de contactos por organización obtenido',
+        type: [ContactResponseDto],
     })
-    async findByOrganization(@Param('idOrganizacion') idOrganizacion: string) {
-        return await this.getContactsByOrgUseCase.execute(idOrganizacion);
+    async findByOrganization(@Param('idOrganizacion') idOrganizacion: string): Promise<ContactResponseDto[]> {
+        const result = await this.getContactsByOrgUseCase.execute(idOrganizacion);
+        return result.map((r) => new ContactResponseDto(r));
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Consultar detalle de un contacto por ID' })
-    @ApiResponse({ status: 200, description: 'Detalle del contacto obtenido' })
+    @ApiResponse({ status: 200, description: 'Detalle del contacto obtenido', type: ContactResponseDto })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
-    async findOne(@Param('id', ParseIntPipe) id: number) {
-        return await this.getContactByIdUseCase.execute(id);
+    async findOne(@Param('id', ParseIntPipe) id: number): Promise<ContactResponseDto> {
+        const enriched = await this.getContactByIdUseCase.execute(id);
+        return new ContactResponseDto(enriched);
     }
 
     @Patch(':id')
@@ -95,12 +101,14 @@ export class ContactController {
     @ApiResponse({
         status: 200,
         description: 'Contacto actualizado exitosamente',
+        type: ContactResponseDto,
     })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() httpDto: HttpUpdateContactDto,
-    ) {
-        return await this.updateContactUseCase.execute(id, httpDto);
+    ): Promise<ContactResponseDto> {
+        const enriched = await this.updateContactUseCase.execute(id, httpDto);
+        return new ContactResponseDto(enriched);
     }
 }

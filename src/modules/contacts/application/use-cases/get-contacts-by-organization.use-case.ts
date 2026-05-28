@@ -1,6 +1,5 @@
 import { Inject } from '@nestjs/common';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
-import { Contact } from '@/modules/contacts/domain/entities/contact';
+import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 
 export class GetContactsByOrganizationUseCase {
     constructor(
@@ -8,7 +7,7 @@ export class GetContactsByOrganizationUseCase {
         private readonly contactRepository: IContactRepository,
     ) {}
 
-    async execute(idOrganization: string): Promise<Contact[]> {
-        return this.contactRepository.findByOrganizationId(idOrganization);
+    async execute(idOrganization: string): Promise<ContactWithOrgName[]> {
+        return this.contactRepository.findByOrganizationIdWithOrganization(idOrganization);
     }
 }

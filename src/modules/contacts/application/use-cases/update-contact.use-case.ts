@@ -1,5 +1,5 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
+import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
 import { ContactNotFoundException } from '@/modules/contacts/domain/exceptions/contact-not-found.exception';
@@ -10,7 +10,7 @@ export class UpdateContactUseCase {
         private readonly contactRepository: IContactRepository,
     ) {}
 
-    async execute(id: number, dto: Partial<Contact>): Promise<Contact> {
+    async execute(id: number, dto: Partial<Contact>): Promise<ContactWithOrgName> {
         const contact = await this.contactRepository.findById(id);
         if (!contact) throw new ContactNotFoundException(id);
 
@@ -41,6 +41,8 @@ export class UpdateContactUseCase {
 
         contact.updatedAt = new Date();
 
-        return await this.contactRepository.save(contact);
+        const saved = await this.contactRepository.save(contact);
+        const enriched = await this.contactRepository.findByIdWithOrganization(saved.id);
+        return enriched!;
     }
 }

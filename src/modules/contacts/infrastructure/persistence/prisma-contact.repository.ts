@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
+import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { ContactMapper } from '@/modules/contacts/infrastructure/persistence/mappers/contact.mapper';
 
@@ -54,5 +54,38 @@ export class PrismaContactRepository implements IContactRepository {
     async findAll(): Promise<Contact[]> {
         const records = await this.prisma.contacto.findMany();
         return records.map((record) => ContactMapper.toDomain(record));
+    }
+
+    async findAllWithOrganization(): Promise<ContactWithOrgName[]> {
+        const records = await this.prisma.contacto.findMany({
+            include: { organizacion: { select: { nombre: true } } },
+        });
+        return records.map((r) => ({
+            contact: ContactMapper.toDomain(r),
+            organizationName: r.organizacion.nombre,
+        }));
+    }
+
+    async findByIdWithOrganization(id: number): Promise<ContactWithOrgName | null> {
+        const record = await this.prisma.contacto.findUnique({
+            where: { id },
+            include: { organizacion: { select: { nombre: true } } },
+        });
+        if (!record) return null;
+        return {
+            contact: ContactMapper.toDomain(record),
+            organizationName: record.organizacion.nombre,
+        };
+    }
+
+    async findByOrganizationIdWithOrganization(idOrganizacion: string): Promise<ContactWithOrgName[]> {
+        const records = await this.prisma.contacto.findMany({
+            where: { idOrganizacion },
+            include: { organizacion: { select: { nombre: true } } },
+        });
+        return records.map((r) => ({
+            contact: ContactMapper.toDomain(r),
+            organizationName: r.organizacion.nombre,
+        }));
     }
 }

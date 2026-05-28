@@ -1,6 +1,5 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
-import { Contact } from '@/modules/contacts/domain/entities/contact';
+import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 
 export class GetAllContactsUseCase {
     constructor(
@@ -8,7 +7,7 @@ export class GetAllContactsUseCase {
         private readonly contactRepository: IContactRepository,
     ) {}
 
-    async execute(): Promise<Contact[]> {
-        return await this.contactRepository.findAll();
+    async execute(): Promise<ContactWithOrgName[]> {
+        return await this.contactRepository.findAllWithOrganization();
     }
 }
