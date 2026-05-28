@@ -354,7 +354,7 @@ describe('Invitations module', () => {
 				TokenStatus.CONSUMIDO,
 				new Date(),
 				new Date(),
-				new Date(),
+				new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // FIX: future date so isExpired() doesn't fire first
 			);
 
 			invitationsRepository.findByToken.mockResolvedValue(acceptedInvitation);
