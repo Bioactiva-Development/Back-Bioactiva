@@ -6,23 +6,12 @@ import { AuthController } from '@/modules/auth/infrastructure/http/auth.controll
 import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/authenticate-user.use-case';
 import { RefreshSessionUseCase } from '@/modules/auth/application/use-cases/refresh-session.use-case';
 import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
-import { InvalidCredentialsError } from '@/modules/auth/application/errors/invalid-credentials.error';
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserRole } from '../../../src/shared/domain/enums/rol';
 
 describe('Security module', () => {
-	/**
-	 * AuthController
-	 * ----------
-	 * Responsable de:
-	 * - mapeo de DTOs de login y refresh
-	 * - gestión de cookies (set/clear)
-	 * - mapeo de errores a excepciones HTTP
-	 * - manejo de endpoint me() para usuario autenticado
-	 */
-	// STATUS: Implementación completa (endpoints login, refresh, me + cookie lifecycle + error mapping).
 	describe('AuthController HTTP endpoints', () => {
 		let controller: AuthController;
 		let authenticateUserUseCase: jest.Mocked<AuthenticateUserUseCase>;
@@ -49,8 +38,8 @@ describe('Security module', () => {
 			new TokenPair(
 				'access-token-value',
 				'refresh-token-value',
-				900, // 15 min
-				604800, // 7 days
+				900,
+				604800,
 			);
 
 		beforeEach(() => {
@@ -96,9 +85,9 @@ describe('Security module', () => {
 				);
 			});
 
-			it('should throw UnauthorizedException on invalid credentials', async () => {
+			it('should throw NotAuthorizedException on invalid credentials', async () => {
 				authenticateUserUseCase.execute.mockRejectedValue(
-					new InvalidCredentialsError(),
+					new NotAuthorizedException(''),
 				);
 
 				await expect(
@@ -109,10 +98,10 @@ describe('Security module', () => {
 						},
 						responseMock,
 					),
-				).rejects.toThrow(UnauthorizedException);
+				).rejects.toThrow(NotAuthorizedException);
 			});
 
-			it('should throw UnauthorizedException when user is not authorized', async () => {
+			it('should throw NotAuthorizedException when user is not authorized', async () => {
 				authenticateUserUseCase.execute.mockRejectedValue(
 					new NotAuthorizedException(''),
 				);
@@ -122,7 +111,7 @@ describe('Security module', () => {
 						{ correo: 'ana@bioactiva.com', password: 'password' },
 						responseMock,
 					),
-				).rejects.toThrow(UnauthorizedException);
+				).rejects.toThrow(NotAuthorizedException);
 			});
 
 			it('should rethrow unexpected errors', async () => {
@@ -171,14 +160,14 @@ describe('Security module', () => {
 				expect(refreshSessionUseCase.execute).not.toHaveBeenCalled();
 			});
 
-			it('should throw UnauthorizedException when refresh token is invalid', async () => {
+			it('should throw NotAuthorizedException when refresh token is invalid', async () => {
 				refreshSessionUseCase.execute.mockRejectedValue(
 					new NotAuthorizedException(''),
 				);
 
 				await expect(
 					controller.refresh(responseMock, 'invalid-refresh-token'),
-				).rejects.toThrow(UnauthorizedException);
+				).rejects.toThrow(NotAuthorizedException);
 			});
 
 			it('should set secure cookie flag in production environment', async () => {

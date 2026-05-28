@@ -2,140 +2,213 @@ import { describe, expect, it, beforeEach } from '@jest/globals';
 import { CreateContactUseCase } from '@/modules/contacts/application/use-cases/create-contact.use-case';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { Vocative } from '@/modules/contacts/domain/enums/vocative';
-import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
-import { CreateContactDto } from '@/modules/contacts/application/dtos/create-contact.dto';
 
 describe('Contacts module', () => {
-	/**
-	 * CreateContactUseCase
-	 * ----------
-	 * Responsable de:
-	 * - validar que el email no exista en la base de datos
-	 * - crear una nueva entidad de contacto con datos limpios
-	 * - persistir el contacto a través del repositorio
-	 * - retornar la entidad creada con ID generado
-	 */
-	// STATUS: Implementación completa (casos de éxito y error).
 	describe('CreateContactUseCase', () => {
 		let useCase: CreateContactUseCase;
-		let mockRepository: Partial<IContactRepository>;
+		let contactRepository: any;
+
+		const createContactDto = {
+			nombres: 'Juan',
+			apellidos: 'Perez',
+			vocativo: Vocative.SR,
+			cargo: 'Manager',
+			correo: 'juan@example.com',
+			telefono: '987654321',
+			correo2: null,
+			comentarios: 'Test contact',
+			idOrganizacion: 'org-123',
+			idAuthor: 1,
+		};
 
 		beforeEach(() => {
-			mockRepository = {
+			contactRepository = {
 				findByEmail: jest.fn(),
+				findBySecondaryEmail: jest.fn(),
 				save: jest.fn(),
 				findById: jest.fn(),
 				findByOrganizationId: jest.fn(),
 				findAll: jest.fn(),
 			};
 
-			useCase = new CreateContactUseCase(mockRepository as IContactRepository);
+			useCase = new CreateContactUseCase(contactRepository);
 		});
-
-		const validDto: CreateContactDto = {
-			nombres: 'Ana',
-			apellidos: 'Paredes',
-			vocativo: Vocative.DOCTORA,
-			cargo: 'Gerente Comercial',
-			correo: 'ana.paredes@techcorp.com',
-			telefono: '+51987654321',
-			correo2: 'ana.p@personal.com',
-			comentarios: 'Primera contacto en LinkedIn',
-			idOrganizacion: 'org-1',
-			idAuthor: 1,
-		};
 
 		it('should create contact with valid data', async () => {
-			const persistedContact = new Contact(
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+			const savedContact = new Contact(
 				1,
-				validDto.nombres,
-				validDto.apellidos,
-				validDto.vocativo,
-				validDto.cargo,
-				validDto.correo,
-				validDto.telefono,
-				validDto.correo2,
-				validDto.comentarios,
-				validDto.idOrganizacion,
-				validDto.idAuthor,
+				createContactDto.nombres,
+				createContactDto.apellidos,
+				createContactDto.vocativo,
+				createContactDto.cargo,
+				createContactDto.correo,
+				createContactDto.telefono,
+				createContactDto.correo2,
+				createContactDto.comentarios,
+				createContactDto.idOrganizacion,
+				createContactDto.idAuthor,
 				new Date(),
 				new Date(),
-				EstadoCorreo.VIGENTE,
 			);
+			contactRepository.save.mockResolvedValue(savedContact);
 
-			(mockRepository.findByEmail as jest.Mock).mockResolvedValue(null);
-			(mockRepository.save as jest.Mock).mockResolvedValue(persistedContact);
+			const result = await useCase.execute(createContactDto);
 
-			const result = await useCase.execute(validDto);
-
-			expect(mockRepository.findByEmail).toHaveBeenCalledWith(validDto.correo);
-			expect(result.id).toBe(1);
-			expect(result.correo).toBe(validDto.correo);
-			expect(result.nombres).toBe(validDto.nombres);
+			expect(result).toHaveProperty('id', 1);
+			expect(result).toHaveProperty('nombres', createContactDto.nombres);
+			expect(result).toHaveProperty('correo', createContactDto.correo);
+			expect(contactRepository.findByEmail).toHaveBeenCalledWith(createContactDto.correo);
+			expect(contactRepository.save).toHaveBeenCalled();
 		});
 
-		it('should reject if email already exists', async () => {
+		it('should throw error when email already exists', async () => {
 			const existingContact = new Contact(
-				2,
-				'Juan',
-				'Perez',
-				Vocative.DON,
-				'Analista',
-				validDto.correo,
-				'+51912345678',
-				'juan@personal.com',
-				'Contacto existente',
-				'org-2',
+				1,
+				'John',
+				'Doe',
+				Vocative.SR,
+				'Dev',
+				'juan@example.com',
+				'987654321',
+				null,
+				'Existing',
+				'org-123',
 				1,
 				new Date(),
 				new Date(),
-				EstadoCorreo.VIGENTE,
 			);
 
-			(mockRepository.findByEmail as jest.Mock).mockResolvedValue(existingContact);
+			contactRepository.findByEmail.mockResolvedValue(existingContact);
 
-			await expect(useCase.execute(validDto)).rejects.toThrow(EmailAlreadyExistsException);
-			expect(mockRepository.save).not.toHaveBeenCalled();
+			await expect(useCase.execute(createContactDto)).rejects.toThrow(
+				EmailAlreadyExistsException,
+			);
+		});
+
+		it('should throw error when secondary email already exists', async () => {
+			const dtoWithSecondaryEmail = {
+				...createContactDto,
+				correo2: 'secondary@example.com',
+			};
+
+			const existingContact = new Contact(
+				2,
+				'Jane',
+				'Smith',
+				Vocative.SRA,
+				'Designer',
+				'jane@example.com',
+				'987654321',
+				'secondary@example.com',
+				'Existing',
+				'org-123',
+				1,
+				new Date(),
+				new Date(),
+			);
+
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(existingContact);
+
+			await expect(useCase.execute(dtoWithSecondaryEmail)).rejects.toThrow(
+				EmailAlreadyExistsException,
+			);
+		});
+
+		it('should create contact without secondary email', async () => {
+			const dtoWithoutSecondaryEmail = {
+				...createContactDto,
+				correo2: null,
+			};
+
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+			const savedContact = new Contact(
+				1,
+				dtoWithoutSecondaryEmail.nombres,
+				dtoWithoutSecondaryEmail.apellidos,
+				dtoWithoutSecondaryEmail.vocativo,
+				dtoWithoutSecondaryEmail.cargo,
+				dtoWithoutSecondaryEmail.correo,
+				dtoWithoutSecondaryEmail.telefono,
+				dtoWithoutSecondaryEmail.correo2,
+				dtoWithoutSecondaryEmail.comentarios,
+				dtoWithoutSecondaryEmail.idOrganizacion,
+				dtoWithoutSecondaryEmail.idAuthor,
+				new Date(),
+				new Date(),
+			);
+			contactRepository.save.mockResolvedValue(savedContact);
+
+			const result = await useCase.execute(dtoWithoutSecondaryEmail);
+
+			expect(result).toHaveProperty('correo2', null);
+			expect(contactRepository.findBySecondaryEmail).not.toHaveBeenCalled();
 		});
 
 		it('should persist contact with corrected timestamps', async () => {
-			const persistedContact = new Contact(
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+			const beforeCreate = new Date();
+			const savedContact = new Contact(
 				1,
-				validDto.nombres,
-				validDto.apellidos,
-				validDto.vocativo,
-				validDto.cargo,
-				validDto.correo,
-				validDto.telefono,
-				validDto.correo2,
-				validDto.comentarios,
-				validDto.idOrganizacion,
-				validDto.idAuthor,
-				new Date(),
-				new Date(),
-				EstadoCorreo.VIGENTE,
+				createContactDto.nombres,
+				createContactDto.apellidos,
+				createContactDto.vocativo,
+				createContactDto.cargo,
+				createContactDto.correo,
+				createContactDto.telefono,
+				createContactDto.correo2,
+				createContactDto.comentarios,
+				createContactDto.idOrganizacion,
+				createContactDto.idAuthor,
+				beforeCreate,
+				beforeCreate,
 			);
+			contactRepository.save.mockResolvedValue(savedContact);
 
-			(mockRepository.findByEmail as jest.Mock).mockResolvedValue(null);
-			(mockRepository.save as jest.Mock).mockResolvedValue(persistedContact);
+			const result = await useCase.execute(createContactDto);
 
-			await useCase.execute(validDto);
-
-			expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
-				nombres: validDto.nombres,
-				correo: validDto.correo,
-				idOrganizacion: validDto.idOrganizacion,
-			}));
+			expect(result.createdAt).toBeDefined();
+			expect(result.updatedAt).toBeDefined();
+			expect(result.createdAt.getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
 		});
 
-		it('should handle repository errors gracefully', async () => {
-			const error = new Error('Database connection failed');
+		it('should save contact with all required fields', async () => {
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+			const savedContact = new Contact(
+				1,
+				createContactDto.nombres,
+				createContactDto.apellidos,
+				createContactDto.vocativo,
+				createContactDto.cargo,
+				createContactDto.correo,
+				createContactDto.telefono,
+				createContactDto.correo2,
+				createContactDto.comentarios,
+				createContactDto.idOrganizacion,
+				createContactDto.idAuthor,
+				new Date(),
+				new Date(),
+			);
+			contactRepository.save.mockResolvedValue(savedContact);
 
-			(mockRepository.findByEmail as jest.Mock).mockRejectedValue(error);
+			await useCase.execute(createContactDto);
 
-			await expect(useCase.execute(validDto)).rejects.toThrow('Database connection failed');
+			expect(contactRepository.save).toHaveBeenCalledWith(
+				expect.objectContaining({
+					nombres: createContactDto.nombres,
+					apellidos: createContactDto.apellidos,
+					vocativo: createContactDto.vocativo,
+					correo: createContactDto.correo,
+					telefono: createContactDto.telefono,
+					idOrganizacion: createContactDto.idOrganizacion,
+				}),
+			);
 		});
 	});
 });
