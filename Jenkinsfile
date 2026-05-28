@@ -60,7 +60,7 @@ pipeline {
             }
         }
 
-       stage('Deploy (Docker Compose)') {
+        stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
                     file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
@@ -73,13 +73,13 @@ pipeline {
                             -p back-bioactiva \
                             -f docker-compose.yml \
                             --profile prod \
-                            down -v
+                            down
 
                         docker compose \
                             -p back-bioactiva \
                             -f docker-compose.yml \
                             --profile prod \
-                            up -d --build bioactiva-backend-prod
+                            up -d --build
                     '''
                 }
             }
