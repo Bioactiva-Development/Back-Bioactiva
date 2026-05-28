@@ -73,7 +73,7 @@ pipeline {
                             -p back-bioactiva \
                             -f docker-compose.yml \
                             --profile prod \
-                            down
+                            down -v
 
                         docker compose \
                             -p back-bioactiva \
