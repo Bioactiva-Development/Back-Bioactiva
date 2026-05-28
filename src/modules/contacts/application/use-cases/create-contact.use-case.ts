@@ -4,6 +4,10 @@ import { CreateContactDto } from '@/modules/contacts/application/dtos/create-con
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
 
+function toNull(value: string | null | undefined): string | null {
+    return value?.trim() ? value : null;
+}
+
 export class CreateContactUseCase {
     constructor(
         @Inject(IContactRepository)
@@ -29,13 +33,13 @@ export class CreateContactUseCase {
         const newContact = new Contact(
             0,
             dto.nombres,
-            dto.apellidos,
+            toNull(dto.apellidos),
             dto.vocativo,
-            dto.cargo,
+            toNull(dto.cargo),
             dto.correo,
-            dto.telefono,
-            dto.correo2,
-            dto.comentarios,
+            toNull(dto.telefono),
+            toNull(dto.correo2),
+            toNull(dto.comentarios),
             dto.idOrganizacion,
             dto.idAuthor,
             new Date(),

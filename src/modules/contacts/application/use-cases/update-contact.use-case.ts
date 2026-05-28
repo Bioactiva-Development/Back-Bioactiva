@@ -4,6 +4,10 @@ import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
 import { ContactNotFoundException } from '@/modules/contacts/domain/exceptions/contact-not-found.exception';
 
+function toNull(value: string | null | undefined): string | null {
+    return value?.trim() ? value : null;
+}
+
 export class UpdateContactUseCase {
     constructor(
         @Inject(IContactRepository)
@@ -31,13 +35,12 @@ export class UpdateContactUseCase {
         }
 
         if (dto.nombres) contact.nombres = dto.nombres;
-        if (dto.apellidos !== undefined) contact.apellidos = dto.apellidos;
+        if (dto.apellidos !== undefined) contact.apellidos = toNull(dto.apellidos);
         if (dto.vocativo !== undefined) contact.vocativo = dto.vocativo;
-        if (dto.cargo !== undefined) contact.cargo = dto.cargo;
-        if (dto.telefono !== undefined) contact.telefono = dto.telefono;
-        if (dto.correo2 !== undefined) contact.correo2 = dto.correo2;
-        if (dto.comentarios !== undefined)
-            contact.comentarios = dto.comentarios;
+        if (dto.cargo !== undefined) contact.cargo = toNull(dto.cargo);
+        if (dto.telefono !== undefined) contact.telefono = toNull(dto.telefono);
+        if (dto.correo2 !== undefined) contact.correo2 = toNull(dto.correo2);
+        if (dto.comentarios !== undefined) contact.comentarios = toNull(dto.comentarios);
 
         contact.updatedAt = new Date();
 

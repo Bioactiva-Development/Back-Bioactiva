@@ -53,13 +53,13 @@ export class ContactController {
     ): Promise<ContactResponseDto> {
         const createDto = new CreateContactDto(
             httpDto.nombres,
-            httpDto.apellidos,
-            httpDto.vocativo,
-            httpDto.cargo,
+            httpDto.apellidos ?? null,
+            httpDto.vocativo ?? null,
+            httpDto.cargo ?? null,
             httpDto.correo,
-            httpDto.telefono,
-            httpDto.correo2,
-            httpDto.comentarios,
+            httpDto.telefono ?? null,
+            httpDto.correo2 ?? null,
+            httpDto.comentarios ?? null,
             httpDto.idOrganizacion,
             user.id!,
         );
