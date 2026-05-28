@@ -105,10 +105,7 @@ services:
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
-            exec node -r tsconfig-paths/register dist/src/main"
-
-    networks:
-      - proxy_net
+            exec node -r tsconfig-paths/register dist/main"
 
   bioactiva-backend-prod:
     profiles: ["prod"]
@@ -128,7 +125,7 @@ services:
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-prod:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
-            exec node -r tsconfig-paths/register dist/src/main"
+            exec node -r tsconfig-paths/register dist/main"
     networks:
       - proxy_net
 
