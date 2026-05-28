@@ -85,7 +85,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
             take: limit,
         });
 
-        return records.map(UserMapper.toDomain);
+        return records.map((r) => UserMapper.toDomain(r));
     }
 
     async countAll(params?: Omit<FindAllParams, 'page' | 'limit'>): Promise<number> {
