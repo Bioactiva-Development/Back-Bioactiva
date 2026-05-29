@@ -23,7 +23,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
-COPY src/modules/common/mail/templates ./dist/src/modules/common/mail/templates
+COPY src/modules/common/mail/templates ./dist/modules/common/mail/templates
+COPY src/modules/common/mail/templates ./src/modules/common/mail/templates
 
 EXPOSE 3000
 
