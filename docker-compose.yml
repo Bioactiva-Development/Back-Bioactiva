@@ -104,7 +104,7 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
     command: >
-      sh -c "npx prisma migrate deploy &&
+      sh -c "npx prisma migrate reset &&
             exec node -r tsconfig-paths/register dist/main"
 
   bioactiva-backend-prod:
@@ -124,7 +124,7 @@ services:
       PORT: ${PORT:-3000}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-prod:8000}
     command: >
-      sh -c "npx prisma migrate deploy &&
+      sh -c "npx prisma migrate reset &&
             exec node -r tsconfig-paths/register dist/main"
     networks:
       - proxy_net
