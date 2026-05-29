@@ -54,8 +54,7 @@ export class HttpCreateContactDto {
     })
     @IsString()
     @IsOptional()
-    @Length(1, 20)
-    telefono!: string | null;
+    telefono?: string | null;
 
     @ApiPropertyOptional({
         example: 'jperez.personal@gmail.com',
@@ -72,8 +71,7 @@ export class HttpCreateContactDto {
     })
     @IsString()
     @IsOptional()
-    @Length(1, 500)
-    comentarios!: string | null;
+    comentarios?: string | null;
 
     @ApiProperty({
         example: '123e4567-e89b-12d3-a456-426614174000',
