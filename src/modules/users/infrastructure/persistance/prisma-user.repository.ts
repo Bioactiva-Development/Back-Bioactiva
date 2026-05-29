@@ -1,9 +1,10 @@
 import { User } from '@/modules/users/domain/entities/user';
-import { UserRepositoryPort } from '@/modules/users/domain/ports/user-repository.port';
+import { FindAllParams, UserRepositoryPort } from '@/modules/users/domain/ports/user-repository.port';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { UserRole } from '@/shared/domain/enums/rol';
+import { UserState } from '@/modules/users/domain/enums/estado';
 import { PRISMA_SERVICE } from '@/modules/common/prisma/prisma.service';
 
 @Injectable()
@@ -71,5 +72,52 @@ export class PrismaUserRepository implements UserRepositoryPort {
                         : 'TRABAJADOR',
             },
         });
+    }
+
+    async findAll(params?: FindAllParams): Promise<User[]> {
+        const { search, role, estado, page = 1, limit = 10 } = params ?? {};
+        const skip = (page - 1) * limit;
+
+        const records = await this.prismaClient.usuario.findMany({
+            where: this.buildWhereInput(search, role, estado),
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+        });
+
+        return records.map((r) => UserMapper.toDomain(r));
+    }
+
+    async countAll(params?: Omit<FindAllParams, 'page' | 'limit'>): Promise<number> {
+        const { search, role, estado } = params ?? {};
+
+        return this.prismaClient.usuario.count({
+            where: this.buildWhereInput(search, role, estado),
+        });
+    }
+
+    private buildWhereInput(
+        search?: string,
+        role?: UserRole,
+        estado?: UserState,
+    ) {
+        const where: Record<string, unknown> = {};
+
+        if (search) {
+            where.OR = [
+                { nombres: { contains: search, mode: 'insensitive' } },
+                { correo: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        if (role !== undefined) {
+            where.rol = UserMapper.mapRoleToPrisma(role);
+        }
+
+        if (estado !== undefined) {
+            where.estado = UserMapper.mapStateToPrisma(estado);
+        }
+
+        return where;
     }
 }

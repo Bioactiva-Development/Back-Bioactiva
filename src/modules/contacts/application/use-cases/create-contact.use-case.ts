@@ -1,8 +1,12 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
+import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 import { CreateContactDto } from '@/modules/contacts/application/dtos/create-contact.dto';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
+
+function toNull(value: string | null | undefined): string | null {
+    return value?.trim() ? value : null;
+}
 
 export class CreateContactUseCase {
     constructor(
@@ -10,7 +14,7 @@ export class CreateContactUseCase {
         private readonly contactRepository: IContactRepository,
     ) {}
 
-    async execute(dto: CreateContactDto): Promise<Contact> {
+    async execute(dto: CreateContactDto): Promise<ContactWithOrgName> {
         const existingContact = await this.contactRepository.findByEmail(
             dto.correo,
         );
@@ -29,19 +33,21 @@ export class CreateContactUseCase {
         const newContact = new Contact(
             0,
             dto.nombres,
-            dto.apellidos,
+            toNull(dto.apellidos),
             dto.vocativo,
-            dto.cargo,
+            toNull(dto.cargo),
             dto.correo,
-            dto.telefono,
-            dto.correo2,
-            dto.comentarios,
+            toNull(dto.telefono),
+            toNull(dto.correo2),
+            toNull(dto.comentarios),
             dto.idOrganizacion,
             dto.idAuthor,
             new Date(),
             new Date(),
         );
 
-        return await this.contactRepository.save(newContact);
+        const saved = await this.contactRepository.save(newContact);
+        const enriched = await this.contactRepository.findByIdWithOrganization(saved.id);
+        return enriched!;
     }
 }

@@ -71,14 +71,14 @@ pipeline {
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile prod \
-                            down -v
+                            down
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile prod \
-                            up -d --build bioactiva-backend-prod
+                            up -d --build
                     '''
                 }
             }

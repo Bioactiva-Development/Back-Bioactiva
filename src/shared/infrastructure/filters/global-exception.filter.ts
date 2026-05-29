@@ -7,6 +7,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { DomainException } from '@/shared/domain/exceptions/domain.exception';
 import { DomainErrorKind } from '@/shared/domain/exceptions/domain-error-kind';
 
@@ -60,6 +61,41 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         response.status(payload.statusCode).json(payload);
     }
 
+    private buildPrismaError(
+        exception: PrismaClientKnownRequestError,
+        base: { path: string; timestamp: string },
+    ): ErrorPayload {
+        const prismaCode = exception.code;
+
+        const errorMap: Record<string, { status: number; kind: DomainErrorKind; label: string }> = {
+            P2000: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'ValueTooLong' },
+            P2002: { status: HttpStatus.CONFLICT, kind: DomainErrorKind.Conflict, label: 'UniqueConstraintViolation' },
+            P2003: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'ForeignKeyViolation' },
+            P2011: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'NullConstraintViolation' },
+            P2014: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'RequiredRelationViolation' },
+            P2025: { status: HttpStatus.NOT_FOUND, kind: DomainErrorKind.NotFound, label: 'RecordNotFound' },
+        };
+
+        const mapped = errorMap[prismaCode];
+        if (mapped) {
+            return {
+                ...base,
+                statusCode: mapped.status,
+                error: mapped.label,
+                kind: mapped.kind,
+                message: exception.message,
+            };
+        }
+
+        return {
+            ...base,
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            error: 'DatabaseError',
+            kind: DomainErrorKind.Unexpected,
+            message: exception.message,
+        };
+    }
+
     private buildPayload(exception: unknown, request: Request): ErrorPayload {
         const base = {
             path: request.originalUrl,
@@ -94,6 +130,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                     DomainErrorKind.Unexpected,
                 message,
             };
+        }
+
+        if (exception instanceof PrismaClientKnownRequestError) {
+            return this.buildPrismaError(exception, base);
         }
 
         return {
