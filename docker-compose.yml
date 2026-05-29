@@ -118,7 +118,7 @@ services:
       bioactiva-sunat-prod:
         condition: service_healthy
     env_file:
-      - .env
+      - ${BIOACTIVA_ENV_FILE}
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
