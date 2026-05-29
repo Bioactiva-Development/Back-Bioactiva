@@ -31,6 +31,7 @@ describe('Contacts module', () => {
 				findByEmail: jest.fn(),
 				findBySecondaryEmail: jest.fn(),
 				save: jest.fn(),
+				findByIdWithOrganization: jest.fn(),
 				findByOrganizationId: jest.fn(),
 				findAll: jest.fn(),
 			};
@@ -42,6 +43,10 @@ describe('Contacts module', () => {
 			contactRepository.findById.mockResolvedValue(mockContact);
 			contactRepository.findByEmail.mockResolvedValue(null);
 			contactRepository.save.mockResolvedValue({
+				...mockContact,
+				nombres: 'Jane',
+			});
+			contactRepository.findByIdWithOrganization.mockResolvedValue({
 				...mockContact,
 				nombres: 'Jane',
 			});
@@ -82,6 +87,7 @@ describe('Contacts module', () => {
 
 			contactRepository.findById.mockResolvedValue(mockContact);
 			contactRepository.findByEmail.mockResolvedValue(existingContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(existingContact);
 
 			await expect(
 				useCase.execute(1, { correo: 'jane@example.com' }),
@@ -98,6 +104,7 @@ describe('Contacts module', () => {
 			contactRepository.findByEmail.mockResolvedValue(null);
 			const savedContact = { ...mockContact, ...updatedData };
 			contactRepository.save.mockResolvedValue(savedContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(savedContact);
 
 			const result = await useCase.execute(1, updatedData);
 
@@ -115,6 +122,10 @@ describe('Contacts module', () => {
 				...mockContact,
 				telefono: '999999999',
 			});
+			contactRepository.findByIdWithOrganization.mockResolvedValue({
+				...mockContact,
+				telefono: '999999999',
+			});
 
 			const result = await useCase.execute(1, {
 				telefono: '999999999',
@@ -128,6 +139,10 @@ describe('Contacts module', () => {
 			contactRepository.findById.mockResolvedValue(mockContact);
 			contactRepository.findByEmail.mockResolvedValue(null);
 			contactRepository.save.mockResolvedValue({
+				...mockContact,
+				vocativo: Vocative.SRA,
+			});
+			contactRepository.findByIdWithOrganization.mockResolvedValue({
 				...mockContact,
 				vocativo: Vocative.SRA,
 			});

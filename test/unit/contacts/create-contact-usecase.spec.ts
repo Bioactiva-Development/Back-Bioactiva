@@ -28,6 +28,7 @@ describe('Contacts module', () => {
 				findBySecondaryEmail: jest.fn(),
 				save: jest.fn(),
 				findById: jest.fn(),
+				findByIdWithOrganization: jest.fn(),
 				findByOrganizationId: jest.fn(),
 				findAll: jest.fn(),
 			};
@@ -54,6 +55,7 @@ describe('Contacts module', () => {
 				new Date(),
 			);
 			contactRepository.save.mockResolvedValue(savedContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(savedContact);
 
 			const result = await useCase.execute(createContactDto);
 
@@ -82,6 +84,7 @@ describe('Contacts module', () => {
 			);
 
 			contactRepository.findByEmail.mockResolvedValue(existingContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(existingContact);
 
 			await expect(useCase.execute(createContactDto)).rejects.toThrow(
 				EmailAlreadyExistsException,
@@ -112,6 +115,7 @@ describe('Contacts module', () => {
 
 			contactRepository.findByEmail.mockResolvedValue(null);
 			contactRepository.findBySecondaryEmail.mockResolvedValue(existingContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(existingContact);
 
 			await expect(useCase.execute(dtoWithSecondaryEmail)).rejects.toThrow(
 				EmailAlreadyExistsException,
@@ -142,6 +146,7 @@ describe('Contacts module', () => {
 				new Date(),
 			);
 			contactRepository.save.mockResolvedValue(savedContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(savedContact);
 
 			const result = await useCase.execute(dtoWithoutSecondaryEmail);
 
@@ -169,6 +174,7 @@ describe('Contacts module', () => {
 				beforeCreate,
 			);
 			contactRepository.save.mockResolvedValue(savedContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(savedContact);
 
 			const result = await useCase.execute(createContactDto);
 
