@@ -29,5 +29,6 @@ import { DeleteLeadUseCase } from '@/modules/leads/application/use-cases/delete-
         ChangeLeadStatusUseCase,
         DeleteLeadUseCase,
     ],
+    exports: [LEAD_REPOSITORY],
 })
 export class LeadsModule {}
