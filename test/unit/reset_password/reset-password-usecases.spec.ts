@@ -514,9 +514,9 @@ describe('Reset Password module', () => {
 	 * Responsable de:
 	 * - expirar tokens automáticamente después del tiempo límite
 	 */
-	// STATUS: No implementado (intentaremos incluirlo si existe en el proyecto).
+	// STATUS: Implementación completa (expire tokens + edge cases).
 	describe('ExpirePasswordResetTokenUseCase', () => {
-		let useCase: any;
+		let useCase: ExpirePasswordResetTokenUseCase;
 		let passwordResetRepository: any;
 
 		beforeEach(() => {
@@ -525,19 +525,10 @@ describe('Reset Password module', () => {
 				save: jest.fn(),
 			};
 
-			// Mock usecase si existe
-			useCase = {
-				execute: jest.fn(async (id: number) => {
-					const token = await passwordResetRepository.findById(id);
-					if (!token) return false;
-					token.expire();
-					await passwordResetRepository.save(token);
-					return true;
-				}),
-			};
+			useCase = new ExpirePasswordResetTokenUseCase(passwordResetRepository);
 		});
 
-		it('should expire password reset token', async () => {
+		it('should expire pending password reset token', async () => {
 			const token = new PasswordResetToken(
 				1,
 				1,
@@ -554,6 +545,7 @@ describe('Reset Password module', () => {
 			const result = await useCase.execute(1);
 
 			expect(result).toBe(true);
+			expect(passwordResetRepository.save).toHaveBeenCalled();
 		});
 
 		it('should return false if token not found', async () => {
@@ -562,6 +554,26 @@ describe('Reset Password module', () => {
 			const result = await useCase.execute(999);
 
 			expect(result).toBe(false);
+			expect(passwordResetRepository.save).not.toHaveBeenCalled();
+		});
+
+		it('should return false if token is not pending', async () => {
+			const token = new PasswordResetToken(
+				1,
+				1,
+				'token',
+				TokenStatus.CONSUMIDO,
+				new Date(),
+				new Date(),
+				new Date(Date.now() + 3600000),
+			);
+
+			passwordResetRepository.findById.mockResolvedValue(token);
+
+			const result = await useCase.execute(1);
+
+			expect(result).toBe(false);
+			expect(passwordResetRepository.save).not.toHaveBeenCalled();
 		});
 	});
 });

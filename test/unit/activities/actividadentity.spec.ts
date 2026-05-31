@@ -162,6 +162,28 @@ describe('Activities module', () => {
 			);
 		});
 
+		it('should use default PENDIENTE state when not provided', () => {
+			const actividad = new Actividad(
+				10,
+				'Default state test',
+				fechaInicio,
+				fechaFin,
+				TipoActividad.REUNION,
+				undefined as any, // Will use default
+				null,
+				null,
+				false,
+				null,
+				false,
+				1,
+				1,
+				createdAt,
+				updatedAt,
+			);
+
+			expect(actividad.estado).toBe(EstadoActividad.PENDIENTE);
+		});
+
 		it('should handle different activity types', () => {
 			const callActivity = buildActividad();
 			expect(callActivity.tipo).toBe(TipoActividad.LLAMADA);

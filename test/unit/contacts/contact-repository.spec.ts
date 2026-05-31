@@ -196,5 +196,104 @@ describe('Contacts module', () => {
 				expect(result).toHaveLength(0);
 			});
 		});
+
+		describe('findBySecondaryEmail', () => {
+			it('should return contact when secondary email found', async () => {
+				(mockPrisma.contacto!.findFirst as jest.Mock).mockResolvedValue(mockContactData);
+
+				const result = await repository.findBySecondaryEmail('ana.p@personal.com');
+
+				expect(mockPrisma.contacto!.findFirst).toHaveBeenCalledWith({
+					where: { correo2: 'ana.p@personal.com' },
+				});
+				expect(result).not.toBeNull();
+				expect(result!.correo).toBe('ana@techcorp.com');
+			});
+
+			it('should return null when secondary email not found', async () => {
+				(mockPrisma.contacto!.findFirst as jest.Mock).mockResolvedValue(null);
+
+				const result = await repository.findBySecondaryEmail('unknown@test.com');
+
+				expect(result).toBeNull();
+			});
+		});
+
+		describe('findAllWithOrganization', () => {
+			it('should return all contacts with organization names', async () => {
+				const records = [
+					{ ...mockContactData, organizacion: { nombre: 'Org A' } },
+					{ ...mockContactData, id: 2, nombres: 'Juan', organizacion: { nombre: 'Org B' } },
+				];
+				(mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(records);
+
+				const result = await repository.findAllWithOrganization();
+
+				expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith({
+					include: { organizacion: { select: { nombre: true } } },
+				});
+				expect(result).toHaveLength(2);
+				expect(result[0].organizationName).toBe('Org A');
+				expect(result[0].contact.correo).toBe('ana@techcorp.com');
+			});
+
+			it('should return empty array when no contacts exist', async () => {
+				(mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue([]);
+
+				const result = await repository.findAllWithOrganization();
+
+				expect(result).toHaveLength(0);
+			});
+		});
+
+		describe('findByIdWithOrganization', () => {
+			it('should return contact with organization name when found', async () => {
+				const record = { ...mockContactData, organizacion: { nombre: 'Org A' } };
+				(mockPrisma.contacto!.findUnique as jest.Mock).mockResolvedValue(record);
+
+				const result = await repository.findByIdWithOrganization(1);
+
+				expect(mockPrisma.contacto!.findUnique).toHaveBeenCalledWith({
+					where: { id: 1 },
+					include: { organizacion: { select: { nombre: true } } },
+				});
+				expect(result).not.toBeNull();
+				expect(result!.organizationName).toBe('Org A');
+			});
+
+			it('should return null when contact not found', async () => {
+				(mockPrisma.contacto!.findUnique as jest.Mock).mockResolvedValue(null);
+
+				const result = await repository.findByIdWithOrganization(999);
+
+				expect(result).toBeNull();
+			});
+		});
+
+		describe('findByOrganizationIdWithOrganization', () => {
+			it('should return contacts with organization names', async () => {
+				const records = [
+					{ ...mockContactData, organizacion: { nombre: 'Org A' } },
+				];
+				(mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(records);
+
+				const result = await repository.findByOrganizationIdWithOrganization('org-1');
+
+				expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith({
+					where: { idOrganizacion: 'org-1' },
+					include: { organizacion: { select: { nombre: true } } },
+				});
+				expect(result).toHaveLength(1);
+				expect(result[0].organizationName).toBe('Org A');
+			});
+
+			it('should return empty array when no contacts found', async () => {
+				(mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue([]);
+
+				const result = await repository.findByOrganizationIdWithOrganization('org-empty');
+
+				expect(result).toHaveLength(0);
+			});
+		});
 	});
 });

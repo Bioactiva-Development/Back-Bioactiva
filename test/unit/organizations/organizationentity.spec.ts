@@ -81,6 +81,19 @@ describe('Organizations module', () => {
 			);
 		});
 
+		it('should throw error when updating commercial name to empty', () => {
+			const org = buildOrganizacion();
+
+			expect(() => org.updateCommercialName('')).toThrow('El nombre comercial no puede estar vacío');
+			expect(org.nombreComercial).toBe('TechCorp');
+		});
+
+		it('should throw error when updating commercial name to whitespace', () => {
+			const org = buildOrganizacion();
+
+			expect(() => org.updateCommercialName('   ')).toThrow('El nombre comercial no puede estar vacío');
+		});
+
 		it('should select new contact and update timestamp', () => {
 			const org = buildOrganizacion();
 			const oldUpdatedAt = org.updatedAt;

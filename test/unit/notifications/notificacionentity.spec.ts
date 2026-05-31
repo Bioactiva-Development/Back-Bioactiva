@@ -81,11 +81,25 @@ describe('Notifications module', () => {
 		it('should accept default state in constructor', () => {
 			const notificacion = new Notificacion(
 				2,
-				'Recordatorio',
-				'Llamada pendiente con cliente',
-				EstadoNotificacion.NO_LEIDA, // Explicit
+				'Titulo',
+				'Mensaje',
+				EstadoNotificacion.NO_LEIDA,
 				2,
 				43,
+				createdAt,
+			);
+
+			expect(notificacion.estado).toBe(EstadoNotificacion.NO_LEIDA);
+		});
+
+		it('should use default NO_LEIDA state when not provided', () => {
+			const notificacion = new Notificacion(
+				3,
+				'Default',
+				'Mensaje default',
+				undefined as any,
+				3,
+				44,
 				createdAt,
 			);
 

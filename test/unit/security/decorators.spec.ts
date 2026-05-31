@@ -1,6 +1,8 @@
 import { extractCookieFromRequest } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
 import { currentUserFromRequest } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
+import { Roles, ROLES_KEY } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
 import { User } from '@/modules/users/domain/entities/user';
+import { UserRole } from '@/shared/domain/enums/rol';
 
 /**
  * Security testing
@@ -8,6 +10,7 @@ import { User } from '@/modules/users/domain/entities/user';
  * Responsable de:
  * - helpers de extracción de cookie
  * - helpers de extracción de usuario autenticado
+ * - decorador de roles
  */
 // STATUS: Implementación parcial (helpers de decoradores para aumentar cobertura unitária).
 describe('security decorators helpers', () => {
@@ -43,6 +46,18 @@ describe('security decorators helpers', () => {
             const req = {};
             const result = currentUserFromRequest(req as any);
             expect(result).toBeUndefined();
+        });
+    });
+
+    describe('Roles decorator', () => {
+        it('should set metadata with given roles', () => {
+            const decorated = Roles(UserRole.ADMINISTRADOR, UserRole.TRABAJADOR);
+            expect(decorated).toBeDefined();
+            expect(Array.isArray(decorated)).toBe(false);
+        });
+
+        it('should have ROLES_KEY constant', () => {
+            expect(ROLES_KEY).toBe('roles');
         });
     });
 });
