@@ -64,8 +64,8 @@ export class LeadMapper {
             desafioOportunidad: lead.desafio_oportunidad,
             notasContacto: lead.notas_contacto,
             canalCaptacion: lead.canal_captacion,
-            updatedAt: lead.updated_at,
-            ultimoCambioEstado: lead.ultimo_cambio?.toDateString(),
+            ultimoCambioEstado: lead.ultimo_cambio,
+            deletedAt: lead.deleted_at,
         };
     }
 }
