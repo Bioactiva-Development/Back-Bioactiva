@@ -12,6 +12,7 @@ import { OrganizationsModule } from '@/modules/organizations/organizations.modul
 import { ContactsModule } from '@/modules/contacts/contacts.module';
 import { InvitationsModule } from '@/modules/invitations/invitations.module';
 import { ResetPasswordModule } from '@/modules/reset_password/reset-password.module';
+import { LeadsModule } from '@/modules/leads/leads.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { ResetPasswordModule } from '@/modules/reset_password/reset-password.mod
         ContactsModule,
         InvitationsModule,
         ResetPasswordModule,
+        LeadsModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
