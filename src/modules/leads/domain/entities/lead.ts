@@ -2,7 +2,7 @@ import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 export class Lead {
     constructor(
-        public readonly id: number,
+        public readonly id: number | null,
         public id_org: string,
         public id_contacto: number | null,
         public estado: LeadState,
@@ -15,6 +15,8 @@ export class Lead {
         public id_author: number,
         public created_at: Date,
         public updated_at: Date,
+        public deleted_at: Date | null,
+        public ultimo_cambio: Date | null,
     ) {}
 
     changeState(estado: LeadState) {
