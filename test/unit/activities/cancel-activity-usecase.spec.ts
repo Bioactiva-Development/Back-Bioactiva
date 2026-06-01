@@ -18,8 +18,12 @@ describe('Activities module', () => {
     describe('CancelActivityUseCase', () => {
         let useCase: CancelActivityUseCase;
         let activityRepository: any;
+        let calendarSync: any;
 
-        const buildActividad = (estado = EstadoActividad.PENDIENTE) =>
+        const buildActividad = (
+            estado = EstadoActividad.PENDIENTE,
+            outlookEventId: string | null = null,
+        ) =>
             new Actividad(
                 1,
                 'Llamada',
@@ -28,7 +32,7 @@ describe('Activities module', () => {
                 TipoActividad.LLAMADA,
                 estado,
                 null,
-                null,
+                outlookEventId,
                 false,
                 null,
                 false,
@@ -44,7 +48,14 @@ describe('Activities module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
-            useCase = new CancelActivityUseCase(activityRepository);
+            calendarSync = {
+                isUserConnected: jest.fn(),
+                createCalendarEvent: jest.fn(),
+                updateCalendarEvent: jest.fn(),
+                deleteCalendarEvent: jest.fn(),
+                createTeamsMeeting: jest.fn(),
+            };
+            useCase = new CancelActivityUseCase(activityRepository, calendarSync);
         });
 
         it('should cancel a pending activity', async () => {
@@ -88,6 +99,52 @@ describe('Activities module', () => {
 
             await expect(useCase.execute(1)).rejects.toThrow(
                 InvalidActivityTransitionException,
+            );
+        });
+
+        // Caso 5: cancelar actividad sincronizada -> evento Outlook cancelado
+        it('should cancel the Outlook event when the activity is synced', async () => {
+            const actividad = buildActividad(
+                EstadoActividad.PENDIENTE,
+                'outlook-123',
+            );
+            activityRepository.findById.mockResolvedValue(actividad);
+            calendarSync.deleteCalendarEvent.mockResolvedValue(undefined);
+            activityRepository.saveWithRelations.mockResolvedValue({
+                activity: actividad,
+            });
+
+            await useCase.execute(1);
+
+            expect(calendarSync.deleteCalendarEvent).toHaveBeenCalledWith(
+                1,
+                'outlook-123',
+            );
+            expect(actividad.estado).toBe(EstadoActividad.CANCELADA);
+            expect(actividad.outlook_event_id).toBeNull();
+            expect(actividad.teams_meeting_url).toBeNull();
+        });
+
+        // RN-003: un error de Microsoft no impide cancelar la actividad
+        it('should still cancel the activity when Outlook deletion fails', async () => {
+            const actividad = buildActividad(
+                EstadoActividad.PENDIENTE,
+                'outlook-123',
+            );
+            activityRepository.findById.mockResolvedValue(actividad);
+            calendarSync.deleteCalendarEvent.mockRejectedValue(
+                new Error('Graph API down'),
+            );
+            activityRepository.saveWithRelations.mockResolvedValue({
+                activity: actividad,
+            });
+
+            await useCase.execute(1);
+
+            expect(actividad.estado).toBe(EstadoActividad.CANCELADA);
+            expect(actividad.outlook_event_id).toBe('outlook-123');
+            expect(activityRepository.saveWithRelations).toHaveBeenCalledWith(
+                actividad,
             );
         });
     });

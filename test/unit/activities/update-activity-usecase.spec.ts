@@ -23,8 +23,9 @@ describe('Activities module', () => {
         let useCase: UpdateActivityUseCase;
         let activityRepository: any;
         let userRepository: any;
+        let calendarSync: any;
 
-        const buildActividad = () =>
+        const buildActividad = (outlookEventId: string | null = null) =>
             new Actividad(
                 1,
                 'Llamada inicial',
@@ -33,7 +34,7 @@ describe('Activities module', () => {
                 TipoActividad.LLAMADA,
                 EstadoActividad.PENDIENTE,
                 'Nota inicial',
-                null,
+                outlookEventId,
                 false,
                 null,
                 false,
@@ -50,9 +51,17 @@ describe('Activities module', () => {
                 saveWithRelations: jest.fn(),
             };
             userRepository = { findById: jest.fn() };
+            calendarSync = {
+                isUserConnected: jest.fn(),
+                createCalendarEvent: jest.fn(),
+                updateCalendarEvent: jest.fn(),
+                deleteCalendarEvent: jest.fn(),
+                createTeamsMeeting: jest.fn(),
+            };
             useCase = new UpdateActivityUseCase(
                 activityRepository,
                 userRepository,
+                calendarSync,
             );
         });
 
@@ -159,6 +168,54 @@ describe('Activities module', () => {
             await expect(useCase.execute(1, dto)).rejects.toThrow(
                 ActivityNotFoundException,
             );
+        });
+
+        // Caso 4: actualizar actividad sincronizada -> Outlook actualizado
+        it('should update the Outlook event when the activity is synced', async () => {
+            const actividad = buildActividad('outlook-123');
+            activityRepository.findById.mockResolvedValue(actividad);
+            activityRepository.saveWithRelations.mockResolvedValue({
+                activity: actividad,
+            });
+            calendarSync.updateCalendarEvent.mockResolvedValue(undefined);
+
+            const dto = new UpdateActivityDto('Reunión actualizada');
+            await useCase.execute(1, dto);
+
+            expect(calendarSync.updateCalendarEvent).toHaveBeenCalledWith(
+                5,
+                'outlook-123',
+                expect.objectContaining({ subject: 'Reunión actualizada' }),
+            );
+        });
+
+        it('should not touch Outlook when the activity is not synced', async () => {
+            const actividad = buildActividad(null);
+            activityRepository.findById.mockResolvedValue(actividad);
+            activityRepository.saveWithRelations.mockResolvedValue({
+                activity: actividad,
+            });
+
+            await useCase.execute(1, new UpdateActivityDto('Nuevo nombre'));
+
+            expect(calendarSync.updateCalendarEvent).not.toHaveBeenCalled();
+        });
+
+        // RN-003: un error de Microsoft no impide actualizar la actividad
+        it('should still update the activity when Outlook update fails', async () => {
+            const actividad = buildActividad('outlook-123');
+            activityRepository.findById.mockResolvedValue(actividad);
+            activityRepository.saveWithRelations.mockResolvedValue({
+                activity: actividad,
+            });
+            calendarSync.updateCalendarEvent.mockRejectedValue(
+                new Error('Graph API down'),
+            );
+
+            await expect(
+                useCase.execute(1, new UpdateActivityDto('Nuevo nombre')),
+            ).resolves.toBeDefined();
+            expect(actividad.nombre_actividad).toBe('Nuevo nombre');
         });
     });
 });

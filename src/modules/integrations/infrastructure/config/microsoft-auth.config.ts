@@ -27,7 +27,7 @@ export class MicrosoftAuthConfig {
     get scopes(): string[] {
         const raw = this.configService.get<string>(
             'MICROSOFT_SCOPES',
-            'openid profile email offline_access User.Read',
+            'openid profile email offline_access User.Read Calendars.ReadWrite OnlineMeetings.ReadWrite',
         );
         return raw.split(' ').filter(Boolean);
     }

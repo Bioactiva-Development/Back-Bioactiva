@@ -38,6 +38,18 @@ export class ActivityResponseDto {
     @ApiProperty({ example: 'Carlos López' })
     responsableName: string;
 
+    @ApiPropertyOptional({
+        example: 'AAMkAGI2...',
+        description: 'ID del evento en Outlook si la actividad está sincronizada',
+    })
+    outlookEventId: string | null;
+
+    @ApiPropertyOptional({
+        example: 'https://teams.microsoft.com/l/meetup-join/...',
+        description: 'URL de la reunión de Teams si se generó',
+    })
+    teamsMeetingUrl: string | null;
+
     @ApiProperty({ example: '2026-05-31T10:30:00.000Z' })
     createdAt: Date;
 
@@ -58,6 +70,8 @@ export class ActivityResponseDto {
         this.idResponsable = enriched.activity.id_responsable;
         this.responsableName =
             `${enriched.responsableNombre} ${enriched.responsableApellidos}`.trim();
+        this.outlookEventId = enriched.activity.outlook_event_id;
+        this.teamsMeetingUrl = enriched.activity.teams_meeting_url;
         this.createdAt = enriched.activity.created_at;
         this.updatedAt = enriched.activity.updated_at;
     }

@@ -5,6 +5,7 @@ import { PrismaActivityRepository } from '@/modules/activities/infrastructure/pe
 import { ACTIVITY_REPOSITORY } from '@/modules/activities/domain/ports/activity-repository.port';
 import { LeadsModule } from '@/modules/leads/leads.module';
 import { UsersModule } from '@/modules/users/user.module';
+import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
@@ -14,7 +15,7 @@ import { CancelActivityUseCase } from '@/modules/activities/application/use-case
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
 
 @Module({
-    imports: [PrismaModule, LeadsModule, UsersModule],
+    imports: [PrismaModule, LeadsModule, UsersModule, MicrosoftIntegrationModule],
     controllers: [ActivityController],
     providers: [
         PrismaActivityRepository,

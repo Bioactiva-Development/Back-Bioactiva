@@ -10,6 +10,8 @@ import { MICROSOFT_INTEGRATION_REPOSITORY } from '@/modules/integrations/domain/
 import { MicrosoftGraphProvider } from '@/modules/integrations/infrastructure/provider/microsoft-graph-provider';
 import { MICROSOFT_PROVIDER } from '@/modules/integrations/domain/ports/microsoft-provider.port';
 import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/config/microsoft-auth.config';
+import { MicrosoftCalendarSyncAdapter } from '@/modules/integrations/infrastructure/sync/microsoft-calendar-sync.adapter';
+import { CALENDAR_SYNC } from '@/modules/integrations/domain/ports/calendar-sync.port';
 
 @Module({
     imports: [PrismaModule],
@@ -26,10 +28,16 @@ import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/confi
             provide: MICROSOFT_PROVIDER,
             useExisting: MicrosoftGraphProvider,
         },
+        MicrosoftCalendarSyncAdapter,
+        {
+            provide: CALENDAR_SYNC,
+            useExisting: MicrosoftCalendarSyncAdapter,
+        },
         ConnectMicrosoftAccountUseCase,
         MicrosoftOAuthCallbackUseCase,
         GetMicrosoftConnectionStatusUseCase,
         DisconnectMicrosoftAccountUseCase,
     ],
+    exports: [CALENDAR_SYNC],
 })
 export class MicrosoftIntegrationModule {}

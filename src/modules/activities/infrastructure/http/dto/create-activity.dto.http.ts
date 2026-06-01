@@ -1,4 +1,5 @@
 import {
+    IsBoolean,
     IsDate,
     IsEnum,
     IsInt,
@@ -69,4 +70,24 @@ export class HttpCreateActivityDto {
     @IsInt()
     @Min(1)
     idResponsable!: number;
+
+    @ApiPropertyOptional({
+        example: false,
+        default: false,
+        description:
+            'Si es true y el responsable tiene Microsoft conectado, crea el evento en Outlook',
+    })
+    @IsOptional()
+    @IsBoolean()
+    syncWithMicrosoft?: boolean;
+
+    @ApiPropertyOptional({
+        example: false,
+        default: false,
+        description:
+            'Si es true y la actividad es de tipo REUNION, crea una reunión de Teams (requiere syncWithMicrosoft)',
+    })
+    @IsOptional()
+    @IsBoolean()
+    createTeamsMeeting?: boolean;
 }

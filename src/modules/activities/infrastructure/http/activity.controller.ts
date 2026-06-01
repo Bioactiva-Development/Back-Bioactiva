@@ -66,6 +66,8 @@ export class ActivityController {
             httpDto.tipo,
             httpDto.notas ?? null,
             httpDto.idResponsable,
+            httpDto.syncWithMicrosoft ?? false,
+            httpDto.createTeamsMeeting ?? false,
         );
         const result = await this.createActivityUseCase.execute(createDto);
         return new ActivityResponseDto(result);
