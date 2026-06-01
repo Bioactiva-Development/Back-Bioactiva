@@ -10,7 +10,12 @@ import {
     ParseIntPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -47,7 +52,11 @@ export class LeadController {
 
     @Post()
     @ApiOperation({ summary: 'Crear un nuevo lead' })
-    @ApiResponse({ status: 201, description: 'Lead creado exitosamente', type: LeadResponseDto })
+    @ApiResponse({
+        status: 201,
+        description: 'Lead creado exitosamente',
+        type: LeadResponseDto,
+    })
     async create(
         @Body() httpDto: HttpCreateLeadDto,
         @CurrentUser() user: User,
@@ -69,7 +78,11 @@ export class LeadController {
 
     @Get()
     @ApiOperation({ summary: 'Listar leads con filtros y paginación' })
-    @ApiResponse({ status: 200, description: 'Listado paginado de leads', type: PaginatedLeadResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado paginado de leads',
+        type: PaginatedLeadResponseDto,
+    })
     async findAll(
         @Query() query: ListLeadsQueryDto,
     ): Promise<PaginatedLeadResponseDto> {
@@ -93,7 +106,11 @@ export class LeadController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Obtener un lead por ID' })
-    @ApiResponse({ status: 200, description: 'Lead encontrado', type: LeadResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Lead encontrado',
+        type: LeadResponseDto,
+    })
     @ApiResponse({ status: 404, description: 'Lead no encontrado' })
     async findOne(
         @Param('id', ParseIntPipe) id: number,
@@ -104,7 +121,11 @@ export class LeadController {
 
     @Patch(':id')
     @ApiOperation({ summary: 'Actualizar un lead existente' })
-    @ApiResponse({ status: 200, description: 'Lead actualizado exitosamente', type: LeadResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Lead actualizado exitosamente',
+        type: LeadResponseDto,
+    })
     @ApiResponse({ status: 404, description: 'Lead no encontrado' })
     async update(
         @Param('id', ParseIntPipe) id: number,
@@ -126,7 +147,11 @@ export class LeadController {
 
     @Patch(':id/status')
     @ApiOperation({ summary: 'Cambiar el estado de un lead' })
-    @ApiResponse({ status: 200, description: 'Estado actualizado exitosamente', type: LeadResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Estado actualizado exitosamente',
+        type: LeadResponseDto,
+    })
     @ApiResponse({ status: 404, description: 'Lead no encontrado' })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,
@@ -141,9 +166,7 @@ export class LeadController {
     @ApiOperation({ summary: 'Eliminar un lead (eliminación lógica)' })
     @ApiResponse({ status: 200, description: 'Lead eliminado exitosamente' })
     @ApiResponse({ status: 404, description: 'Lead no encontrado' })
-    async remove(
-        @Param('id', ParseIntPipe) id: number,
-    ) {
+    async remove(@Param('id', ParseIntPipe) id: number) {
         return await this.deleteLeadUseCase.execute(id);
     }
 }

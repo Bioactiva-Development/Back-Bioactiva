@@ -11,6 +11,6 @@ export class CreateContactDto {
         public readonly correo2: string | null,
         public readonly comentarios: string | null,
         public readonly idOrganizacion: string,
-        public readonly idAuthor: number
+        public readonly idAuthor: number,
     ) {}
 }

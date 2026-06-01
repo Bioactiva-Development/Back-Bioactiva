@@ -150,9 +150,9 @@ describe('Activities module', () => {
                 const actividad = buildActividad();
                 const sameDate = new Date('2024-03-01T14:00:00.000Z');
 
-                expect(() =>
-                    actividad.reschedule(sameDate, sameDate),
-                ).toThrow(InvalidActivityDateException);
+                expect(() => actividad.reschedule(sameDate, sameDate)).toThrow(
+                    InvalidActivityDateException,
+                );
             });
         });
 

@@ -1,5 +1,8 @@
 import { User } from '@/modules/users/domain/entities/user';
-import { FindAllParams, UserRepositoryPort } from '@/modules/users/domain/ports/user-repository.port';
+import {
+    FindAllParams,
+    UserRepositoryPort,
+} from '@/modules/users/domain/ports/user-repository.port';
 import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
@@ -88,7 +91,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
         return records.map((r) => UserMapper.toDomain(r));
     }
 
-    async countAll(params?: Omit<FindAllParams, 'page' | 'limit'>): Promise<number> {
+    async countAll(
+        params?: Omit<FindAllParams, 'page' | 'limit'>,
+    ): Promise<number> {
         const { search, role, estado } = params ?? {};
 
         return this.prismaClient.usuario.count({

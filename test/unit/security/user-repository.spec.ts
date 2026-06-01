@@ -6,186 +6,219 @@ import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 
 describe('Users module', () => {
-	/**
-	 * PrismaUserRepository
-	 * ----------
-	 * Responsable de:
-	 * - persistir usuarios en la base de datos
-	 * - buscar usuarios por email (correo) y ID
-	 * - contar usuarios por rol
-	 * - mapear entre entidades de dominio y modelos Prisma
-	 * - manejar operaciones create/update
-	 */
-	// STATUS: Implementación completa (CRUD operations).
-	describe('PrismaUserRepository', () => {
-		let repository: PrismaUserRepository;
-		let mockPrismaClient: any;
+    /**
+     * PrismaUserRepository
+     * ----------
+     * Responsable de:
+     * - persistir usuarios en la base de datos
+     * - buscar usuarios por email (correo) y ID
+     * - contar usuarios por rol
+     * - mapear entre entidades de dominio y modelos Prisma
+     * - manejar operaciones create/update
+     */
+    // STATUS: Implementación completa (CRUD operations).
+    describe('PrismaUserRepository', () => {
+        let repository: PrismaUserRepository;
+        let mockPrismaClient: any;
 
-		const mockUserData = {
-			id: 1,
-			nombres: 'Juan',
-			apellidos: 'Pérez',
-			correo: 'juan@example.com',
-			contraseña_hash: 'hashed_password',
-			estado: 'ACTIVO' as const,
-			rol: 'ADMINISTRADOR' as const,
-			createdAt: new Date('2024-01-01'),
-			updatedAt: new Date('2024-01-01'),
-		};
+        const mockUserData = {
+            id: 1,
+            nombres: 'Juan',
+            apellidos: 'Pérez',
+            correo: 'juan@example.com',
+            contraseña_hash: 'hashed_password',
+            estado: 'ACTIVO' as const,
+            rol: 'ADMINISTRADOR' as const,
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+        };
 
-		beforeEach(() => {
-			mockPrismaClient = {
-				usuario: {
-					findUnique: jest.fn(),
-					findFirst: jest.fn(),
-					create: jest.fn(),
-					update: jest.fn(),
-					count: jest.fn(),
-				},
-			};
+        beforeEach(() => {
+            mockPrismaClient = {
+                usuario: {
+                    findUnique: jest.fn(),
+                    findFirst: jest.fn(),
+                    create: jest.fn(),
+                    update: jest.fn(),
+                    count: jest.fn(),
+                },
+            };
 
-			repository = new PrismaUserRepository(mockPrismaClient);
-		});
+            repository = new PrismaUserRepository(mockPrismaClient);
+        });
 
-		describe('findByCorreo', () => {
-			it('should return user when email found', async () => {
-				(mockPrismaClient.usuario.findUnique as jest.Mock).mockResolvedValue(mockUserData);
+        describe('findByCorreo', () => {
+            it('should return user when email found', async () => {
+                (
+                    mockPrismaClient.usuario.findUnique as jest.Mock
+                ).mockResolvedValue(mockUserData);
 
-				const result = await repository.findByCorreo('juan@example.com');
+                const result =
+                    await repository.findByCorreo('juan@example.com');
 
-				expect(mockPrismaClient.usuario.findUnique).toHaveBeenCalledWith({
-					where: { correo: 'juan@example.com' },
-				});
-				expect(result).not.toBeNull();
-				expect(result!.correo).toBe('juan@example.com');
-			});
+                expect(
+                    mockPrismaClient.usuario.findUnique,
+                ).toHaveBeenCalledWith({
+                    where: { correo: 'juan@example.com' },
+                });
+                expect(result).not.toBeNull();
+                expect(result!.correo).toBe('juan@example.com');
+            });
 
-			it('should return null when email not found', async () => {
-				(mockPrismaClient.usuario.findUnique as jest.Mock).mockResolvedValue(null);
+            it('should return null when email not found', async () => {
+                (
+                    mockPrismaClient.usuario.findUnique as jest.Mock
+                ).mockResolvedValue(null);
 
-				const result = await repository.findByCorreo('nonexistent@example.com');
+                const result = await repository.findByCorreo(
+                    'nonexistent@example.com',
+                );
 
-				expect(result).toBeNull();
-			});
-		});
+                expect(result).toBeNull();
+            });
+        });
 
-		describe('findById', () => {
-			it('should return user when ID found', async () => {
-				(mockPrismaClient.usuario.findUnique as jest.Mock).mockResolvedValue(mockUserData);
+        describe('findById', () => {
+            it('should return user when ID found', async () => {
+                (
+                    mockPrismaClient.usuario.findUnique as jest.Mock
+                ).mockResolvedValue(mockUserData);
 
-				const result = await repository.findById(1);
+                const result = await repository.findById(1);
 
-				expect(mockPrismaClient.usuario.findUnique).toHaveBeenCalledWith({
-					where: { id: 1 },
-				});
-				expect(result).not.toBeNull();
-				expect(result!.id).toBe(1);
-			});
+                expect(
+                    mockPrismaClient.usuario.findUnique,
+                ).toHaveBeenCalledWith({
+                    where: { id: 1 },
+                });
+                expect(result).not.toBeNull();
+                expect(result!.id).toBe(1);
+            });
 
-			it('should return null when ID not found', async () => {
-				(mockPrismaClient.usuario.findUnique as jest.Mock).mockResolvedValue(null);
+            it('should return null when ID not found', async () => {
+                (
+                    mockPrismaClient.usuario.findUnique as jest.Mock
+                ).mockResolvedValue(null);
 
-				const result = await repository.findById(999);
+                const result = await repository.findById(999);
 
-				expect(result).toBeNull();
-			});
-		});
+                expect(result).toBeNull();
+            });
+        });
 
-		describe('save', () => {
-			it('should create user with null ID', async () => {
-				const newUser = new User(
-					null as any,
-					'Ana',
-					'García',
-					'ana@example.com',
-					'hashed_pwd',
-					UserState.PENDIENTE,
-					UserRole.TRABAJADOR,
-					new Date(),
-					new Date(),
-				);
+        describe('save', () => {
+            it('should create user with null ID', async () => {
+                const newUser = new User(
+                    null,
+                    'Ana',
+                    'García',
+                    'ana@example.com',
+                    'hashed_pwd',
+                    UserState.PENDIENTE,
+                    UserRole.TRABAJADOR,
+                    new Date(),
+                    new Date(),
+                );
 
-				const createdUserData = { ...mockUserData, id: 2 };
-				(mockPrismaClient.usuario.create as jest.Mock).mockResolvedValue(createdUserData);
+                const createdUserData = { ...mockUserData, id: 2 };
+                (
+                    mockPrismaClient.usuario.create as jest.Mock
+                ).mockResolvedValue(createdUserData);
 
-				const result = await repository.save(newUser);
+                const result = await repository.save(newUser);
 
-				expect(mockPrismaClient.usuario.create).toHaveBeenCalled();
-				expect(result.id).toBe(2);
-			});
+                expect(mockPrismaClient.usuario.create).toHaveBeenCalled();
+                expect(result.id).toBe(2);
+            });
 
-			it('should update user with existing ID', async () => {
-				const existingUser = new User(
-					1,
-					'Juan',
-					'Pérez Updated',
-					'juan@example.com',
-					'hashed_pwd',
-					UserState.ACTIVO,
-					UserRole.ADMINISTRADOR,
-					new Date('2024-01-01'),
-					new Date('2024-01-02'),
-				);
+            it('should update user with existing ID', async () => {
+                const existingUser = new User(
+                    1,
+                    'Juan',
+                    'Pérez Updated',
+                    'juan@example.com',
+                    'hashed_pwd',
+                    UserState.ACTIVO,
+                    UserRole.ADMINISTRADOR,
+                    new Date('2024-01-01'),
+                    new Date('2024-01-02'),
+                );
 
-				(mockPrismaClient.usuario.update as jest.Mock).mockResolvedValue(mockUserData);
+                (
+                    mockPrismaClient.usuario.update as jest.Mock
+                ).mockResolvedValue(mockUserData);
 
-				const result = await repository.save(existingUser);
+                const result = await repository.save(existingUser);
 
-				expect(mockPrismaClient.usuario.update).toHaveBeenCalledWith(
-					expect.objectContaining({
-						where: { id: 1 },
-					}),
-				);
-				expect(result.id).toBe(1);
-			});
+                expect(mockPrismaClient.usuario.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { id: 1 },
+                    }),
+                );
+                expect(result.id).toBe(1);
+            });
 
-			it('should throw error when updating user with null ID', async () => {
-				const userWithNullId = new User(
-					null as any,
-					'Test',
-					'User',
-					'test@example.com',
-					'hashed',
-					UserState.ACTIVO,
-					UserRole.TRABAJADOR,
-					new Date(),
-					new Date(),
-				);
+            it('should throw error when updating user with null ID', async () => {
+                const userWithNullId = new User(
+                    null,
+                    'Test',
+                    'User',
+                    'test@example.com',
+                    'hashed',
+                    UserState.ACTIVO,
+                    UserRole.TRABAJADOR,
+                    new Date(),
+                    new Date(),
+                );
 
-				(mockPrismaClient.usuario.create as jest.Mock).mockResolvedValue(mockUserData);
+                (
+                    mockPrismaClient.usuario.create as jest.Mock
+                ).mockResolvedValue(mockUserData);
 
-				// First call to create should work
-				const result = await repository.save(userWithNullId);
-				expect(result).not.toBeNull();
-			});
-		});
+                // First call to create should work
+                const result = await repository.save(userWithNullId);
+                expect(result).not.toBeNull();
+            });
+        });
 
-		describe('count', () => {
-			it('should count users by ADMINISTRADOR role', async () => {
-				(mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(5);
+        describe('count', () => {
+            it('should count users by ADMINISTRADOR role', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    5,
+                );
 
-				const result = await repository.count({ where: { role: UserRole.ADMINISTRADOR } });
+                const result = await repository.count({
+                    where: { role: UserRole.ADMINISTRADOR },
+                });
 
-				expect(mockPrismaClient.usuario.count).toHaveBeenCalled();
-				expect(result).toBe(5);
-			});
+                expect(mockPrismaClient.usuario.count).toHaveBeenCalled();
+                expect(result).toBe(5);
+            });
 
-			it('should count users by TRABAJADOR role', async () => {
-				(mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(20);
+            it('should count users by TRABAJADOR role', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    20,
+                );
 
-				const result = await repository.count({ where: { role: UserRole.TRABAJADOR } });
+                const result = await repository.count({
+                    where: { role: UserRole.TRABAJADOR },
+                });
 
-				expect(mockPrismaClient.usuario.count).toHaveBeenCalled();
-				expect(result).toBe(20);
-			});
+                expect(mockPrismaClient.usuario.count).toHaveBeenCalled();
+                expect(result).toBe(20);
+            });
 
-			it('should return 0 when no users found for role', async () => {
-				(mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(0);
+            it('should return 0 when no users found for role', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    0,
+                );
 
-				const result = await repository.count({ where: { role: UserRole.ADMINISTRADOR } });
+                const result = await repository.count({
+                    where: { role: UserRole.ADMINISTRADOR },
+                });
 
-				expect(result).toBe(0);
-			});
-		});
-	});
+                expect(result).toBe(0);
+            });
+        });
+    });
 });

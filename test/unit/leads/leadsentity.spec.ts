@@ -74,9 +74,9 @@ describe('Leads module', () => {
             const currentResponsibleId = lead.id_encargado;
             const updatedAtBeforeError = lead.updated_at;
 
-            expect(() =>
-                lead.assignResponsible(currentResponsibleId),
-            ).toThrow(InvalidLeadResponsibleException);
+            expect(() => lead.assignResponsible(currentResponsibleId)).toThrow(
+                InvalidLeadResponsibleException,
+            );
             expect(lead.id_encargado).toBe(currentResponsibleId);
             expect(lead.updated_at).toEqual(updatedAtBeforeError);
         });

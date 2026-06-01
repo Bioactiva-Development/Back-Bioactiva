@@ -22,7 +22,10 @@ export class UserResponseDto {
     @ApiProperty({ enum: UserState, example: 'ACTIVO' })
     estado: string;
 
-    @ApiProperty({ example: '2026-01-15T10:30:00.000Z', description: 'Fecha de registro del usuario' })
+    @ApiProperty({
+        example: '2026-01-15T10:30:00.000Z',
+        description: 'Fecha de registro del usuario',
+    })
     fechaRegistro: Date;
 
     constructor(user: User) {

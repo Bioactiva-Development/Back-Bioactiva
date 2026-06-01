@@ -27,9 +27,7 @@ describe('Integrations module', () => {
             expect(microsoftProvider.getAuthUrl).toHaveBeenCalledWith(
                 expect.stringMatching(/^1:/),
             );
-            expect(result.url).toBe(
-                'https://login.microsoftonline.com/...',
-            );
+            expect(result.url).toBe('https://login.microsoftonline.com/...');
         });
     });
 });

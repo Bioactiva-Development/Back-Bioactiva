@@ -55,13 +55,22 @@ describe('Leads module', () => {
             leadRepository.findById.mockResolvedValue(lead);
             leadRepository.saveWithRelations.mockResolvedValue(lead);
 
-            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.CIERRE_CON_VENTA));
+            await useCase.execute(
+                1,
+                new ChangeLeadStatusDto(LeadState.CIERRE_CON_VENTA),
+            );
             expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
 
-            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.CIERRE_SIN_VENTA));
+            await useCase.execute(
+                1,
+                new ChangeLeadStatusDto(LeadState.CIERRE_SIN_VENTA),
+            );
             expect(lead.estado).toBe(LeadState.CIERRE_SIN_VENTA);
 
-            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.EN_PROSPECTO));
+            await useCase.execute(
+                1,
+                new ChangeLeadStatusDto(LeadState.EN_PROSPECTO),
+            );
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
         });
 

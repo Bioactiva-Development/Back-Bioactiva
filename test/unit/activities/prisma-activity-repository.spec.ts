@@ -77,7 +77,9 @@ describe('Activities module', () => {
 
         describe('save', () => {
             it('should create a new activity when id is 0', async () => {
-                prismaService.actividad.create.mockResolvedValue(prismaRecord());
+                prismaService.actividad.create.mockResolvedValue(
+                    prismaRecord(),
+                );
 
                 const result = await repository.save(buildNewActividad());
 
@@ -151,7 +153,9 @@ describe('Activities module', () => {
 
         describe('saveWithRelations', () => {
             it('should return enriched activity after save', async () => {
-                prismaService.actividad.create.mockResolvedValue(prismaRecord());
+                prismaService.actividad.create.mockResolvedValue(
+                    prismaRecord(),
+                );
                 prismaService.actividad.findFirst.mockResolvedValue(
                     prismaRecord({
                         lead: {
@@ -162,9 +166,8 @@ describe('Activities module', () => {
                     }),
                 );
 
-                const result = await repository.saveWithRelations(
-                    buildNewActividad(),
-                );
+                const result =
+                    await repository.saveWithRelations(buildNewActividad());
 
                 expect(result.activity.id).toBe(1);
                 expect(result.leadServicioInteres).toBe('Consultoría');
@@ -174,7 +177,9 @@ describe('Activities module', () => {
             });
 
             it('should throw when re-fetch after save returns null', async () => {
-                prismaService.actividad.create.mockResolvedValue(prismaRecord());
+                prismaService.actividad.create.mockResolvedValue(
+                    prismaRecord(),
+                );
                 prismaService.actividad.findFirst.mockResolvedValue(null);
 
                 await expect(

@@ -33,9 +33,7 @@ describe('Integrations module', () => {
                 baseDate,
                 baseDate,
             );
-            integrationRepository.findByUserId.mockResolvedValue(
-                integration,
-            );
+            integrationRepository.findByUserId.mockResolvedValue(integration);
             integrationRepository.save.mockResolvedValue(integration);
 
             const result = await useCase.execute(1);

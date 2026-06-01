@@ -57,11 +57,11 @@ describe('Integrations module', () => {
             expect(result?.microsoftEmail).toBe('user@example.com');
             expect(result?.conectado).toBe(true);
 
-            expect(
-                prisma.integracionMicrosoft.findUnique,
-            ).toHaveBeenCalledWith({
-                where: { idUsuario: 5 },
-            });
+            expect(prisma.integracionMicrosoft.findUnique).toHaveBeenCalledWith(
+                {
+                    where: { idUsuario: 5 },
+                },
+            );
         });
 
         it('should return null when no integration found', async () => {
@@ -82,9 +82,7 @@ describe('Integrations module', () => {
             const result = await repository.save(integration);
 
             expect(result).toBeInstanceOf(MicrosoftIntegration);
-            expect(
-                prisma.integracionMicrosoft.create,
-            ).toHaveBeenCalledWith({
+            expect(prisma.integracionMicrosoft.create).toHaveBeenCalledWith({
                 data: {
                     idUsuario: 5,
                     microsoftEmail: 'user@example.com',
@@ -97,9 +95,7 @@ describe('Integrations module', () => {
         });
 
         it('should update an existing integration', async () => {
-            prisma.integracionMicrosoft.update.mockResolvedValue(
-                mockRecord,
-            );
+            prisma.integracionMicrosoft.update.mockResolvedValue(mockRecord);
 
             const integration = new MicrosoftIntegration(
                 1,
@@ -116,9 +112,7 @@ describe('Integrations module', () => {
             const result = await repository.save(integration);
 
             expect(result).toBeInstanceOf(MicrosoftIntegration);
-            expect(
-                prisma.integracionMicrosoft.update,
-            ).toHaveBeenCalledWith({
+            expect(prisma.integracionMicrosoft.update).toHaveBeenCalledWith({
                 where: { id: 1 },
                 data: {
                     microsoftEmail: 'updated@example.com',

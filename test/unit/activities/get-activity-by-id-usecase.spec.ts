@@ -23,7 +23,9 @@ describe('Activities module', () => {
 
         it('should return activity when found', async () => {
             const expected = { activity: { id: 1 }, leadServicioInteres: 'X' };
-            activityRepository.findByIdWithRelations.mockResolvedValue(expected);
+            activityRepository.findByIdWithRelations.mockResolvedValue(
+                expected,
+            );
 
             const result = await useCase.execute(1);
 

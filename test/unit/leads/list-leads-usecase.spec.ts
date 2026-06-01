@@ -25,7 +25,14 @@ describe('Leads module', () => {
             leadRepository.list.mockResolvedValue(mockData);
             leadRepository.count.mockResolvedValue(2);
 
-            const dto = new ListLeadsDto(undefined, undefined, undefined, undefined, 1, 10);
+            const dto = new ListLeadsDto(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                1,
+                10,
+            );
             const result = await useCase.execute(dto);
 
             expect(result.data).toEqual(mockData);

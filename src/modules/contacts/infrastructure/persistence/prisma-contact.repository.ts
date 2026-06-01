@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
-import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
+import {
+    IContactRepository,
+    ContactWithOrgName,
+} from '@/modules/contacts/domain/ports/contact.repository';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { ContactMapper } from '@/modules/contacts/infrastructure/persistence/mappers/contact.mapper';
 
@@ -66,7 +69,9 @@ export class PrismaContactRepository implements IContactRepository {
         }));
     }
 
-    async findByIdWithOrganization(id: number): Promise<ContactWithOrgName | null> {
+    async findByIdWithOrganization(
+        id: number,
+    ): Promise<ContactWithOrgName | null> {
         const record = await this.prisma.contacto.findUnique({
             where: { id },
             include: { organizacion: { select: { nombre: true } } },
@@ -78,7 +83,9 @@ export class PrismaContactRepository implements IContactRepository {
         };
     }
 
-    async findByOrganizationIdWithOrganization(idOrganizacion: string): Promise<ContactWithOrgName[]> {
+    async findByOrganizationIdWithOrganization(
+        idOrganizacion: string,
+    ): Promise<ContactWithOrgName[]> {
         const records = await this.prisma.contacto.findMany({
             where: { idOrganizacion },
             include: { organizacion: { select: { nombre: true } } },

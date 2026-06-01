@@ -60,7 +60,9 @@ describe('Activities module', () => {
 
         it('should create activity with valid data', async () => {
             leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({ id: validResponsableId });
+            userRepository.findById.mockResolvedValue({
+                id: validResponsableId,
+            });
             activityRepository.findPendingByLead.mockResolvedValue(null);
             activityRepository.saveWithRelations.mockResolvedValue({
                 activity: {},
@@ -99,7 +101,9 @@ describe('Activities module', () => {
 
         it('should throw when fechaFin is before or equal to fechaInicio', async () => {
             leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({ id: validResponsableId });
+            userRepository.findById.mockResolvedValue({
+                id: validResponsableId,
+            });
 
             const dto = buildDto({
                 fechaInicio: new Date('2026-06-01T11:00:00.000Z'),
@@ -113,7 +117,9 @@ describe('Activities module', () => {
 
         it('should throw when a pending activity already exists for the lead', async () => {
             leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({ id: validResponsableId });
+            userRepository.findById.mockResolvedValue({
+                id: validResponsableId,
+            });
             activityRepository.findPendingByLead.mockResolvedValue({
                 id: 99,
                 estado: EstadoActividad.PENDIENTE,
@@ -127,7 +133,9 @@ describe('Activities module', () => {
 
         it('should assign PENDIENTE as initial state', async () => {
             leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({ id: validResponsableId });
+            userRepository.findById.mockResolvedValue({
+                id: validResponsableId,
+            });
             activityRepository.findPendingByLead.mockResolvedValue(null);
 
             let savedState: EstadoActividad | null = null;

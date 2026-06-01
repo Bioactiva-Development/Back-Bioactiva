@@ -22,7 +22,9 @@ export class MockMailProvider implements MailProviderPort {
         token: string;
     }): Promise<void> {
         const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${input.token}`;
-        this.logger.log(`Mock reset password mail to ${input.correo} -> ${resetLink}`);
+        this.logger.log(
+            `Mock reset password mail to ${input.correo} -> ${resetLink}`,
+        );
         await new Promise((resolve) => setTimeout(resolve, 100));
     }
 }

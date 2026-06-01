@@ -356,9 +356,9 @@ describe('Leads module', () => {
                 );
                 prismaService.lead.create.mockRejectedValue(prismaError);
 
-                await expect(
-                    repository.save(buildLead()),
-                ).rejects.toThrow(LeadNotFoundException);
+                await expect(repository.save(buildLead())).rejects.toThrow(
+                    LeadNotFoundException,
+                );
             });
 
             it('should map P2003 idContacto to LeadNotFoundException', async () => {
@@ -368,9 +368,9 @@ describe('Leads module', () => {
                 );
                 prismaService.lead.create.mockRejectedValue(prismaError);
 
-                await expect(
-                    repository.save(buildLead()),
-                ).rejects.toThrow(LeadNotFoundException);
+                await expect(repository.save(buildLead())).rejects.toThrow(
+                    LeadNotFoundException,
+                );
             });
 
             it('should map P2003 idEncargado to LeadNotFoundException', async () => {
@@ -380,9 +380,9 @@ describe('Leads module', () => {
                 );
                 prismaService.lead.create.mockRejectedValue(prismaError);
 
-                await expect(
-                    repository.save(buildLead()),
-                ).rejects.toThrow(LeadNotFoundException);
+                await expect(repository.save(buildLead())).rejects.toThrow(
+                    LeadNotFoundException,
+                );
             });
 
             it('should map P2025 on update to LeadNotFoundException', async () => {
@@ -409,9 +409,9 @@ describe('Leads module', () => {
                 );
                 prismaService.lead.update.mockRejectedValue(prismaError);
 
-                await expect(
-                    repository.save(existingLead),
-                ).rejects.toThrow(LeadNotFoundException);
+                await expect(repository.save(existingLead)).rejects.toThrow(
+                    LeadNotFoundException,
+                );
             });
 
             it('should re-throw unknown Prisma errors', async () => {

@@ -67,13 +67,40 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     ): ErrorPayload {
         const prismaCode = exception.code;
 
-        const errorMap: Record<string, { status: number; kind: DomainErrorKind; label: string }> = {
-            P2000: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'ValueTooLong' },
-            P2002: { status: HttpStatus.CONFLICT, kind: DomainErrorKind.Conflict, label: 'UniqueConstraintViolation' },
-            P2003: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'ForeignKeyViolation' },
-            P2011: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'NullConstraintViolation' },
-            P2014: { status: HttpStatus.BAD_REQUEST, kind: DomainErrorKind.Validation, label: 'RequiredRelationViolation' },
-            P2025: { status: HttpStatus.NOT_FOUND, kind: DomainErrorKind.NotFound, label: 'RecordNotFound' },
+        const errorMap: Record<
+            string,
+            { status: number; kind: DomainErrorKind; label: string }
+        > = {
+            P2000: {
+                status: HttpStatus.BAD_REQUEST,
+                kind: DomainErrorKind.Validation,
+                label: 'ValueTooLong',
+            },
+            P2002: {
+                status: HttpStatus.CONFLICT,
+                kind: DomainErrorKind.Conflict,
+                label: 'UniqueConstraintViolation',
+            },
+            P2003: {
+                status: HttpStatus.BAD_REQUEST,
+                kind: DomainErrorKind.Validation,
+                label: 'ForeignKeyViolation',
+            },
+            P2011: {
+                status: HttpStatus.BAD_REQUEST,
+                kind: DomainErrorKind.Validation,
+                label: 'NullConstraintViolation',
+            },
+            P2014: {
+                status: HttpStatus.BAD_REQUEST,
+                kind: DomainErrorKind.Validation,
+                label: 'RequiredRelationViolation',
+            },
+            P2025: {
+                status: HttpStatus.NOT_FOUND,
+                kind: DomainErrorKind.NotFound,
+                label: 'RecordNotFound',
+            },
         };
 
         const mapped = errorMap[prismaCode];
