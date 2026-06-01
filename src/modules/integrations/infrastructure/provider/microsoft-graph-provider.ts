@@ -39,9 +39,11 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 scopes: this.config.scopes,
             });
 
+            const refreshToken = this.extractRefreshTokenFromCache();
+
             return {
                 accessToken: response.accessToken,
-                refreshToken: undefined,
+                refreshToken,
                 expiresIn: response.expiresOn
                     ? Math.floor(
                           (response.expiresOn.getTime() - Date.now()) / 1000,
@@ -99,9 +101,11 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 );
             }
 
+            const newRefreshToken = this.extractRefreshTokenFromCache();
+
             return {
                 accessToken: response.accessToken,
-                refreshToken: undefined,
+                refreshToken: newRefreshToken,
                 expiresIn: response.expiresOn
                     ? Math.floor(
                           (response.expiresOn.getTime() - Date.now()) / 1000,
@@ -115,6 +119,21 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
             throw new MicrosoftOAuthFailedException(
                 `Error al refrescar token: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
+        }
+    }
+
+    private extractRefreshTokenFromCache(): string | undefined {
+        try {
+            const cache = this.msalClient.getTokenCache();
+            const cacheData = cache.serialize();
+            const parsed = JSON.parse(cacheData);
+            const refreshTokens = parsed.RefreshToken;
+            if (!refreshTokens) return undefined;
+            const key = Object.keys(refreshTokens)[0];
+            if (!key) return undefined;
+            return refreshTokens[key].secret;
+        } catch {
+            return undefined;
         }
     }
 }
