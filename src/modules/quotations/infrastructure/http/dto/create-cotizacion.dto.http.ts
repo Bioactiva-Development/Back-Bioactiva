@@ -4,6 +4,7 @@ import {
     IsString,
     IsInt,
     IsDateString,
+    IsNumberString,
     Min,
     Length,
 } from 'class-validator';
@@ -42,8 +43,8 @@ export class HttpCreateCotizacionDto {
     nombreServicio!: string;
 
     @ApiProperty({ example: '5000.00' })
-    @IsString()
     @IsNotEmpty()
+    @IsNumberString({ no_symbols: false })
     monto!: string;
 
     @ApiProperty({ enum: TipoMoneda, example: TipoMoneda.USD })

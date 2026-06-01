@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsDateString, Length } from 'class-validator';
+import {
+    IsOptional,
+    IsString,
+    IsDateString,
+    IsNumberString,
+    Length,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
@@ -35,7 +41,7 @@ export class HttpUpdateCotizacionDto {
 
     @ApiPropertyOptional({ example: '5000.00' })
     @IsOptional()
-    @IsString()
+    @IsNumberString({ no_symbols: false })
     monto?: string;
 
     @ApiPropertyOptional({ enum: TipoMoneda, example: TipoMoneda.USD })
