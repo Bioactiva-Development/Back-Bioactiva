@@ -80,7 +80,9 @@ describe('Integrations module', () => {
                     accessToken: 'access-1',
                     refreshToken: 'refresh-old',
                 });
-                microsoftProvider.createCalendarEvent.mockResolvedValue('evt-1');
+                microsoftProvider.createCalendarEvent.mockResolvedValue(
+                    'evt-1',
+                );
 
                 const id = await adapter.createCalendarEvent(1, eventInput);
 
@@ -100,7 +102,9 @@ describe('Integrations module', () => {
                     refreshToken: 'refresh-new',
                     expiresIn: 3600,
                 });
-                microsoftProvider.createCalendarEvent.mockResolvedValue('evt-1');
+                microsoftProvider.createCalendarEvent.mockResolvedValue(
+                    'evt-1',
+                );
 
                 await adapter.createCalendarEvent(1, eventInput);
 

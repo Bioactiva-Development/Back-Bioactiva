@@ -26,9 +26,7 @@ export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
     async isUserConnected(userId: number): Promise<boolean> {
         const integration =
             await this.integrationRepository.findByUserId(userId);
-        return Boolean(
-            integration?.conectado && integration.refreshToken,
-        );
+        return Boolean(integration?.conectado && integration.refreshToken);
     }
 
     async createCalendarEvent(
@@ -83,7 +81,10 @@ export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
             integration.refreshToken,
         );
 
-        if (tokens.refreshToken && tokens.refreshToken !== integration.refreshToken) {
+        if (
+            tokens.refreshToken &&
+            tokens.refreshToken !== integration.refreshToken
+        ) {
             integration.refreshToken = tokens.refreshToken;
             integration.tokenExpiresAt = tokens.expiresIn
                 ? new Date(Date.now() + tokens.expiresIn * 1000)

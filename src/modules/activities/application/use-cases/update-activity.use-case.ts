@@ -63,7 +63,8 @@ export class UpdateActivityUseCase {
 
         activity.updated_at = new Date();
 
-        const result = await this.activityRepository.saveWithRelations(activity);
+        const result =
+            await this.activityRepository.saveWithRelations(activity);
 
         if (activity.outlook_event_id) {
             await this.syncUpdateWithMicrosoft(activity);

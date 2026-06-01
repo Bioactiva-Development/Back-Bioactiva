@@ -40,7 +40,8 @@ export class ActivityResponseDto {
 
     @ApiPropertyOptional({
         example: 'AAMkAGI2...',
-        description: 'ID del evento en Outlook si la actividad está sincronizada',
+        description:
+            'ID del evento en Outlook si la actividad está sincronizada',
     })
     outlookEventId: string | null;
 

@@ -15,7 +15,12 @@ import { CancelActivityUseCase } from '@/modules/activities/application/use-case
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
 
 @Module({
-    imports: [PrismaModule, LeadsModule, UsersModule, MicrosoftIntegrationModule],
+    imports: [
+        PrismaModule,
+        LeadsModule,
+        UsersModule,
+        MicrosoftIntegrationModule,
+    ],
     controllers: [ActivityController],
     providers: [
         PrismaActivityRepository,

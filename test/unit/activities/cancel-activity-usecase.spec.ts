@@ -55,7 +55,10 @@ describe('Activities module', () => {
                 deleteCalendarEvent: jest.fn(),
                 createTeamsMeeting: jest.fn(),
             };
-            useCase = new CancelActivityUseCase(activityRepository, calendarSync);
+            useCase = new CancelActivityUseCase(
+                activityRepository,
+                calendarSync,
+            );
         });
 
         it('should cancel a pending activity', async () => {

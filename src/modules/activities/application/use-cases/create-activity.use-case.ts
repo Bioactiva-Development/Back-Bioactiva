@@ -89,7 +89,8 @@ export class CreateActivityUseCase {
             null,
         );
 
-        const result = await this.activityRepository.saveWithRelations(actividad);
+        const result =
+            await this.activityRepository.saveWithRelations(actividad);
 
         if (dto.syncWithMicrosoft) {
             await this.syncWithMicrosoft(
