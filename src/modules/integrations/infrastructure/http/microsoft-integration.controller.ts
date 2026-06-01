@@ -1,13 +1,13 @@
 import {
     Controller,
     Get,
-    Post,
     Delete,
-    Body,
     Query,
     UseGuards,
     HttpCode,
+    Res,
 } from '@nestjs/common';
+import { type Response } from 'express';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -15,12 +15,12 @@ import { ConnectMicrosoftAccountUseCase } from '@/modules/integrations/applicati
 import { MicrosoftOAuthCallbackUseCase } from '@/modules/integrations/application/use-cases/microsoft-oauth-callback.use-case';
 import { GetMicrosoftConnectionStatusUseCase } from '@/modules/integrations/application/use-cases/get-microsoft-connection-status.use-case';
 import { DisconnectMicrosoftAccountUseCase } from '@/modules/integrations/application/use-cases/disconnect-microsoft-account.use-case';
-import { DirectConnectUseCase } from '@/modules/integrations/application/use-cases/direct-connect.use-case';
 import { OAuthCallbackQueryDto } from '@/modules/integrations/infrastructure/http/dto/oauth-callback-query.dto';
 import { ConnectUrlDto } from '@/modules/integrations/application/dto/connect-url.dto';
 import { ConnectionStatusDto } from '@/modules/integrations/application/dto/connection-status.dto';
-import { DirectConnectDto } from '@/modules/integrations/application/dto/direct-connect.dto';
-import { MicrosoftIntegration } from '@/modules/integrations/domain/entities/microsoft-integration';
+
+const FRONTEND_URL =
+    process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3120';
 
 @Controller('microsoft')
 export class MicrosoftIntegrationController {
@@ -29,7 +29,6 @@ export class MicrosoftIntegrationController {
         private readonly callbackUseCase: MicrosoftOAuthCallbackUseCase,
         private readonly statusUseCase: GetMicrosoftConnectionStatusUseCase,
         private readonly disconnectUseCase: DisconnectMicrosoftAccountUseCase,
-        private readonly directConnectUseCase: DirectConnectUseCase,
     ) {}
 
     @Get('connect')
@@ -41,10 +40,16 @@ export class MicrosoftIntegrationController {
     @Get('callback')
     async callback(
         @Query() query: OAuthCallbackQueryDto,
-    ): Promise<MicrosoftIntegration> {
-        const stateParts = query.state.split(':');
-        const userId = parseInt(stateParts[0], 10);
-        return await this.callbackUseCase.execute(query.code, userId);
+        @Res() res: Response,
+    ): Promise<void> {
+        try {
+            const stateParts = query.state.split(':');
+            const userId = parseInt(stateParts[0], 10);
+            await this.callbackUseCase.execute(query.code, userId);
+            return res.redirect(`${FRONTEND_URL}/ajustes?microsoft=connected`);
+        } catch {
+            return res.redirect(`${FRONTEND_URL}/ajustes?microsoft=error`);
+        }
     }
 
     @Get('status')
@@ -58,14 +63,5 @@ export class MicrosoftIntegrationController {
     @HttpCode(200)
     async disconnect(@CurrentUser() user: User): Promise<{ ok: boolean }> {
         return await this.disconnectUseCase.execute(user.id!);
-    }
-
-    @Post('connect/direct')
-    @UseGuards(JwtAuthGuard)
-    async connectDirect(
-        @CurrentUser() user: User,
-        @Body() dto: DirectConnectDto,
-    ): Promise<MicrosoftIntegration> {
-        return await this.directConnectUseCase.execute(user.id!, dto);
     }
 }

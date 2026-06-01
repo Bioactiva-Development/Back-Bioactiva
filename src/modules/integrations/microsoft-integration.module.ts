@@ -5,7 +5,6 @@ import { ConnectMicrosoftAccountUseCase } from '@/modules/integrations/applicati
 import { MicrosoftOAuthCallbackUseCase } from '@/modules/integrations/application/use-cases/microsoft-oauth-callback.use-case';
 import { GetMicrosoftConnectionStatusUseCase } from '@/modules/integrations/application/use-cases/get-microsoft-connection-status.use-case';
 import { DisconnectMicrosoftAccountUseCase } from '@/modules/integrations/application/use-cases/disconnect-microsoft-account.use-case';
-import { DirectConnectUseCase } from '@/modules/integrations/application/use-cases/direct-connect.use-case';
 import { PrismaMicrosoftIntegrationRepository } from '@/modules/integrations/infrastructure/persistance/prisma-microsoft-integration.repository';
 import { MICROSOFT_INTEGRATION_REPOSITORY } from '@/modules/integrations/domain/ports/microsoft-integration-repository.port';
 import { MicrosoftGraphProvider } from '@/modules/integrations/infrastructure/provider/microsoft-graph-provider';
@@ -31,7 +30,6 @@ import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/confi
         MicrosoftOAuthCallbackUseCase,
         GetMicrosoftConnectionStatusUseCase,
         DisconnectMicrosoftAccountUseCase,
-        DirectConnectUseCase,
     ],
 })
 export class MicrosoftIntegrationModule {}
