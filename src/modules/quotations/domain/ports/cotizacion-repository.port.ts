@@ -1,10 +1,12 @@
 import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
+import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 export interface CotizacionWithRelations {
     cotizacion: Cotizacion;
     leadServicioInteres: string;
     leadEstado: string;
+    contactName: string;
     remitenteNombre: string;
     remitenteApellidos: string;
 }
@@ -28,11 +30,13 @@ export interface CotizacionRepositoryPort {
         cotizacionId: number,
         leadId: number,
         leadState: LeadState,
+        expectedEstado: EstadoCot,
     ): Promise<CotizacionWithRelations>;
     rejectAndUpdateLead(
         cotizacionId: number,
         leadId: number,
         leadState: LeadState,
+        expectedEstado: EstadoCot,
     ): Promise<CotizacionWithRelations>;
     list(params?: ListCotizacionesParams): Promise<CotizacionWithRelations[]>;
     count(

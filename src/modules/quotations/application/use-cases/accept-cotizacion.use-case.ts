@@ -27,6 +27,7 @@ export class AcceptCotizacionUseCase {
             );
         }
 
+        const expectedEstado = cotizacion.estado;
         cotizacion.accept();
 
         const lead = await this.leadRepository.findById(cotizacion.id_lead);
@@ -42,6 +43,7 @@ export class AcceptCotizacionUseCase {
             cotizacion.id!,
             lead.id!,
             LeadState.CIERRE_CON_VENTA,
+            expectedEstado,
         );
     }
 }

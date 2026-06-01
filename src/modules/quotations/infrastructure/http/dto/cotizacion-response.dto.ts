@@ -22,8 +22,10 @@ export class CotizacionResponseDto {
     @ApiProperty({ example: 'Consultoría en transformación digital' })
     leadServicioInteres: string;
     @ApiProperty({ example: 'EN_PROSPECTO' }) leadEstado: string;
+    @ApiProperty({ example: 'María Gómez' }) contactName: string;
     @ApiProperty({ example: 1 }) idRemitente: number;
     @ApiProperty({ example: 'Carlos López' }) remitenteName: string;
+    @ApiProperty({ example: 1 }) idAuthor: number;
     @ApiProperty({ example: '2026-01-15T10:30:00.000Z' }) createdAt: Date;
     @ApiProperty({ example: '2026-01-15T10:30:00.000Z' }) updatedAt: Date;
 
@@ -43,9 +45,11 @@ export class CotizacionResponseDto {
         this.idLead = enriched.cotizacion.id_lead;
         this.leadServicioInteres = enriched.leadServicioInteres;
         this.leadEstado = enriched.leadEstado;
+        this.contactName = enriched.contactName;
         this.idRemitente = enriched.cotizacion.id_remitente;
         this.remitenteName =
             `${enriched.remitenteNombre} ${enriched.remitenteApellidos}`.trim();
+        this.idAuthor = enriched.cotizacion.id_author;
         this.createdAt = enriched.cotizacion.created_at;
         this.updatedAt = enriched.cotizacion.updated_at;
     }

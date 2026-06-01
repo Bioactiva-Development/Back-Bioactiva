@@ -10,10 +10,19 @@ import { EstadoCot as PrismaEstadoCot, Prisma } from '@prisma/client';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { CotizacionMapper } from '@/modules/quotations/infrastructure/mappers/cotizacion.mapper';
 import { CotizacionNotFoundException } from '@/modules/quotations/domain/exceptions/cotizacion-not-found.exception';
+import { CotizacionConflictException } from '@/modules/quotations/domain/exceptions/cotizacion-conflict.exception';
+import { LeadMapper } from '@/modules/leads/infrastructure/mappers/lead.mapper';
+import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 type PrismaCotizacionWithRelations = Prisma.CotizacionGetPayload<{
     include: {
-        lead: { select: { servicioInteres: true; estado: true } };
+        lead: {
+            select: {
+                servicioInteres: true;
+                estado: true;
+                contacto: { select: { nombres: true; apellidos: true } };
+            };
+        };
         remitente: { select: { nombres: true; apellidos: true } };
     };
 }>;
@@ -29,6 +38,9 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             cotizacion: CotizacionMapper.toDomain(record),
             leadServicioInteres: record.lead?.servicioInteres ?? '',
             leadEstado: record.lead?.estado ?? '',
+            contactName: record.lead?.contacto
+                ? `${record.lead.contacto.nombres} ${record.lead.contacto.apellidos ?? ''}`.trim()
+                : '',
             remitenteNombre: record.remitente?.nombres ?? '',
             remitenteApellidos: record.remitente?.apellidos ?? '',
         };
@@ -95,7 +107,15 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             const record = await this.prisma.cotizacion.findFirst({
                 where: { id, deletedAt: null },
                 include: {
-                    lead: { select: { servicioInteres: true, estado: true } },
+                    lead: {
+                        select: {
+                            servicioInteres: true,
+                            estado: true,
+                            contacto: {
+                                select: { nombres: true, apellidos: true },
+                            },
+                        },
+                    },
                     remitente: { select: { nombres: true, apellidos: true } },
                 },
             });
@@ -195,57 +215,68 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
     async acceptAndUpdateLead(
         cotizacionId: number,
         leadId: number,
+        leadState: LeadState,
+        expectedEstado: EstadoCot,
     ): Promise<CotizacionWithRelations> {
-        try {
-            const [updated] = await this.prisma.$transaction([
-                this.prisma.cotizacion.update({
-                    where: { id: cotizacionId },
-                    data: {
-                        estado: 'ACEPTADA',
-                        updatedAt: new Date(),
-                    },
-                    include: {
-                        lead: {
-                            select: { servicioInteres: true, estado: true },
-                        },
-                        remitente: {
-                            select: { nombres: true, apellidos: true },
-                        },
-                    },
-                }),
-                this.prisma.lead.update({
-                    where: { id: leadId },
-                    data: {
-                        estado: 'CIERRE_CON_VENTA',
-                        updatedAt: new Date(),
-                        ultimoCambioEstado: new Date(),
-                    },
-                }),
-            ]);
-            return this.mapToCotizacionWithRelations(updated);
-        } catch (error) {
-            this.handlePrismaError(error, {
-                operation: 'acceptAndUpdateLead',
-                cotizacionId: cotizacionId,
-            });
-        }
+        return this.updateEstadoAndLead(
+            cotizacionId,
+            leadId,
+            'ACEPTADA',
+            leadState,
+            expectedEstado,
+            'acceptAndUpdateLead',
+        );
     }
 
     async rejectAndUpdateLead(
         cotizacionId: number,
         leadId: number,
+        leadState: LeadState,
+        expectedEstado: EstadoCot,
+    ): Promise<CotizacionWithRelations> {
+        return this.updateEstadoAndLead(
+            cotizacionId,
+            leadId,
+            'RECHAZADA',
+            leadState,
+            expectedEstado,
+            'rejectAndUpdateLead',
+        );
+    }
+
+    private async updateEstadoAndLead(
+        cotizacionId: number,
+        leadId: number,
+        estado: PrismaEstadoCot,
+        leadState: LeadState,
+        expectedEstado: EstadoCot,
+        operation: string,
     ): Promise<CotizacionWithRelations> {
         try {
             const [updated] = await this.prisma.$transaction([
                 this.prisma.cotizacion.update({
-                    where: { id: cotizacionId },
+                    // Concurrencia optimista: solo actualiza si el estado
+                    // sigue siendo el que leyó el caso de uso. Si otra
+                    // operación ya lo cambió, no hay match -> P2025 -> rollback.
+                    where: {
+                        id: cotizacionId,
+                        estado: CotizacionMapper.mapStateToPrisma(
+                            expectedEstado,
+                        ),
+                    },
                     data: {
-                        estado: 'RECHAZADA',
+                        estado,
                         updatedAt: new Date(),
                     },
                     include: {
                         lead: {
-                            select: { servicioInteres: true, estado: true },
+                            select: {
+                                servicioInteres: true,
+                                estado: true,
+                                contacto: {
+                                    select: { nombres: true, apellidos: true },
+                                },
+                            },
                         },
                         remitente: {
                             select: { nombres: true, apellidos: true },
@@ -255,7 +286,7 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
                 this.prisma.lead.update({
                     where: { id: leadId },
                     data: {
-                        estado: 'CIERRE_SIN_VENTA',
+                        estado: LeadMapper.mapStateToPrisma(leadState),
                         updatedAt: new Date(),
                         ultimoCambioEstado: new Date(),
                     },
@@ -263,9 +294,14 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             ]);
             return this.mapToCotizacionWithRelations(updated);
         } catch (error) {
+            if (this.isPrismaError(error) && error.code === 'P2025') {
+                throw new CotizacionConflictException(
+                    `La cotización con id ${cotizacionId} ya fue procesada por otra operación`,
+                );
+            }
             this.handlePrismaError(error, {
-                operation: 'rejectAndUpdateLead',
-                cotizacionId: cotizacionId,
+                operation,
+                cotizacionId,
             });
         }
     }
@@ -284,7 +320,15 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
-                    lead: { select: { servicioInteres: true, estado: true } },
+                    lead: {
+                        select: {
+                            servicioInteres: true,
+                            estado: true,
+                            contacto: {
+                                select: { nombres: true, apellidos: true },
+                            },
+                        },
+                    },
                     remitente: { select: { nombres: true, apellidos: true } },
                 },
             });
