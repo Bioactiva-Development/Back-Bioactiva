@@ -16,29 +16,33 @@ export interface GraphEventData {
     body?: string | null;
 }
 
+export interface GraphCalendarEventResult {
+    id: string;
+    /** URL de la reunión de Teams si el evento se creó como online meeting. */
+    joinUrl: string | null;
+}
+
 export interface MicrosoftProviderPort {
     getAuthUrl(state: string): Promise<string>;
     exchangeCodeForTokens(code: string): Promise<TokenResponse>;
     getProfile(accessToken: string): Promise<MicrosoftProfile>;
     refreshAccessToken(refreshToken: string): Promise<TokenResponse>;
 
-    // Outlook Calendar (sincronización CRM -> Outlook)
+    // Outlook Calendar (sincronización CRM -> Outlook).
+    // Si options.onlineMeeting = true, el evento se crea como reunión de Teams
+    // (isOnlineMeeting) y el resultado incluye la joinUrl. Esto evita el endpoint
+    // /me/onlineMeetings, que requiere cuentas work/school y políticas extra.
     createCalendarEvent(
         accessToken: string,
         event: GraphEventData,
-    ): Promise<string>;
+        options?: { onlineMeeting?: boolean },
+    ): Promise<GraphCalendarEventResult>;
     updateCalendarEvent(
         accessToken: string,
         eventId: string,
         event: GraphEventData,
     ): Promise<void>;
     deleteCalendarEvent(accessToken: string, eventId: string): Promise<void>;
-
-    // Microsoft Teams
-    createTeamsMeeting(
-        accessToken: string,
-        meeting: GraphEventData,
-    ): Promise<string>;
 }
 
 export const MICROSOFT_PROVIDER = Symbol('MICROSOFT_PROVIDER');

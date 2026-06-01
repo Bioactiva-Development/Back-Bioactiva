@@ -3,6 +3,7 @@ import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
     type CalendarSyncPort,
     type CalendarEventInput,
+    type CalendarSyncResult,
 } from '@/modules/integrations/domain/ports/calendar-sync.port';
 import {
     MICROSOFT_INTEGRATION_REPOSITORY,
@@ -32,9 +33,18 @@ export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
     async createCalendarEvent(
         userId: number,
         input: CalendarEventInput,
-    ): Promise<string> {
+        options?: { onlineMeeting?: boolean },
+    ): Promise<CalendarSyncResult> {
         const accessToken = await this.getAccessToken(userId);
-        return this.microsoftProvider.createCalendarEvent(accessToken, input);
+        const result = await this.microsoftProvider.createCalendarEvent(
+            accessToken,
+            input,
+            options,
+        );
+        return {
+            outlookEventId: result.id,
+            teamsJoinUrl: result.joinUrl,
+        };
     }
 
     async updateCalendarEvent(
@@ -53,14 +63,6 @@ export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
     async deleteCalendarEvent(userId: number, eventId: string): Promise<void> {
         const accessToken = await this.getAccessToken(userId);
         await this.microsoftProvider.deleteCalendarEvent(accessToken, eventId);
-    }
-
-    async createTeamsMeeting(
-        userId: number,
-        input: CalendarEventInput,
-    ): Promise<string> {
-        const accessToken = await this.getAccessToken(userId);
-        return this.microsoftProvider.createTeamsMeeting(accessToken, input);
     }
 
     /**

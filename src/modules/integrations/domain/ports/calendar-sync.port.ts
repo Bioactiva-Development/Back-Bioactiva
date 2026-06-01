@@ -12,15 +12,25 @@ export interface CalendarEventInput {
     body?: string | null;
 }
 
+export interface CalendarSyncResult {
+    outlookEventId: string;
+    /** URL de Teams si el evento se creó como reunión online; null si no. */
+    teamsJoinUrl: string | null;
+}
+
 export interface CalendarSyncPort {
     /** Indica si el usuario tiene Microsoft conectado (RN-001). */
     isUserConnected(userId: number): Promise<boolean>;
 
-    /** Crea un evento en Outlook y devuelve su id. */
+    /**
+     * Crea un evento en Outlook. Si options.onlineMeeting = true, el evento se
+     * crea como reunión de Teams y el resultado incluye la URL de unión.
+     */
     createCalendarEvent(
         userId: number,
         input: CalendarEventInput,
-    ): Promise<string>;
+        options?: { onlineMeeting?: boolean },
+    ): Promise<CalendarSyncResult>;
 
     /** Actualiza un evento existente de Outlook. */
     updateCalendarEvent(
@@ -31,12 +41,6 @@ export interface CalendarSyncPort {
 
     /** Elimina/cancela un evento de Outlook. */
     deleteCalendarEvent(userId: number, eventId: string): Promise<void>;
-
-    /** Crea una reunión de Teams y devuelve su URL de unión. */
-    createTeamsMeeting(
-        userId: number,
-        input: CalendarEventInput,
-    ): Promise<string>;
 }
 
 export const CALENDAR_SYNC = Symbol('CALENDAR_SYNC');

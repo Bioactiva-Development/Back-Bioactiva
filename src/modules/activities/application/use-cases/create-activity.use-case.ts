@@ -126,19 +126,19 @@ export class CreateActivityUseCase {
                 body: activity.notas,
             };
 
-            activity.outlook_event_id =
-                await this.calendarSync.createCalendarEvent(
-                    activity.id_responsable,
-                    eventInput,
-                );
+            // Solo las REUNION con createTeamsMeeting se crean como online meeting;
+            // así el evento y la reunión de Teams se obtienen en una sola llamada.
+            const onlineMeeting =
+                activity.tipo === TipoActividad.REUNION && createTeamsMeeting;
 
-            if (activity.tipo === TipoActividad.REUNION && createTeamsMeeting) {
-                activity.teams_meeting_url =
-                    await this.calendarSync.createTeamsMeeting(
-                        activity.id_responsable,
-                        eventInput,
-                    );
-            }
+            const result = await this.calendarSync.createCalendarEvent(
+                activity.id_responsable,
+                eventInput,
+                { onlineMeeting },
+            );
+
+            activity.outlook_event_id = result.outlookEventId;
+            activity.teams_meeting_url = result.teamsJoinUrl;
 
             await this.activityRepository.save(activity);
         } catch (error) {

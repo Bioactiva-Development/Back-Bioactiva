@@ -5,6 +5,7 @@ import {
     MicrosoftProfile,
     MicrosoftProviderPort,
     GraphEventData,
+    GraphCalendarEventResult,
 } from '@/modules/integrations/domain/ports/microsoft-provider.port';
 import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/config/microsoft-auth.config';
 import { MicrosoftOAuthFailedException } from '@/modules/integrations/domain/exceptions/microsoft-oauth-failed.exception';
@@ -127,12 +128,13 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
     async createCalendarEvent(
         accessToken: string,
         event: GraphEventData,
-    ): Promise<string> {
+        options?: { onlineMeeting?: boolean },
+    ): Promise<GraphCalendarEventResult> {
         const data = await this.graphRequest(
             accessToken,
             'POST',
             'https://graph.microsoft.com/v1.0/me/events',
-            this.toGraphEventBody(event),
+            this.toGraphEventBody(event, options?.onlineMeeting ?? false),
         );
 
         if (!data?.id) {
@@ -141,7 +143,14 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
             );
         }
 
-        return data.id as string;
+        const onlineMeeting = data.onlineMeeting as
+            | { joinUrl?: string }
+            | undefined;
+
+        return {
+            id: data.id as string,
+            joinUrl: onlineMeeting?.joinUrl ?? null,
+        };
     }
 
     async updateCalendarEvent(
@@ -153,7 +162,7 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
             accessToken,
             'PATCH',
             `https://graph.microsoft.com/v1.0/me/events/${eventId}`,
-            this.toGraphEventBody(event),
+            this.toGraphEventBody(event, false),
         );
     }
 
@@ -168,31 +177,10 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
         );
     }
 
-    async createTeamsMeeting(
-        accessToken: string,
-        meeting: GraphEventData,
-    ): Promise<string> {
-        const data = await this.graphRequest(
-            accessToken,
-            'POST',
-            'https://graph.microsoft.com/v1.0/me/onlineMeetings',
-            {
-                subject: meeting.subject,
-                startDateTime: meeting.start.toISOString(),
-                endDateTime: meeting.end.toISOString(),
-            },
-        );
-
-        if (!data?.joinWebUrl) {
-            throw new MicrosoftGraphRequestException(
-                'Microsoft Graph no devolvió la URL de la reunión de Teams',
-            );
-        }
-
-        return data.joinWebUrl as string;
-    }
-
-    private toGraphEventBody(event: GraphEventData): Record<string, unknown> {
+    private toGraphEventBody(
+        event: GraphEventData,
+        onlineMeeting: boolean,
+    ): Record<string, unknown> {
         return {
             subject: event.subject,
             body: {
@@ -207,6 +195,12 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 dateTime: event.end.toISOString(),
                 timeZone: 'UTC',
             },
+            ...(onlineMeeting
+                ? {
+                      isOnlineMeeting: true,
+                      onlineMeetingProvider: 'teamsForBusiness',
+                  }
+                : {}),
         };
     }
 

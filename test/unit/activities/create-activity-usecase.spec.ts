@@ -79,7 +79,6 @@ describe('Activities module', () => {
                 createCalendarEvent: jest.fn(),
                 updateCalendarEvent: jest.fn(),
                 deleteCalendarEvent: jest.fn(),
-                createTeamsMeeting: jest.fn(),
             };
 
             useCase = new CreateActivityUseCase(
@@ -222,13 +221,17 @@ describe('Activities module', () => {
             const saved = buildSavedActivity();
             arrangeValidCreate(saved);
             calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue('evt-1');
+            calendarSync.createCalendarEvent.mockResolvedValue({
+                outlookEventId: 'evt-1',
+                teamsJoinUrl: null,
+            });
 
             await useCase.execute(buildDto({ syncWithMicrosoft: true }));
 
             expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
                 validResponsableId,
                 expect.objectContaining({ subject: 'Llamada de seguimiento' }),
+                { onlineMeeting: false },
             );
             expect(saved.outlook_event_id).toBe('evt-1');
             expect(saved.teams_meeting_url).toBeNull();
@@ -240,10 +243,10 @@ describe('Activities module', () => {
             const saved = buildSavedActivity(TipoActividad.REUNION);
             arrangeValidCreate(saved);
             calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue('evt-1');
-            calendarSync.createTeamsMeeting.mockResolvedValue(
-                'https://teams.microsoft.com/l/meetup-join/xyz',
-            );
+            calendarSync.createCalendarEvent.mockResolvedValue({
+                outlookEventId: 'evt-1',
+                teamsJoinUrl: 'https://teams.microsoft.com/l/meetup-join/xyz',
+            });
 
             await useCase.execute(
                 buildDto({
@@ -253,6 +256,11 @@ describe('Activities module', () => {
                 }),
             );
 
+            expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
+                validResponsableId,
+                expect.any(Object),
+                { onlineMeeting: true },
+            );
             expect(saved.outlook_event_id).toBe('evt-1');
             expect(saved.teams_meeting_url).toBe(
                 'https://teams.microsoft.com/l/meetup-join/xyz',
@@ -260,11 +268,14 @@ describe('Activities module', () => {
         });
 
         // RN-004: solo REUNION puede generar Teams
-        it('should not create a Teams meeting for a non-REUNION activity', async () => {
+        it('should not request an online meeting for a non-REUNION activity', async () => {
             const saved = buildSavedActivity(TipoActividad.LLAMADA);
             arrangeValidCreate(saved);
             calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue('evt-1');
+            calendarSync.createCalendarEvent.mockResolvedValue({
+                outlookEventId: 'evt-1',
+                teamsJoinUrl: null,
+            });
 
             await useCase.execute(
                 buildDto({
@@ -274,7 +285,11 @@ describe('Activities module', () => {
                 }),
             );
 
-            expect(calendarSync.createTeamsMeeting).not.toHaveBeenCalled();
+            expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
+                validResponsableId,
+                expect.any(Object),
+                { onlineMeeting: false },
+            );
             expect(saved.teams_meeting_url).toBeNull();
         });
 

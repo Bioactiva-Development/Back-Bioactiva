@@ -41,7 +41,6 @@ describe('Integrations module', () => {
                 createCalendarEvent: jest.fn(),
                 updateCalendarEvent: jest.fn(),
                 deleteCalendarEvent: jest.fn(),
-                createTeamsMeeting: jest.fn(),
             };
             adapter = new MicrosoftCalendarSyncAdapter(
                 integrationRepository,
@@ -72,7 +71,7 @@ describe('Integrations module', () => {
         });
 
         describe('createCalendarEvent', () => {
-            it('resolves a fresh token and delegates to the provider', async () => {
+            it('resolves a fresh token and maps the provider result', async () => {
                 integrationRepository.findByUserId.mockResolvedValue(
                     connectedIntegration(),
                 );
@@ -80,16 +79,45 @@ describe('Integrations module', () => {
                     accessToken: 'access-1',
                     refreshToken: 'refresh-old',
                 });
-                microsoftProvider.createCalendarEvent.mockResolvedValue(
-                    'evt-1',
-                );
+                microsoftProvider.createCalendarEvent.mockResolvedValue({
+                    id: 'evt-1',
+                    joinUrl: null,
+                });
 
-                const id = await adapter.createCalendarEvent(1, eventInput);
+                const result = await adapter.createCalendarEvent(1, eventInput);
 
-                expect(id).toBe('evt-1');
+                expect(result).toEqual({
+                    outlookEventId: 'evt-1',
+                    teamsJoinUrl: null,
+                });
                 expect(
                     microsoftProvider.createCalendarEvent,
-                ).toHaveBeenCalledWith('access-1', eventInput);
+                ).toHaveBeenCalledWith('access-1', eventInput, undefined);
+            });
+
+            it('returns the Teams join URL for an online meeting', async () => {
+                integrationRepository.findByUserId.mockResolvedValue(
+                    connectedIntegration(),
+                );
+                microsoftProvider.refreshAccessToken.mockResolvedValue({
+                    accessToken: 'access-1',
+                    refreshToken: 'refresh-old',
+                });
+                microsoftProvider.createCalendarEvent.mockResolvedValue({
+                    id: 'evt-1',
+                    joinUrl: 'https://teams/join',
+                });
+
+                const result = await adapter.createCalendarEvent(1, eventInput, {
+                    onlineMeeting: true,
+                });
+
+                expect(result.teamsJoinUrl).toBe('https://teams/join');
+                expect(
+                    microsoftProvider.createCalendarEvent,
+                ).toHaveBeenCalledWith('access-1', eventInput, {
+                    onlineMeeting: true,
+                });
             });
 
             it('persists the rotated refresh token when Microsoft returns a new one', async () => {
@@ -102,9 +130,10 @@ describe('Integrations module', () => {
                     refreshToken: 'refresh-new',
                     expiresIn: 3600,
                 });
-                microsoftProvider.createCalendarEvent.mockResolvedValue(
-                    'evt-1',
-                );
+                microsoftProvider.createCalendarEvent.mockResolvedValue({
+                    id: 'evt-1',
+                    joinUrl: null,
+                });
 
                 await adapter.createCalendarEvent(1, eventInput);
 
@@ -123,25 +152,6 @@ describe('Integrations module', () => {
                 expect(
                     microsoftProvider.createCalendarEvent,
                 ).not.toHaveBeenCalled();
-            });
-        });
-
-        describe('createTeamsMeeting', () => {
-            it('returns the join URL from the provider', async () => {
-                integrationRepository.findByUserId.mockResolvedValue(
-                    connectedIntegration(),
-                );
-                microsoftProvider.refreshAccessToken.mockResolvedValue({
-                    accessToken: 'access-1',
-                    refreshToken: 'refresh-old',
-                });
-                microsoftProvider.createTeamsMeeting.mockResolvedValue(
-                    'https://teams/join',
-                );
-
-                const url = await adapter.createTeamsMeeting(1, eventInput);
-
-                expect(url).toBe('https://teams/join');
             });
         });
     });
