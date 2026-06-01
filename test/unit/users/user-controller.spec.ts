@@ -2,6 +2,8 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { UserController } from '@/modules/users/infrastructure/http/user.controller';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
+import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
+import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
 
 describe('UserController', () => {
     let controller: UserController;
@@ -14,6 +16,8 @@ describe('UserController', () => {
             controllers: [UserController],
             providers: [
                 { provide: GetAllUsersUseCase, useValue: getAllUsersUseCase },
+                { provide: DisableUserUseCase, useValue: { execute: jest.fn() } },
+                { provide: EnableUserUseCase, useValue: { execute: jest.fn() } },
             ],
         }).compile();
 
