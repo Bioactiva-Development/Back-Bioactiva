@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, Min, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
+import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListCotizacionesQueryDto {
     @ApiPropertyOptional({ description: 'Filtrar por ID del lead' })
@@ -31,6 +32,7 @@ export class ListCotizacionesQueryDto {
     @ApiPropertyOptional({ description: 'Fecha hasta (ISO 8601)' })
     @IsOptional()
     @IsDateString()
+    @IsAfterOrEqualDate('fechaDesde')
     fechaHasta?: string;
 
     @ApiPropertyOptional({ description: 'Número de página', default: 1 })
