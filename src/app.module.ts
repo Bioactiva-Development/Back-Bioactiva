@@ -14,6 +14,7 @@ import { InvitationsModule } from '@/modules/invitations/invitations.module';
 import { ResetPasswordModule } from '@/modules/reset_password/reset-password.module';
 import { LeadsModule } from '@/modules/leads/leads.module';
 import { ActivitiesModule } from '@/modules/activities/activities.module';
+import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
 
 @Module({
     imports: [
@@ -26,6 +27,7 @@ import { ActivitiesModule } from '@/modules/activities/activities.module';
         ResetPasswordModule,
         LeadsModule,
         ActivitiesModule,
+        MicrosoftIntegrationModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
