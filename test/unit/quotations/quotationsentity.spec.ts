@@ -24,6 +24,7 @@ describe('Cotizacion entity domain rules', () => {
             'https://proposal.techcorp.com/cot-001',
             1,
             1,
+            1,
             createdAt,
             createdAt,
             null,

@@ -69,6 +69,7 @@ export class CotizacionMapper {
             record.linkPropuesta,
             record.idLead,
             record.idRemitente,
+            record.idAuthor,
             record.createdAt,
             record.updatedAt,
             record.deletedAt,
@@ -79,6 +80,7 @@ export class CotizacionMapper {
         return {
             lead: { connect: { id: cotizacion.id_lead } },
             remitente: { connect: { id: cotizacion.id_remitente } },
+            author: { connect: { id: cotizacion.id_author } },
             fechaCot: cotizacion.fecha_cot,
             dirigido: cotizacion.dirigido,
             cliente: cotizacion.cliente,

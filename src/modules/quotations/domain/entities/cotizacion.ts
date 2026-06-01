@@ -18,6 +18,7 @@ export class Cotizacion {
         public link_propuesta: string | null,
         public id_lead: number,
         public id_remitente: number,
+        public readonly id_author: number,
         public readonly created_at: Date,
         public updated_at: Date,
         public deleted_at: Date | null,

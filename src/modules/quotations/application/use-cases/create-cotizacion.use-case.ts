@@ -15,7 +15,8 @@ import { CreateCotizacionDto } from '@/modules/quotations/application/dto/create
 import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
-import { CotizacionNotFoundException } from '@/modules/quotations/domain/exceptions/cotizacion-not-found.exception';
+import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { UserNotFoundException } from '@/modules/users/domain/exceptions/user-not-found.exception';
 
 export class CreateCotizacionUseCase {
     constructor(
@@ -30,14 +31,14 @@ export class CreateCotizacionUseCase {
     async execute(dto: CreateCotizacionDto) {
         const lead = await this.leadRepository.findById(dto.idLead);
         if (!lead) {
-            throw new CotizacionNotFoundException(
+            throw new LeadNotFoundException(
                 `Lead con id ${dto.idLead} no encontrado`,
             );
         }
 
         const remitente = await this.userRepository.findById(dto.idRemitente);
         if (!remitente) {
-            throw new CotizacionNotFoundException(
+            throw new UserNotFoundException(
                 `Remitente con id ${dto.idRemitente} no encontrado`,
             );
         }
@@ -57,6 +58,7 @@ export class CreateCotizacionUseCase {
             dto.linkPropuesta,
             dto.idLead,
             dto.idRemitente,
+            dto.idAuthor,
             new Date(),
             new Date(),
             null,

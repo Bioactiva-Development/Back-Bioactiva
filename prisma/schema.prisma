@@ -160,7 +160,8 @@ model Usuario {
   contactosCreados      Contacto[]
   leadsCreados          Lead[]
   actividadesAsignadas  Actividad[] @relation("ResponsableActividad")
-  cotizacionesEmitidas  Cotizacion[]
+  cotizacionesEmitidas  Cotizacion[] @relation("CotizacionRemitente")
+  cotizacionesCreadas   Cotizacion[]
   tokensInvitados       UserToken[] @relation("Invitador")
   integracionMicrosoft  IntegracionMicrosoft?
   notificaciones        Notificacion[]
@@ -365,7 +366,10 @@ model Cotizacion {
   lead Lead @relation(fields: [idLead], references: [id])
 
   idRemitente Int
-  remitente Usuario @relation(fields: [idRemitente], references: [id])
+  remitente Usuario @relation("CotizacionRemitente", fields: [idRemitente], references: [id])
+
+  idAuthor Int
+  author Usuario @relation(fields: [idAuthor], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
