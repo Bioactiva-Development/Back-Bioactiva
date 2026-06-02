@@ -1,5 +1,8 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
+import {
+    IContactRepository,
+    ContactWithOrgName,
+} from '@/modules/contacts/domain/ports/contact.repository';
 
 export class GetAllContactsUseCase {
     constructor(

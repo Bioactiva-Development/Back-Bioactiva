@@ -12,6 +12,10 @@ import { OrganizationsModule } from '@/modules/organizations/organizations.modul
 import { ContactsModule } from '@/modules/contacts/contacts.module';
 import { InvitationsModule } from '@/modules/invitations/invitations.module';
 import { ResetPasswordModule } from '@/modules/reset_password/reset-password.module';
+import { LeadsModule } from '@/modules/leads/leads.module';
+import { ActivitiesModule } from '@/modules/activities/activities.module';
+import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
+import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
 
 @Module({
     imports: [
@@ -22,6 +26,10 @@ import { ResetPasswordModule } from '@/modules/reset_password/reset-password.mod
         ContactsModule,
         InvitationsModule,
         ResetPasswordModule,
+        LeadsModule,
+        ActivitiesModule,
+        MicrosoftIntegrationModule,
+        CotizacionesModule,
 
         ConfigModule.forRoot({
             isGlobal: true,

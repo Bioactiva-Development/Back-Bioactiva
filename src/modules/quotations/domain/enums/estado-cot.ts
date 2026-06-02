@@ -1,6 +1,6 @@
 export enum EstadoCot {
-    ENVIADA,
-    ACEPTADA,
-    RECHAZADA,
-    PENDIENTE,
+    PENDIENTE = 'PENDIENTE',
+    ENVIADA = 'ENVIADA',
+    ACEPTADA = 'ACEPTADA',
+    RECHAZADA = 'RECHAZADA',
 }

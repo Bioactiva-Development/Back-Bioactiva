@@ -42,7 +42,11 @@ export class ContactController {
 
     @Post()
     @ApiOperation({ summary: 'Registrar un nuevo contacto' })
-    @ApiResponse({ status: 201, description: 'Contacto creado exitosamente', type: ContactResponseDto })
+    @ApiResponse({
+        status: 201,
+        description: 'Contacto creado exitosamente',
+        type: ContactResponseDto,
+    })
     @ApiResponse({
         status: 409,
         description: 'El correo electrónico ya existe',
@@ -69,7 +73,11 @@ export class ContactController {
 
     @Get()
     @ApiOperation({ summary: 'Listar todos los contactos' })
-    @ApiResponse({ status: 200, description: 'Listado de contactos obtenido', type: [ContactResponseDto] })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado de contactos obtenido',
+        type: [ContactResponseDto],
+    })
     async findAll(): Promise<ContactResponseDto[]> {
         const result = await this.getAllContactsUseCase.execute();
         return result.map((r) => new ContactResponseDto(r));
@@ -82,16 +90,25 @@ export class ContactController {
         description: 'Listado de contactos por organización obtenido',
         type: [ContactResponseDto],
     })
-    async findByOrganization(@Param('idOrganizacion') idOrganizacion: string): Promise<ContactResponseDto[]> {
-        const result = await this.getContactsByOrgUseCase.execute(idOrganizacion);
+    async findByOrganization(
+        @Param('idOrganizacion') idOrganizacion: string,
+    ): Promise<ContactResponseDto[]> {
+        const result =
+            await this.getContactsByOrgUseCase.execute(idOrganizacion);
         return result.map((r) => new ContactResponseDto(r));
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Consultar detalle de un contacto por ID' })
-    @ApiResponse({ status: 200, description: 'Detalle del contacto obtenido', type: ContactResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Detalle del contacto obtenido',
+        type: ContactResponseDto,
+    })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
-    async findOne(@Param('id', ParseIntPipe) id: number): Promise<ContactResponseDto> {
+    async findOne(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<ContactResponseDto> {
         const enriched = await this.getContactByIdUseCase.execute(id);
         return new ContactResponseDto(enriched);
     }

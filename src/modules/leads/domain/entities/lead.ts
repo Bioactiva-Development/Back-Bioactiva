@@ -1,8 +1,9 @@
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { InvalidLeadResponsibleException } from '@/modules/leads/domain/exceptions/invalid-lead-responsible.exception';
 
 export class Lead {
     constructor(
-        public readonly id: number,
+        public readonly id: number | null,
         public id_org: string,
         public id_contacto: number | null,
         public estado: LeadState,
@@ -15,23 +16,28 @@ export class Lead {
         public id_author: number,
         public created_at: Date,
         public updated_at: Date,
+        public deleted_at: Date | null,
+        public ultimo_cambio: Date,
     ) {}
 
     changeState(estado: LeadState) {
         this.estado = estado;
         this.updated_at = new Date();
+        this.ultimo_cambio = new Date();
     }
 
     assignResponsible(idEncargado: number) {
         if (this.id_encargado === idEncargado) {
-            throw new Error('El encargado ya está asignado');
+            throw new InvalidLeadResponsibleException(
+                'El encargado ya está asignado',
+            );
         }
         this.id_encargado = idEncargado;
         this.updated_at = new Date();
     }
 
-    attachContact(idContacto: number | null) {
-        this.id_contacto = idContacto;
+    markAsDeleted() {
+        this.deleted_at = new Date();
         this.updated_at = new Date();
     }
 }

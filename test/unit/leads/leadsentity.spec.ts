@@ -2,152 +2,148 @@ import { describe, expect, it } from '@jest/globals';
 
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { InvalidLeadResponsibleException } from '@/modules/leads/domain/exceptions/invalid-lead-responsible.exception';
 
 describe('Leads module', () => {
-	/**
-	 * Lead entity
-	 * ----------
-	 * Responsable de:
-	 * - cambiar estado del lead en el pipeline
-	 * - asignar responsable del lead
-	 * - vincular/desvinular contacto con lead
-	 * - mantener trazabilidad de cambios
-	 */
-	// STATUS: Implementación completa (métodos de dominio y reglas de asignación).
-	describe('Lead entity domain rules', () => {
-		const createdAt = new Date('2024-01-01T00:00:00.000Z');
+    describe('Lead entity domain rules', () => {
+        const createdAt = new Date('2024-01-01T00:00:00.000Z');
 
-		const buildLead = () =>
-			new Lead(
-				1,
-				'org-1',
-				5,
-				LeadState.EN_PROSPECTO,
-				'Desarrollo de sitio web',
-				'Cliente interesado en soluciones custom',
-				'Necesita migrar de plataforma antigua',
-				'Contacto activo y comprometido',
-				1,
-				'LinkedIn',
-				1,
-				createdAt,
-				createdAt,
-			);
+        const buildLead = () =>
+            new Lead(
+                1,
+                'org-1',
+                5,
+                LeadState.EN_PROSPECTO,
+                'Desarrollo de sitio web',
+                'Cliente interesado en soluciones custom',
+                'Necesita migrar de plataforma antigua',
+                'Contacto activo y comprometido',
+                1,
+                'LinkedIn',
+                1,
+                createdAt,
+                createdAt,
+                null,
+                createdAt,
+            );
 
-		it('should change lead state and update timestamp', () => {
-			const lead = buildLead();
-			const oldUpdatedAt = lead.updated_at;
+        it('should change lead state and update timestamps', () => {
+            const lead = buildLead();
+            const oldUpdatedAt = lead.updated_at;
+            const oldUltimoCambio = lead.ultimo_cambio;
 
-			lead.changeState(LeadState.OFERTADO);
+            lead.changeState(LeadState.OFERTADO);
 
-			expect(lead.estado).toBe(LeadState.OFERTADO);
-			expect(lead.updated_at.getTime()).toBeGreaterThan(
-				oldUpdatedAt.getTime(),
-			);
-		});
+            expect(lead.estado).toBe(LeadState.OFERTADO);
+            expect(lead.updated_at.getTime()).toBeGreaterThan(
+                oldUpdatedAt.getTime(),
+            );
+            expect(lead.ultimo_cambio.getTime()).toBeGreaterThan(
+                oldUltimoCambio.getTime(),
+            );
+        });
 
-		it('should allow transitioning through different states', () => {
-			const lead = buildLead();
+        it('should allow transitioning through different states', () => {
+            const lead = buildLead();
 
-			lead.changeState(LeadState.OFERTADO);
-			expect(lead.estado).toBe(LeadState.OFERTADO);
+            lead.changeState(LeadState.OFERTADO);
+            expect(lead.estado).toBe(LeadState.OFERTADO);
 
-			lead.changeState(LeadState.CIERRE_CON_VENTA);
-			expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
+            lead.changeState(LeadState.CIERRE_CON_VENTA);
+            expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
 
-			lead.changeState(LeadState.EN_PROSPECTO);
-			expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
-		});
+            lead.changeState(LeadState.EN_PROSPECTO);
+            expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
+        });
 
-		it('should assign new responsible user', () => {
-			const lead = buildLead();
-			const oldUpdatedAt = lead.updated_at;
-			const newResponsibleId = 5;
+        it('should assign new responsible user', () => {
+            const lead = buildLead();
+            const oldUpdatedAt = lead.updated_at;
+            const newResponsibleId = 5;
 
-			lead.assignResponsible(newResponsibleId);
+            lead.assignResponsible(newResponsibleId);
 
-			expect(lead.id_encargado).toBe(newResponsibleId);
-			expect(lead.updated_at.getTime()).toBeGreaterThan(
-				oldUpdatedAt.getTime(),
-			);
-		});
+            expect(lead.id_encargado).toBe(newResponsibleId);
+            expect(lead.updated_at.getTime()).toBeGreaterThan(
+                oldUpdatedAt.getTime(),
+            );
+        });
 
-		it('should throw error when assigning same responsible', () => {
-			const lead = buildLead();
-			const currentResponsibleId = lead.id_encargado;
-			const updatedAtBeforeError = lead.updated_at;
+        it('should throw error when assigning same responsible', () => {
+            const lead = buildLead();
+            const currentResponsibleId = lead.id_encargado;
+            const updatedAtBeforeError = lead.updated_at;
 
-			expect(() =>
-				lead.assignResponsible(currentResponsibleId),
-			).toThrow('El encargado ya está asignado');
-			expect(lead.id_encargado).toBe(currentResponsibleId); // Unchanged
-			expect(lead.updated_at).toEqual(updatedAtBeforeError); // Timestamp unchanged
-		});
+            expect(() => lead.assignResponsible(currentResponsibleId)).toThrow(
+                InvalidLeadResponsibleException,
+            );
+            expect(lead.id_encargado).toBe(currentResponsibleId);
+            expect(lead.updated_at).toEqual(updatedAtBeforeError);
+        });
 
-		it('should allow reassigning to different responsible after clear', () => {
-			const lead = buildLead();
-			lead.assignResponsible(5);
-			lead.assignResponsible(10); // Different ID should work
+        it('should allow reassigning to different responsible after clear', () => {
+            const lead = buildLead();
+            lead.assignResponsible(5);
+            lead.assignResponsible(10);
 
-			expect(lead.id_encargado).toBe(10);
-		});
+            expect(lead.id_encargado).toBe(10);
+        });
 
-		it('should attach contact to lead', () => {
-			const lead = buildLead();
-			const oldUpdatedAt = lead.updated_at;
+        it('should preserve other lead properties during state changes', () => {
+            const lead = buildLead();
+            const originalOrg = lead.id_org;
+            const originalResponsible = lead.id_encargado;
 
-			lead.attachContact(42);
+            lead.changeState(LeadState.CIERRE_CON_VENTA);
 
-			expect(lead.id_contacto).toBe(42);
-			expect(lead.updated_at.getTime()).toBeGreaterThan(
-				oldUpdatedAt.getTime(),
-			);
-		});
+            expect(lead.id_org).toBe(originalOrg);
+            expect(lead.id_encargado).toBe(originalResponsible);
+        });
 
-		it('should allow detaching contact by setting to null', () => {
-			const lead = buildLead();
-			lead.attachContact(42);
-			const updatedAtAfterAttach = lead.updated_at;
+        it('should allow multiple state changes and assignments', () => {
+            const lead = buildLead();
 
-			lead.attachContact(null);
+            lead.changeState(LeadState.OFERTADO);
+            lead.assignResponsible(5);
+            lead.changeState(LeadState.CIERRE_CON_VENTA);
+            lead.assignResponsible(7);
 
-			expect(lead.id_contacto).toBeNull();
-			expect(lead.updated_at.getTime()).toBeGreaterThanOrEqual(
-				updatedAtAfterAttach.getTime(),
-			);
-		});
+            expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
+            expect(lead.id_encargado).toBe(7);
+        });
 
-		it('should allow attaching different contact', () => {
-			const lead = buildLead();
-			lead.attachContact(42);
-			lead.attachContact(99);
+        describe('markAsDeleted', () => {
+            it('should set deleted_at when marking as deleted', () => {
+                const lead = buildLead();
 
-			expect(lead.id_contacto).toBe(99);
-		});
+                expect(lead.deleted_at).toBeNull();
 
-		it('should preserve other lead properties during state changes', () => {
-			const lead = buildLead();
-			const originalOrg = lead.id_org;
-			const originalResponsible = lead.id_encargado;
+                lead.markAsDeleted();
 
-			lead.changeState(LeadState.CIERRE_CON_VENTA);
+                expect(lead.deleted_at).toBeInstanceOf(Date);
+            });
 
-			expect(lead.id_org).toBe(originalOrg);
-			expect(lead.id_encargado).toBe(originalResponsible);
-		});
+            it('should update updated_at when marking as deleted', () => {
+                const lead = buildLead();
+                const oldUpdatedAt = lead.updated_at;
 
-		it('should allow multiple state changes and assignments', () => {
-			const lead = buildLead();
+                lead.markAsDeleted();
 
-			lead.changeState(LeadState.OFERTADO);
-			lead.assignResponsible(5);
-			lead.attachContact(10);
-			lead.changeState(LeadState.CIERRE_CON_VENTA);
-			lead.assignResponsible(7);
+                expect(lead.updated_at.getTime()).toBeGreaterThan(
+                    oldUpdatedAt.getTime(),
+                );
+            });
 
-			expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
-			expect(lead.id_encargado).toBe(7);
-			expect(lead.id_contacto).toBe(10);
-		});
-	});
+            it('should preserve lead properties when marking as deleted', () => {
+                const lead = buildLead();
+                const originalOrg = lead.id_org;
+                const originalState = lead.estado;
+
+                lead.markAsDeleted();
+
+                expect(lead.id_org).toBe(originalOrg);
+                expect(lead.estado).toBe(originalState);
+            });
+        });
+    });
 });
