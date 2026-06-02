@@ -78,6 +78,16 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE')
                 ]) {
                     sh '''
+                        echo "=== ENV FILE ==="
+                        cat "$ENV_FILE"
+
+                        echo ""
+                        echo "=== VARIABLES DE ENTORNO CARGADAS ==="
+                        set -a
+                        . "$ENV_FILE"
+                        set +a
+                        env | sort
+
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
