@@ -263,5 +263,60 @@ describe('Organizations module', () => {
 
 			expect(result.updatedAt.getTime()).toBeGreaterThanOrEqual(beforeUpdate.getTime());
 		});
+
+		it('should update subArea when provided', async () => {
+			const updateDto: UpdateOrganizationDto = { subArea: 'Nuevo SubArea' };
+
+			(mockRepository.findById as jest.Mock).mockResolvedValue(existingOrg);
+			(mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+			await useCase.execute('org-1', updateDto);
+
+			expect(mockRepository.save).toHaveBeenCalled();
+		});
+
+		it('should update linkedin when provided', async () => {
+			const updateDto: UpdateOrganizationDto = { linkedin: 'https://linkedin.com/company/new' };
+
+			(mockRepository.findById as jest.Mock).mockResolvedValue(existingOrg);
+			(mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+			await useCase.execute('org-1', updateDto);
+
+			expect(mockRepository.save).toHaveBeenCalled();
+		});
+
+		it('should update actividadEconomica when provided', async () => {
+			const updateDto: UpdateOrganizationDto = { actividadEconomica: 'Nueva Actividad' };
+
+			(mockRepository.findById as jest.Mock).mockResolvedValue(existingOrg);
+			(mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+			await useCase.execute('org-1', updateDto);
+
+			expect(mockRepository.save).toHaveBeenCalled();
+		});
+
+		it('should update alianzasEstrategicas when provided', async () => {
+			const updateDto: UpdateOrganizationDto = { alianzasEstrategicas: 'Aliado1, Aliado2' };
+
+			(mockRepository.findById as jest.Mock).mockResolvedValue(existingOrg);
+			(mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+			await useCase.execute('org-1', updateDto);
+
+			expect(mockRepository.save).toHaveBeenCalled();
+		});
+
+		it('should update idContactoActivo when provided', async () => {
+			const updateDto: UpdateOrganizationDto = { idContactoActivo: 5 };
+
+			(mockRepository.findById as jest.Mock).mockResolvedValue(existingOrg);
+			(mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+			await useCase.execute('org-1', updateDto);
+
+			expect(mockRepository.save).toHaveBeenCalled();
+		});
 	});
 });

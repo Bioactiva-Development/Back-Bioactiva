@@ -91,6 +91,40 @@ describe('Contacts module', () => {
 			);
 		});
 
+		it('should create contact with secondary email when it is unique', async () => {
+			const dtoWithSecondaryEmail = {
+				...createContactDto,
+				correo2: 'new.secondary@example.com',
+			};
+
+			contactRepository.findByEmail.mockResolvedValue(null);
+			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+			const savedContact = new Contact(
+				1,
+				dtoWithSecondaryEmail.nombres,
+				dtoWithSecondaryEmail.apellidos,
+				dtoWithSecondaryEmail.vocativo,
+				dtoWithSecondaryEmail.cargo,
+				dtoWithSecondaryEmail.correo,
+				dtoWithSecondaryEmail.telefono,
+				'new.secondary@example.com',
+				dtoWithSecondaryEmail.comentarios,
+				dtoWithSecondaryEmail.idOrganizacion,
+				dtoWithSecondaryEmail.idAuthor,
+				new Date(),
+				new Date(),
+			);
+			contactRepository.save.mockResolvedValue(savedContact);
+			contactRepository.findByIdWithOrganization.mockResolvedValue(savedContact);
+
+			const result = await useCase.execute(dtoWithSecondaryEmail);
+
+			expect(result.correo2).toBe('new.secondary@example.com');
+			expect(contactRepository.findBySecondaryEmail).toHaveBeenCalledWith(
+				'new.secondary@example.com',
+			);
+		});
+
 		it('should throw error when secondary email already exists', async () => {
 			const dtoWithSecondaryEmail = {
 				...createContactDto,

@@ -18,21 +18,8 @@ export class UpdateContactUseCase {
         const contact = await this.contactRepository.findById(id);
         if (!contact) throw new ContactNotFoundException(id);
 
-        if (dto.correo && dto.correo !== contact.correo) {
-            const emailExists = await this.contactRepository.findByEmail(
-                dto.correo,
-            );
-            if (emailExists) throw new EmailAlreadyExistsException(dto.correo);
-            contact.correo = dto.correo;
-        }
-
-        if (dto.correo2 && dto.correo2 !== contact.correo2) {
-            const email2Exists =
-                await this.contactRepository.findBySecondaryEmail(dto.correo2);
-            if (email2Exists)
-                throw new EmailAlreadyExistsException(dto.correo2);
-            contact.correo2 = dto.correo2;
-        }
+        if (dto.correo) await this.updateEmail(contact, dto.correo);
+        if (dto.correo2) await this.updateSecondaryEmail(contact, dto.correo2);
 
         if (dto.nombres) contact.nombres = dto.nombres;
         if (dto.apellidos !== undefined) contact.apellidos = toNull(dto.apellidos);
@@ -47,5 +34,19 @@ export class UpdateContactUseCase {
         const saved = await this.contactRepository.save(contact);
         const enriched = await this.contactRepository.findByIdWithOrganization(saved.id);
         return enriched!;
+    }
+
+    private async updateEmail(contact: Contact, newCorreo: string): Promise<void> {
+        if (newCorreo === contact.correo) return;
+        const emailExists = await this.contactRepository.findByEmail(newCorreo);
+        if (emailExists) throw new EmailAlreadyExistsException(newCorreo);
+        contact.correo = newCorreo;
+    }
+
+    private async updateSecondaryEmail(contact: Contact, newCorreo2: string): Promise<void> {
+        if (newCorreo2 === contact.correo2) return;
+        const email2Exists = await this.contactRepository.findBySecondaryEmail(newCorreo2);
+        if (email2Exists) throw new EmailAlreadyExistsException(newCorreo2);
+        contact.correo2 = newCorreo2;
     }
 }

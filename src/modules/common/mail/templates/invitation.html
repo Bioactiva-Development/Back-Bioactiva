@@ -48,7 +48,7 @@
 				margin-bottom: 18px;
 				padding: 8px 14px;
 				border-radius: 9999px;
-				background: rgba(164, 245, 174, 0.18);
+				background: #15803d;
 				color: #ffffff;
 				font-size: 12px;
 				font-weight: 700;
@@ -170,6 +170,7 @@
 				color: #5a605b;
 			}
 
+			/* Mantenido para compatibilidad web */
 			.link {
 				color: #09612a;
 				text-decoration: none;
@@ -248,14 +249,42 @@
 							</div>
 						</div>
 
-						<a class="cta" href="{{invitationLink}}" target="_blank" rel="noreferrer">
+						<a
+							class="cta"
+							href="{{invitationLink}}"
+							target="_blank"
+							rel="noreferrer"
+							style="
+								display: inline-block;
+								padding: 16px 28px;
+								border-radius: 9999px;
+								background: linear-gradient(135deg, #09612a 0%, #2c7a40 100%);
+								color: #ffffff !important;
+								font-size: 15px;
+								font-weight: 700;
+								text-decoration: none !important;
+								box-shadow: 0 14px 30px rgba(9, 97, 42, 0.18);
+								-webkit-text-fill-color: #ffffff;
+							"
+						>
 							Aceptar invitación
 						</a>
 
 						<p class="cta-note">
 							Si el botón no funciona, copia y pega este enlace en tu navegador:
 							<br />
-							<a class="link" href="{{invitationLink}}" target="_blank" rel="noreferrer">{{invitationLink}}</a>
+							<a
+								class="link"
+								href="{{invitationLink}}"
+								target="_blank"
+								rel="noreferrer"
+								style="
+									color: #09612a !important;
+									text-decoration: none !important;
+									font-weight: 700;
+									-webkit-text-fill-color: #09612a;
+								"
+							>{{invitationLink}}</a>
 						</p>
 					</div>
 				</div>

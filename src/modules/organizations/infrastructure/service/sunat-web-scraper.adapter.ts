@@ -149,10 +149,14 @@ export class SunatWebScraperAdapter implements ISunatService {
             return null;
         }
 
-        const rucMatch = rawRuc.match(/^(\d{11})\s*-\s*([^\n\r]+)$/);
+        const rucParts = rawRuc.split('-').map((part) => part.trim());
+        const isValidRucDash =
+            rucParts.length >= 2 &&
+            rucParts[0].length === 11 &&
+            rucParts[0].split('').every((ch) => ch >= '0' && ch <= '9');
 
-        const ruc = rucMatch ? rucMatch[1] : rawRuc;
-        const razonSocial = rucMatch ? rucMatch[2].trim() : '';
+        const ruc = isValidRucDash ? rucParts[0] : rawRuc;
+        const razonSocial = isValidRucDash ? rucParts.slice(1).join(' - ').trim() : '';
 
         const actividadEconomica =
             res.actividad_economica ??
