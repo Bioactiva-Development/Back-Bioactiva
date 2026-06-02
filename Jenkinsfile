@@ -74,9 +74,8 @@ pipeline {
                 branch 'testing'
             }
             steps {
-                // TODO: usar una credencial dedicada por ambiente (ej. BIOACTIVA-SECRETS-TESTING) a futuro
                 withCredentials([
-                    file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
+                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE')
                 ]) {
                     sh '''
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
@@ -102,9 +101,8 @@ pipeline {
                 branch 'development'
             }
             steps {
-                // TODO: usar una credencial dedicada por ambiente (ej. BIOACTIVA-SECRETS-DEV) a futuro
                 withCredentials([
-                    file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
+                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_DEV', variable: 'ENV_FILE')
                 ]) {
                     sh '''
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
