@@ -89,3 +89,4 @@ SKILL.md
 
 # symlink para importar sunat-app como módulo Python
 sunat_app
+*.deploy

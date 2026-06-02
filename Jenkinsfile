@@ -14,6 +14,9 @@ pipeline {
         }
 
         stage('Test') {
+            when {
+                branch 'testing'
+            }
             agent {
                 docker {
                     image 'node:22-slim'
@@ -30,6 +33,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            when {
+                branch 'testing'
+            }
             agent {
                 docker {
                     image 'node:22-slim'
@@ -53,6 +59,9 @@ pipeline {
         }
 
         stage('Quality Gate') {
+            when {
+                branch 'testing'
+            }
             steps {
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: false
@@ -60,24 +69,56 @@ pipeline {
             }
         }
 
-        stage('Deploy (Docker Compose)') {
+        stage('Deploy Testing (Docker Compose)') {
+            when {
+                branch 'testing'
+            }
             steps {
+                // TODO: usar una credencial dedicada por ambiente (ej. BIOACTIVA-SECRETS-TESTING) a futuro
                 withCredentials([
                     file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
                 ]) {
                     sh '''
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
-                            -p back-bioactiva \
+                            -p back-bioactiva-testing \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
-                            --profile prod \
+                            --profile testing \
                             down
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
-                            -p back-bioactiva \
+                            -p back-bioactiva-testing \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
-                            --profile prod \
+                            --profile testing \
+                            up -d --build
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Development (Docker Compose)') {
+            when {
+                branch 'development'
+            }
+            steps {
+                // TODO: usar una credencial dedicada por ambiente (ej. BIOACTIVA-SECRETS-DEV) a futuro
+                withCredentials([
+                    file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
+                ]) {
+                    sh '''
+                        BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
+                            -p back-bioactiva-development \
+                            -f docker-compose.yml \
+                            --env-file "$ENV_FILE" \
+                            --profile development \
+                            down
+
+                        BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
+                            -p back-bioactiva-development \
+                            -f docker-compose.yml \
+                            --env-file "$ENV_FILE" \
+                            --profile development \
                             up -d --build
                     '''
                 }
