@@ -91,5 +91,19 @@ describe('Notifications module', () => {
 
             expect(notificacion.estado).toBe(EstadoNotificacion.NO_LEIDA);
         });
+
+        it('should use default NO_LEIDA state when not provided', () => {
+            const notificacion = new Notificacion(
+                3,
+                'Default',
+                'Mensaje default',
+                undefined as any,
+                3,
+                44,
+                createdAt,
+            );
+
+            expect(notificacion.estado).toBe(EstadoNotificacion.NO_LEIDA);
+        });
     });
 });

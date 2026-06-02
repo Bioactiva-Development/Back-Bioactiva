@@ -157,5 +157,79 @@ describe('Contacts module', () => {
 
             expect(result.vocativo).toBe(Vocative.SRA);
         });
+
+        it('should update contact email when new email is unique', async () => {
+            contactRepository.findById.mockResolvedValue(mockContact);
+            contactRepository.findByEmail.mockResolvedValue(null);
+            const savedContact = {
+                ...mockContact,
+                correo: 'newemail@example.com',
+            };
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
+
+            const result = await useCase.execute(1, {
+                correo: 'newemail@example.com',
+            });
+
+            expect(result.correo).toBe('newemail@example.com');
+            expect(contactRepository.findByEmail).toHaveBeenCalledWith(
+                'newemail@example.com',
+            );
+        });
+
+        it('should update contact secondary email when new secondary email is unique', async () => {
+            contactRepository.findById.mockResolvedValue(mockContact);
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const savedContact = {
+                ...mockContact,
+                correo2: 'new.secondary@example.com',
+            };
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
+
+            const result = await useCase.execute(1, {
+                correo2: 'new.secondary@example.com',
+            });
+
+            expect(result.correo2).toBe('new.secondary@example.com');
+            expect(contactRepository.findBySecondaryEmail).toHaveBeenCalledWith(
+                'new.secondary@example.com',
+            );
+        });
+
+        it('should reject duplicate secondary email', async () => {
+            const existingContact = new Contact(
+                3,
+                'Other',
+                'User',
+                Vocative.SR,
+                'Test',
+                'other@example.com',
+                null,
+                'existing.secondary@example.com',
+                null,
+                'org-456',
+                2,
+                new Date('2024-01-01'),
+                new Date('2024-01-01'),
+            );
+
+            contactRepository.findById.mockResolvedValue(mockContact);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(
+                existingContact,
+            );
+
+            await expect(
+                useCase.execute(1, {
+                    correo2: 'existing.secondary@example.com',
+                }),
+            ).rejects.toThrow();
+        });
     });
 });

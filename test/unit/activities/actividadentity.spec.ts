@@ -179,6 +179,29 @@ describe('Activities module', () => {
             });
         });
 
+        it('should use default PENDIENTE state when not provided', () => {
+            const actividad = new Actividad(
+                10,
+                'Default state test',
+                fechaInicio,
+                fechaFin,
+                TipoActividad.REUNION,
+                undefined as any, // Will use default
+                null,
+                null,
+                false,
+                null,
+                false,
+                1,
+                1,
+                createdAt,
+                updatedAt,
+                null,
+            );
+
+            expect(actividad.estado).toBe(EstadoActividad.PENDIENTE);
+        });
+
         it('should preserve activity data during state transitions', () => {
             const actividad = buildActividad();
             const originalNombre = actividad.nombre_actividad;

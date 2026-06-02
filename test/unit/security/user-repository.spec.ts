@@ -1,9 +1,8 @@
-import { describe, expect, it, beforeEach } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { PrismaUserRepository } from '@/modules/users/infrastructure/persistance/prisma-user.repository';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
-import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 
 describe('Users module', () => {
     /**
@@ -26,7 +25,7 @@ describe('Users module', () => {
             nombres: 'Juan',
             apellidos: 'Pérez',
             correo: 'juan@example.com',
-            contraseña_hash: 'hashed_password',
+            password: 'hashed_password',
             estado: 'ACTIVO' as const,
             rol: 'ADMINISTRADOR' as const,
             createdAt: new Date('2024-01-01'),
@@ -41,6 +40,7 @@ describe('Users module', () => {
                     create: jest.fn(),
                     update: jest.fn(),
                     count: jest.fn(),
+                    findMany: jest.fn(),
                 },
             };
 
@@ -218,6 +218,146 @@ describe('Users module', () => {
                 });
 
                 expect(result).toBe(0);
+            });
+        });
+
+        describe('findAll', () => {
+            it('should return all users with default pagination', async () => {
+                (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mockResolvedValue([mockUserData]);
+
+                const result = await repository.findAll();
+
+                expect(mockPrismaClient.usuario.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        skip: 0,
+                        take: 10,
+                    }),
+                );
+                expect(result).toHaveLength(1);
+                expect(result[0].correo).toBe('juan@example.com');
+            });
+
+            it('should apply search filter correctly', async () => {
+                (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mockResolvedValue([]);
+
+                await repository.findAll({ search: 'juan', page: 1, limit: 5 });
+
+                const callArgs = (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mock.calls[0][0];
+                expect(callArgs.where).toEqual({
+                    OR: [
+                        { nombres: { contains: 'juan', mode: 'insensitive' } },
+                        { correo: { contains: 'juan', mode: 'insensitive' } },
+                    ],
+                });
+                expect(callArgs.skip).toBe(0);
+                expect(callArgs.take).toBe(5);
+            });
+
+            it('should apply role and estado filters', async () => {
+                (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mockResolvedValue([]);
+
+                await repository.findAll({
+                    role: UserRole.ADMINISTRADOR,
+                    estado: UserState.ACTIVO,
+                });
+
+                const callArgs = (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mock.calls[0][0];
+                expect(callArgs.where.rol).toBe('ADMINISTRADOR');
+                expect(callArgs.where.estado).toBe('ACTIVO');
+            });
+
+            it('should handle empty results', async () => {
+                (
+                    mockPrismaClient.usuario.findMany as jest.Mock
+                ).mockResolvedValue([]);
+
+                const result = await repository.findAll();
+
+                expect(result).toEqual([]);
+            });
+        });
+
+        describe('countAll', () => {
+            it('should count users without filters', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    10,
+                );
+
+                const result = await repository.countAll();
+
+                expect(result).toBe(10);
+                expect(mockPrismaClient.usuario.count).toHaveBeenCalledWith({
+                    where: {},
+                });
+            });
+
+            it('should count users with search filter', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    3,
+                );
+
+                const result = await repository.countAll({ search: 'juan' });
+
+                expect(result).toBe(3);
+                const callArgs = (mockPrismaClient.usuario.count as jest.Mock)
+                    .mock.calls[0][0];
+                expect(callArgs.where).toEqual({
+                    OR: [
+                        { nombres: { contains: 'juan', mode: 'insensitive' } },
+                        { correo: { contains: 'juan', mode: 'insensitive' } },
+                    ],
+                });
+            });
+
+            it('should count users with role filter', async () => {
+                (mockPrismaClient.usuario.count as jest.Mock).mockResolvedValue(
+                    5,
+                );
+
+                await repository.countAll({ role: UserRole.TRABAJADOR });
+
+                const callArgs = (mockPrismaClient.usuario.count as jest.Mock)
+                    .mock.calls[0][0];
+                expect(callArgs.where.rol).toBe('TRABAJADOR');
+            });
+        });
+
+        describe('save edge cases', () => {
+            it('should call update when user has existing ID', async () => {
+                const existingUser = new User(
+                    1,
+                    'Juan',
+                    'Pérez Updated',
+                    'juan@example.com',
+                    'hashed_pwd',
+                    new Date('2024-01-01'),
+                    UserRole.ADMINISTRADOR,
+                    UserState.ACTIVO,
+                    new Date('2024-01-02'),
+                );
+
+                (
+                    mockPrismaClient.usuario.update as jest.Mock
+                ).mockResolvedValue(mockUserData);
+
+                const result = await repository.save(existingUser);
+
+                expect(mockPrismaClient.usuario.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { id: 1 },
+                    }),
+                );
+                expect(result.id).toBe(1);
             });
         });
     });

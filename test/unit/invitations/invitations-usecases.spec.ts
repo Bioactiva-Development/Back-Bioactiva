@@ -266,6 +266,7 @@ describe('Invitations module', () => {
         let hashService: any;
         let userRepository: any;
         let passwordHasher: any;
+        let tokenService: any;
 
         beforeEach(() => {
             invitationsRepository = {
@@ -280,10 +281,18 @@ describe('Invitations module', () => {
             };
             userRepository = {
                 findByCorreo: jest.fn(),
-                save: jest.fn(),
+                save: jest
+                    .fn()
+                    .mockImplementation((u: any) =>
+                        Promise.resolve({ ...u, id: u.id ?? 1 }),
+                    ),
             };
             passwordHasher = {
                 hash: jest.fn().mockResolvedValue('hashed-password-123'),
+            };
+            tokenService = {
+                signAccessToken: jest.fn().mockResolvedValue('access-token'),
+                signRefreshToken: jest.fn().mockResolvedValue('refresh-token'),
             };
 
             useCase = new AcceptInvitationUseCase(
@@ -292,6 +301,7 @@ describe('Invitations module', () => {
                 hashService,
                 userRepository,
                 passwordHasher,
+                tokenService,
             );
         });
 

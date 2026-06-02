@@ -44,5 +44,21 @@ describe('Security module', () => {
                 hasher.compare('wrong-password', hashedPassword),
             ).resolves.toBe(false);
         });
+
+        it('should use default salt rounds when env not set', async () => {
+            const originalSalt = process.env.BCRYPT_SALT_ROUNDS;
+            delete process.env.BCRYPT_SALT_ROUNDS;
+
+            const hasher = new BcryptPasswordHasher();
+            const bcrypt = jest.requireMock('bcryptjs') as any;
+            bcrypt.hash.mockResolvedValue('hashed-password');
+
+            await hasher.hash('secret-password');
+            expect(bcrypt.hash).toHaveBeenCalledWith('secret-password', 10);
+
+            if (originalSalt) {
+                process.env.BCRYPT_SALT_ROUNDS = originalSalt;
+            }
+        });
     });
 });

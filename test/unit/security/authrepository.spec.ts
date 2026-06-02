@@ -138,6 +138,25 @@ describe('Security module', () => {
         });
 
         describe('save', () => {
+            it('should throw when user id is null', async () => {
+                const nullIdUser = new User(
+                    null as any,
+                    'Test',
+                    'User',
+                    'test@bioactiva.com',
+                    'pass',
+                    new Date(),
+                    UserRole.TRABAJADOR,
+                    UserState.ACTIVO,
+                    new Date(),
+                );
+
+                await expect(repository.save(nullIdUser)).rejects.toThrow(
+                    'User ID cannot be null when saving',
+                );
+                expect(prismaMock.usuario.update).not.toHaveBeenCalled();
+            });
+
             it('should update and return user with new state', async () => {
                 const inactiveUser = new User(
                     1,

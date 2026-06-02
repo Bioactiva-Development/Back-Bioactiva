@@ -79,6 +79,13 @@ skills/
 __pycache__/
 ## AI context files
 GEMINI.md
+SKILL.md
+
+# Project documentation (local only)
+\# 6 crm_bioactiva_especificacion.md
+\# 7. ANÁLISIS DE REQUERIMIENTOS FUN.md
+\# 8. MODELO DE DATOS y Diccionario.md
+\# 9. ARQUITECTURA DE LA SOLUCIONmd.md
 
 # symlink para importar sunat-app como módulo Python
 sunat_app

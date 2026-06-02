@@ -197,6 +197,32 @@ describe('Organizations module', () => {
                 expect(result).not.toHaveProperty('createdAt');
                 expect(result).not.toHaveProperty('updatedAt');
             });
+
+            it('should map null sector to null in persistence', () => {
+                const domainOrg = new Organization(
+                    'org-2',
+                    'CLI-002',
+                    'Test Corp',
+                    'Test',
+                    null,
+                    '20123456788',
+                    EnterpriseType.EMPRESA_NACIONAL,
+                    null,
+                    null,
+                    null,
+                    Size.MICRO,
+                    null,
+                    null,
+                    null,
+                    1,
+                    new Date(),
+                    new Date(),
+                );
+
+                const result = OrganizationMapper.toPersistence(domainOrg);
+
+                expect(result.sector).toBeNull();
+            });
         });
 
         describe('bidirectional conversion', () => {

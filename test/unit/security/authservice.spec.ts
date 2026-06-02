@@ -242,6 +242,35 @@ describe('Security module', () => {
             expect(tokenService.signAccessToken).not.toHaveBeenCalled();
         });
 
+        it('should reject refresh when the user is inactive', async () => {
+            const inactiveUser = buildInactiveUser();
+            const verifyRefreshToken = jest.fn() as any;
+            verifyRefreshToken.mockResolvedValue({
+                sub: '2',
+                tokenVersion: 1,
+            });
+
+            const tokenService: any = {
+                verifyRefreshToken,
+                signAccessToken: jest.fn() as any,
+                signRefreshToken: jest.fn() as any,
+            };
+            const authUserRepository: any = {
+                findById: jest.fn() as any,
+            };
+            authUserRepository.findById.mockResolvedValue(inactiveUser);
+
+            const useCase = new RefreshSessionUseCase(
+                tokenService,
+                authUserRepository,
+            );
+
+            await expect(useCase.execute('refresh-token')).rejects.toThrow(
+                'El usuario no está activo',
+            );
+            expect(tokenService.signAccessToken).not.toHaveBeenCalled();
+        });
+
         it('should reject login when the user is inactive', async () => {
             const inactiveUser = buildInactiveUser();
             const findByCorreo = jest.fn() as any;
