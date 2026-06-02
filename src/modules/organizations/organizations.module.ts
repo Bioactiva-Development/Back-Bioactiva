@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { OrganizationController } from './infrastructure/http/organization.controller';
 import { PrismaOrganizationRepository } from './infrastructure/persistance/prisma-organization.repository';
 import { SunatWebScraperAdapter } from './infrastructure/service/sunat-web-scraper.adapter';
-import { IOrganizationRepository } from './domain/ports/organization.repository';
-import { ISunatService } from './domain/ports/sunat.service';
+import { ORGANIZATION_REPOSITORY } from './domain/ports/organization.repository';
+import { SUNAT_SERVICE } from './domain/ports/sunat.service';
 import { CreateOrganizationUseCase } from './application/use-cases/create-organization.use-case';
 import { UpdateOrganizationUseCase } from './application/use-cases/update-organization.use-case';
 import { GetOrganizationByIdUseCase } from './application/use-cases/get-organization-by-id.use-case';
@@ -16,11 +16,11 @@ import { QuerySunatUseCase } from './application/use-cases/query-sunat.use-case'
         PrismaOrganizationRepository,
         SunatWebScraperAdapter,
         {
-            provide: IOrganizationRepository,
+            provide: ORGANIZATION_REPOSITORY,
             useExisting: PrismaOrganizationRepository,
         },
         {
-            provide: ISunatService,
+            provide: SUNAT_SERVICE,
             useExisting: SunatWebScraperAdapter,
         },
         CreateOrganizationUseCase,
@@ -30,8 +30,8 @@ import { QuerySunatUseCase } from './application/use-cases/query-sunat.use-case'
         QuerySunatUseCase,
     ],
     exports: [
-        IOrganizationRepository,
-        ISunatService,
+        ORGANIZATION_REPOSITORY,
+        SUNAT_SERVICE,
         CreateOrganizationUseCase,
         UpdateOrganizationUseCase,
         GetOrganizationByIdUseCase,

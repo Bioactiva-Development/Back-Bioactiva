@@ -1,12 +1,13 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
-    ISunatService,
+    SUNAT_SERVICE,
+    type ISunatService,
     SunatCompanyInfo,
 } from '@/modules/organizations/domain/ports/sunat.service';
 
 export class QuerySunatUseCase {
     constructor(
-        @Inject(ISunatService)
+        @Inject(SUNAT_SERVICE)
         private readonly sunatService: ISunatService,
     ) {}
 

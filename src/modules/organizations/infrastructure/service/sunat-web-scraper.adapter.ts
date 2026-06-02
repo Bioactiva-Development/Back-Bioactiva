@@ -1,28 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-    ISunatService,
+    SUNAT_SERVICE,
+    type ISunatService,
     SunatCompanyInfo,
 } from '@/modules/organizations/domain/ports/sunat.service';
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { Size } from '@/modules/organizations/domain/enums/size';
 
-interface PythonScraperResponse {
-    resultados: PythonScraperResult[];
+interface PythonScraperRucResponse {
+    ruc?: string;
+    nombre?: string;
+    tipoContribuyente?: string;
+    nombreComercial?: string | null;
+    ubicacion?: string | null;
+    actividadEconomica?: string | null;
+    tipo?: string | null;
+    sector?: string | null;
+    tamano?: string | null;
+    estado?: string;
+    [key: string]: unknown;
 }
 
-interface PythonScraperResult {
+interface PythonScraperNombreResult {
     ruc?: string;
-    numero_de_ruc?: string;
-    'número_de_ruc'?: string;
-    tipo_contribuyente?: string;
-    nombre_comercial?: string | null;
-    domicilio_fiscal?: string | null;
-    actividad_economica?: string | null;
-    actividades_economicas?: string | null;
-    'actividades_económicas'?: string | null;
-    error?: string;
-    [key: string]: unknown;
+    nombre?: string;
+    ubicacion?: string | null;
+    estado?: string;
 }
 
 @Injectable()
@@ -31,8 +35,7 @@ export class SunatWebScraperAdapter implements ISunatService {
     private readonly pythonScraperBaseUrl: string;
 
     constructor() {
-        this.pythonScraperBaseUrl =
-            process.env.PYTHON_SCRAPER_URL ?? 'http://localhost:8000';
+        this.pythonScraperBaseUrl = process.env.PYTHON_SCRAPER_URL!;
     }
 
     async validateRuc(ruc: string): Promise<boolean> {
@@ -49,143 +52,111 @@ export class SunatWebScraperAdapter implements ISunatService {
             return null;
         }
 
-        const pythonInfo = await this.queryPythonScraperByRuc(ruc);
-        if (pythonInfo) {
-            return pythonInfo;
-        }
-
-        return null;
-    }
-
-    async getByRazonSocial(razonSocial: string): Promise<SunatCompanyInfo[]> {
-        const pythonResults =
-            await this.queryPythonScraperByRazonSocial(razonSocial);
-        if (pythonResults && pythonResults.length > 0) {
-            return pythonResults;
-        }
-
-        return [];
-    }
-
-    private async queryPythonScraperByRuc(
-        ruc: string,
-    ): Promise<SunatCompanyInfo | null> {
         try {
-            const url = `${this.pythonScraperBaseUrl}/consulta-ruc/${ruc}`;
+            const url = `${this.pythonScraperBaseUrl}/consultar-ruc?ruc=${ruc}`;
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(60000),
             });
-            if (!response.ok) return null;
 
-            const body = (await response.json()) as PythonScraperResponse;
-
-            if (
-                !Array.isArray(body.resultados) ||
-                body.resultados.length === 0
-            ) {
-                this.logger.warn(
-                    `Respuesta inesperada del scraper Python para RUC ${ruc}: ${JSON.stringify(body).slice(0, 500)}`,
-                );
+            if (response.status === 404) {
+                this.logger.warn(`RUC ${ruc} no encontrado en SUNAT`);
                 return null;
             }
 
-            return this.mapPythonResultToCompany(body.resultados[0]);
+            if (!response.ok) {
+                this.logger.warn(`Scraper respondió con ${response.status} para RUC ${ruc}`);
+                return null;
+            }
+
+            const body = (await response.json()) as PythonScraperRucResponse;
+
+            if (!body.ruc) {
+                this.logger.warn(`Respuesta del scraper sin campo 'ruc': ${JSON.stringify(body).slice(0, 500)}`);
+                return null;
+            }
+
+            return this.mapRucResponseToCompany(body);
         } catch (error) {
             this.logger.warn(
-                `Python Scraper no disponible o falló para RUC ${ruc} - Error: ${error instanceof Error ? error.message : String(error)}`,
+                `Python Scraper no disponible para RUC ${ruc} - ${error instanceof Error ? error.message : String(error)}`,
             );
             return null;
         }
     }
 
-    private async queryPythonScraperByRazonSocial(
-        razonSocial: string,
-    ): Promise<SunatCompanyInfo[] | null> {
+    async getByRazonSocial(razonSocial: string): Promise<SunatCompanyInfo[]> {
         try {
-            const url = `${this.pythonScraperBaseUrl}/consulta/${encodeURIComponent(razonSocial)}`;
+            const url = `${this.pythonScraperBaseUrl}/consultar-nombre?nombre=${encodeURIComponent(razonSocial)}`;
             const response = await fetch(url, {
                 signal: AbortSignal.timeout(120000),
             });
-            if (!response.ok) return null;
 
-            const body = (await response.json()) as PythonScraperResponse;
-
-            if (
-                !Array.isArray(body.resultados) ||
-                body.resultados.length === 0
-            ) {
-                this.logger.warn(
-                    `Respuesta inesperada del scraper Python para Razón Social ${razonSocial}: ${JSON.stringify(body).slice(0, 500)}`,
-                );
-                return null;
+            if (!response.ok) {
+                this.logger.warn(`Scraper respondió con ${response.status} para nombre ${razonSocial}`);
+                return [];
             }
 
-            return body.resultados
-                .map((res) => this.mapPythonResultToCompany(res))
+            const body = (await response.json()) as PythonScraperNombreResult[];
+
+            if (!Array.isArray(body) || body.length === 0) {
+                return [];
+            }
+
+            return body
+                .map((res) => this.mapNombreResultToCompany(res))
                 .filter((r): r is SunatCompanyInfo => r !== null);
         } catch (error) {
             this.logger.warn(
-                `Python Scraper no disponible o falló para Razón Social ${razonSocial} - Error: ${error instanceof Error ? error.message : String(error)}`,
+                `Python Scraper no disponible para nombre ${razonSocial} - ${error instanceof Error ? error.message : String(error)}`,
             );
-            return null;
+            return [];
         }
     }
 
-    private mapPythonResultToCompany(
-        res: PythonScraperResult,
-    ): SunatCompanyInfo | null {
-        if (res.error) {
-            this.logger.warn(`Error en scraper Python: ${res.error}`);
-            return null;
-        }
-
-        const rawRuc =
-            res.ruc ?? res.numero_de_ruc ?? res['número_de_ruc'] ?? undefined;
-
-        if (!rawRuc) {
-            this.logger.warn(
-                `Respuesta del scraper Python sin campo 'ruc': ${JSON.stringify(res).slice(0, 500)}`,
-            );
-            return null;
-        }
-
-        const rucMatch = rawRuc.match(/^(\d{11})\s*-\s*([^\n\r]+)$/);
-
-        const ruc = rucMatch ? rucMatch[1] : rawRuc;
-        const razonSocial = rucMatch ? rucMatch[2].trim() : '';
-
-        const actividadEconomica =
-            res.actividad_economica ??
-            res.actividades_economicas ??
-            res['actividades_económicas'] ??
-            null;
-
+    private mapRucResponseToCompany(res: PythonScraperRucResponse): SunatCompanyInfo {
         return {
-            ruc,
-            razonSocial,
-            nombreComercial: res.nombre_comercial ?? razonSocial,
-            tipo: this.detectEnterpriseType(res.tipo_contribuyente ?? ''),
-            ubicacion: res.domicilio_fiscal ?? 'LIMA',
-            actividadEconomica,
+            ruc: res.ruc!,
+            razonSocial: res.nombre ?? '',
+            nombreComercial: res.nombreComercial ?? res.nombre ?? '',
+            tipo: this.mapEnterpriseType(res.tipo),
+            ubicacion: res.ubicacion ?? 'LIMA',
+            actividadEconomica: res.actividadEconomica ?? null,
+            tamano: Size.MICRO,
+            sector: this.mapSector(res.sector),
+        };
+    }
+
+    private mapNombreResultToCompany(res: PythonScraperNombreResult): SunatCompanyInfo | null {
+        if (!res.ruc) {
+            return null;
+        }
+        return {
+            ruc: res.ruc,
+            razonSocial: res.nombre ?? '',
+            nombreComercial: res.nombre ?? '',
+            tipo: EnterpriseType.EMPRESA_NACIONAL,
+            ubicacion: res.ubicacion ?? 'LIMA',
+            actividadEconomica: null,
             tamano: Size.MICRO,
             sector: Sector.OTROS,
         };
     }
 
-    private detectEnterpriseType(tipoContribuyente: string): EnterpriseType {
-        const clean = tipoContribuyente.toUpperCase();
-        if (
-            clean.includes('PERSONA NATURAL') ||
-            clean.includes('INDEPENDIENTE')
-        ) {
-            return EnterpriseType.INDEPENDIENTE;
-        }
-        if (clean.includes('ONG') || clean.includes('ASOCIACION')) {
-            return EnterpriseType.ONG;
-        }
-        if (clean.includes('GOBIERNO') || clean.includes('MUNICIPALIDAD')) {
-            return EnterpriseType.GOBIERNO_NACIONAL;
+    private mapEnterpriseType(tipo: string | null | undefined): EnterpriseType {
+        if (!tipo) return EnterpriseType.EMPRESA_NACIONAL;
+        const upper = tipo.toUpperCase() as keyof typeof EnterpriseType;
+        if (upper in EnterpriseType) {
+            return EnterpriseType[upper];
         }
         return EnterpriseType.EMPRESA_NACIONAL;
+    }
+
+    private mapSector(sector: string | null | undefined): Sector | null {
+        if (!sector) return null;
+        const upper = sector.toUpperCase() as keyof typeof Sector;
+        if (upper in Sector) {
+            return Sector[upper];
+        }
+        return null;
     }
 }
