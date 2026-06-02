@@ -99,8 +99,8 @@ services:
       PORT: ${PORT:-3000}
 
       FRONTEND_URL: ${FRONTEND_URL}
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${DOCKER_DATABASE_URL}
+      REDIS_URL: ${DOCKER_REDIS_URL}
 
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
@@ -120,7 +120,7 @@ services:
       MAIL_PROVIDER: ${MAIL_PROVIDER}
       MAIL_FROM: ${MAIL_FROM}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
-      PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
+      PYTHON_SCRAPER_URL: ${DOCKER_PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"
