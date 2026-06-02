@@ -24,7 +24,15 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('invitations')
 @Controller('invitations')
 export class InvitationController {
     constructor(
@@ -36,7 +44,26 @@ export class InvitationController {
     ) {}
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMINISTRADOR)
+    @ApiBearerAuth()
     @Post()
+    @ApiOperation({
+        summary: 'Crear una invitación (solo ADMINISTRADOR)',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Invitación creada y correo encolado',
+        schema: { example: { ok: true } },
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Dominio no permitido o ya existe una invitación pendiente para el correo',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado o no autorizado' })
+    @ApiResponse({
+        status: 403,
+        description: 'El usuario no tiene rol ADMINISTRADOR',
+    })
     async createInvitation(
         @CurrentUser() user: User,
         @Body() invitationData: CreateInvitationDto,
@@ -50,7 +77,26 @@ export class InvitationController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMINISTRADOR)
+    @ApiBearerAuth()
     @Get()
+    @ApiOperation({
+        summary: 'Listar invitaciones con filtros (solo ADMINISTRADOR)',
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({
+        name: 'term',
+        required: false,
+        type: String,
+        description: 'Búsqueda por correo',
+    })
+    @ApiQuery({ name: 'estado', required: false, enum: TokenStatus })
+    @ApiResponse({ status: 200, description: 'Listado de invitaciones' })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 403,
+        description: 'El usuario no tiene rol ADMINISTRADOR',
+    })
     async listInvitations(
         @CurrentUser() user: User,
         @Query('page', ParseIntPipe) page?: number,
@@ -62,11 +108,42 @@ export class InvitationController {
     }
 
     @Get('info/:token')
+    @ApiOperation({
+        summary: 'Obtener información pública de una invitación por token',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Información de la invitación (correo enmascarado)',
+        schema: {
+            example: {
+                correo: 'j***n@bioactiva.com',
+                expired: false,
+                accepted: false,
+            },
+        },
+    })
+    @ApiResponse({ status: 404, description: 'Token no encontrado' })
     async obtainInfo(@Param('token') token: string) {
         return this.obtainInfoUseCase.execute(token);
     }
 
     @Post('accept')
+    @ApiOperation({
+        summary: 'Aceptar una invitación y activar la cuenta del usuario',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Invitación aceptada y usuario activado',
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Las contraseñas no coinciden, el token es inválido o el dominio no está permitido',
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'La invitación está expirada o ya fue consumida',
+    })
     async acceptInvitation(@Body() body: AcceptInvitationDto) {
         if (body.password !== body.confirmPassword) {
             throw new BadRequestException('Las contraseñas no coinciden');
@@ -82,6 +159,15 @@ export class InvitationController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMINISTRADOR)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Revocar una invitación (solo ADMINISTRADOR)' })
+    @ApiResponse({ status: 200, description: 'Invitación revocada' })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 403,
+        description: 'El usuario no tiene rol ADMINISTRADOR',
+    })
+    @ApiResponse({ status: 404, description: 'Invitación no encontrada' })
     async revokeInvitation(@Param('id', ParseIntPipe) id: number) {
         return this.revokeInvitationUseCase.execute(id);
     }

@@ -55,6 +55,16 @@ export class ActivityController {
         description: 'Actividad creada exitosamente',
         type: ActivityResponseDto,
     })
+    @ApiResponse({
+        status: 400,
+        description: 'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Lead o responsable no encontrado' })
+    @ApiResponse({
+        status: 409,
+        description: 'El lead ya tiene una actividad pendiente',
+    })
     async create(
         @Body() httpDto: HttpCreateActivityDto,
     ): Promise<ActivityResponseDto> {
@@ -80,6 +90,8 @@ export class ActivityController {
         description: 'Listado paginado de actividades',
         type: PaginatedActivityResponseDto,
     })
+    @ApiResponse({ status: 400, description: 'Parámetros de consulta inválidos' })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async findAll(
         @Query() query: ListActivitiesQueryDto,
     ): Promise<PaginatedActivityResponseDto> {
@@ -110,6 +122,7 @@ export class ActivityController {
         description: 'Actividad encontrada',
         type: ActivityResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
     async findOne(
         @Param('id', ParseIntPipe) id: number,
@@ -125,7 +138,15 @@ export class ActivityController {
         description: 'Actividad actualizada exitosamente',
         type: ActivityResponseDto,
     })
-    @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+    @ApiResponse({
+        status: 400,
+        description: 'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Actividad o responsable no encontrado',
+    })
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() httpDto: HttpUpdateActivityDto,
@@ -148,6 +169,11 @@ export class ActivityController {
         description: 'Actividad completada exitosamente',
         type: ActivityResponseDto,
     })
+    @ApiResponse({
+        status: 400,
+        description: 'Transición inválida: la actividad no está PENDIENTE',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
     async complete(
         @Param('id', ParseIntPipe) id: number,
@@ -163,6 +189,11 @@ export class ActivityController {
         description: 'Actividad cancelada exitosamente',
         type: ActivityResponseDto,
     })
+    @ApiResponse({
+        status: 400,
+        description: 'Transición inválida: la actividad no está PENDIENTE',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
     async cancel(
         @Param('id', ParseIntPipe) id: number,
@@ -177,6 +208,7 @@ export class ActivityController {
         status: 200,
         description: 'Actividad eliminada exitosamente',
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
     async remove(@Param('id', ParseIntPipe) id: number) {
         return await this.deleteActivityUseCase.execute(id);
