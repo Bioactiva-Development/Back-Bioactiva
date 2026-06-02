@@ -78,15 +78,21 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE')
                 ]) {
                     sh '''
-                        echo "=== ENV FILE ==="
-                        cat "$ENV_FILE"
+                        echo "=== EXISTE EL CONTENEDOR ==="
+                        docker ps -a --filter name=^bioactiva-sunat-prod$ || true
 
-                        echo ""
-                        echo "=== VARIABLES DE ENTORNO CARGADAS ==="
-                        set -a
-                        . "$ENV_FILE"
-                        set +a
-                        env | sort
+                        echo "=== LABELS ==="
+                        docker inspect bioactiva-sunat-prod \
+                        --format 'project={{ index .Config.Labels "com.docker.compose.project" }} service={{ index .Config.Labels "com.docker.compose.service" }}' \
+                        || true
+
+                        echo "=== EXISTE BACKEND ==="
+                        docker ps -a --filter name=^bioactiva-backend-prod$ || true
+
+                        echo "=== LABELS BACKEND ==="
+                        docker inspect bioactiva-backend-prod \
+                        --format 'project={{ index .Config.Labels "com.docker.compose.project" }} service={{ index .Config.Labels "com.docker.compose.service" }}' \
+                        || true
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
@@ -94,6 +100,9 @@ pipeline {
                             --env-file "$ENV_FILE" \
                             --profile testing \
                             down
+
+                        docker rm -f bioactiva-sunat-prod || true
+                        docker rm -f bioactiva-backend-prod || true
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
