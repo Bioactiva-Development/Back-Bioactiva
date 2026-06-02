@@ -130,15 +130,18 @@ export class SunatWebScraperAdapter implements ISunatService {
         if (!res.ruc) {
             return null;
         }
+        // La búsqueda por nombre solo raspa la lista de SUNAT (ruc + nombre +
+        // ubicación). Los campos de detalle no se conocen aquí: van null en vez
+        // de placeholders falsos. El detalle real se obtiene consultando por RUC.
         return {
             ruc: res.ruc,
             razonSocial: res.nombre ?? '',
             nombreComercial: res.nombre ?? '',
-            tipo: EnterpriseType.EMPRESA_NACIONAL,
-            ubicacion: res.ubicacion ?? 'LIMA',
+            tipo: null,
+            ubicacion: res.ubicacion ?? null,
             actividadEconomica: null,
-            tamano: Size.MICRO,
-            sector: Sector.OTROS,
+            tamano: null,
+            sector: null,
         };
     }
 

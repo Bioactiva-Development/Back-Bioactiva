@@ -6,10 +6,10 @@ export interface SunatCompanyInfo {
     ruc: string;
     razonSocial: string;
     nombreComercial: string;
-    tipo: EnterpriseType;
+    tipo: EnterpriseType | null;
     ubicacion: string | null;
     actividadEconomica: string | null;
-    tamano: Size;
+    tamano: Size | null;
     sector: Sector | null;
 }
 

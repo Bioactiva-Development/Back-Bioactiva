@@ -3,7 +3,10 @@ import {
     LEAD_REPOSITORY,
     type LeadRepository,
 } from '@/modules/leads/domain/ports/lead-repository.port';
-import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import {
+    ORGANIZATION_REPOSITORY,
+    type IOrganizationRepository,
+} from '@/modules/organizations/domain/ports/organization.repository';
 import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
 import {
     USER_REPOSITORY,
@@ -18,7 +21,7 @@ export class UpdateLeadUseCase {
     constructor(
         @Inject(LEAD_REPOSITORY)
         private readonly leadRepository: LeadRepository,
-        @Inject(IOrganizationRepository)
+        @Inject(ORGANIZATION_REPOSITORY)
         private readonly organizationRepository: IOrganizationRepository,
         @Inject(IContactRepository)
         private readonly contactRepository: IContactRepository,

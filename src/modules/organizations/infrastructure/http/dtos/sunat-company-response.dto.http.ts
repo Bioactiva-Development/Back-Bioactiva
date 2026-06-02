@@ -14,8 +14,8 @@ export class SunatCompanyResponseDto {
     @ApiProperty({ example: 'Ejemplo Corp' })
     nombreComercial: string;
 
-    @ApiProperty({ enum: EnterpriseType, example: 'EMPRESA_NACIONAL' })
-    tipo: EnterpriseType;
+    @ApiProperty({ enum: EnterpriseType, example: 'EMPRESA_NACIONAL', nullable: true })
+    tipo: EnterpriseType | null;
 
     @ApiProperty({ example: 'AV. EJEMPLO 123, LIMA', nullable: true })
     ubicacion: string | null;
@@ -23,8 +23,8 @@ export class SunatCompanyResponseDto {
     @ApiProperty({ example: 'VENTA AL POR MAYOR DE PRODUCTOS', nullable: true })
     actividadEconomica: string | null;
 
-    @ApiProperty({ enum: Size, example: 'MICRO' })
-    tamano: Size;
+    @ApiProperty({ enum: Size, example: 'MICRO', nullable: true })
+    tamano: Size | null;
 
     @ApiProperty({ enum: Sector, example: 'OTROS', nullable: true })
     sector: Sector | null;
