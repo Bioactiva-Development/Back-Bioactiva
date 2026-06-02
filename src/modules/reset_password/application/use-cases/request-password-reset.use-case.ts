@@ -19,6 +19,10 @@ import {
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { PasswordResetToken } from '@/modules/reset_password/domain/entities/password-reset-token';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
+import { ActiveResetTokenException } from '@/modules/reset_password/domain/exeptions/active-reset-token.exception';
+
+const RESET_TOKEN_TTL_MS = 2 * 60 * 60 * 1000;
+const RATE_LIMIT_MS = 5 * 60 * 1000;
 
 export class RequestPasswordResetUseCase {
     constructor(
@@ -40,10 +44,20 @@ export class RequestPasswordResetUseCase {
             return { ok: true };
         }
 
+        const existingToken = await this.passwordResetRepository.findPendingByEmail(correo);
+        if (existingToken) {
+            const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_MS);
+            if (existingToken.created_at > rateLimitCutoff) {
+                throw new ActiveResetTokenException();
+            }
+            existingToken.expire();
+            await this.passwordResetRepository.save(existingToken);
+        }
+
         const rawToken = randomUUID();
         const tokenHash = this.hashService.hash(rawToken);
 
-        const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
         const resetToken = new PasswordResetToken(
             null,
             user.id,

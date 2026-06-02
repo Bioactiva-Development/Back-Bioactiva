@@ -39,6 +39,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
                 estado: 'PENDIENTE',
                 proposito: PrismaTokenPurpose.RESET_PASSWORD,
             },
+            orderBy: { createdAt: 'desc' },
         });
         return record ? PasswordResetMapper.toDomain(record) : null;
     }
