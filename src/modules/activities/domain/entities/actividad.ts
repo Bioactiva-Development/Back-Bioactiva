@@ -1,5 +1,7 @@
 import { EstadoActividad } from '@/modules/activities/domain/enums/estado-actividad';
 import { TipoActividad } from '@/modules/activities/domain/enums/tipo-actividad';
+import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
+import { InvalidActivityTransitionException } from '@/modules/activities/domain/exceptions/invalid-activity-transition.exception';
 
 export class Actividad {
     constructor(
@@ -18,16 +20,25 @@ export class Actividad {
         public id_responsable: number,
         public readonly created_at: Date,
         public updated_at: Date,
+        public deleted_at: Date | null,
     ) {}
 
     markCompleted() {
+        if (this.estado !== EstadoActividad.PENDIENTE) {
+            throw new InvalidActivityTransitionException(
+                `No se puede completar una actividad en estado ${this.estado}`,
+            );
+        }
+
         this.estado = EstadoActividad.REALIZADA;
         this.updated_at = new Date();
     }
 
     cancel() {
-        if (this.estado === EstadoActividad.CANCELADA) {
-            throw new Error('La actividad ya está cancelada');
+        if (this.estado !== EstadoActividad.PENDIENTE) {
+            throw new InvalidActivityTransitionException(
+                `No se puede cancelar una actividad en estado ${this.estado}`,
+            );
         }
 
         this.estado = EstadoActividad.CANCELADA;
@@ -35,14 +46,19 @@ export class Actividad {
     }
 
     reschedule(fechaInicio: Date, fechaFin: Date) {
-        if (fechaFin < fechaInicio) {
-            throw new Error(
-                'La fecha fin no puede ser anterior a la fecha inicio',
+        if (fechaFin <= fechaInicio) {
+            throw new InvalidActivityDateException(
+                'La fecha de inicio debe ser menor que la fecha de fin',
             );
         }
 
         this.fecha_inicio = fechaInicio;
         this.fecha_fin = fechaFin;
+        this.updated_at = new Date();
+    }
+
+    markAsDeleted() {
+        this.deleted_at = new Date();
         this.updated_at = new Date();
     }
 }

@@ -47,6 +47,7 @@ services:
       retries: 5
       start_period: 20s
 
+
   bioactiva-sunat-prod:
     profiles: ["prod"]
     build:
@@ -97,6 +98,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       REFRESH_TOKEN_COOKIE_NAME: ${REFRESH_TOKEN_COOKIE_NAME}
 
+
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
       RESEND_TOKEN: ${RESEND_TOKEN}
       MAIL_PROVIDER: ${MAIL_PROVIDER}
@@ -105,9 +107,7 @@ services:
       PYTHON_SCRAPER_URL: ${DOCKER_PYTHON_SCRAPER_URL:-http://bioactiva-sunat-local:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
-            exec node -r tsconfig-paths/register dist/src/main"
-
-    # Red por defecto del compose (resuelve bioactiva-database, bioactiva-redis, bioactiva-sunat-local)
+            exec node -r tsconfig-paths/register dist/main"
 
   bioactiva-backend-prod:
     profiles: ["prod"]
@@ -120,14 +120,14 @@ services:
       bioactiva-sunat-prod:
         condition: service_healthy
     env_file:
-      - .env
+      - ${BIOACTIVA_ENV_FILE}
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-prod:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
-            exec node -r tsconfig-paths/register dist/src/main"
+            exec node -r tsconfig-paths/register dist/main"
     networks:
       - proxy_net
 

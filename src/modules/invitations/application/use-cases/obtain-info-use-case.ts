@@ -5,6 +5,7 @@ import {
 } from '@/modules/invitations/domain/port/invitations-repository.port';
 import { InvitationInfoDto } from '@/modules/invitations/application/dto/invitation-info.dto';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
+import { InvitationNotFoundException } from '@/modules/invitations/domain/exceptions/invitation-not-found.exception';
 
 export class ObtainInfoUseCase {
     constructor(
@@ -19,7 +20,7 @@ export class ObtainInfoUseCase {
         const invitation =
             await this.invitationsRepository.findByToken(token_hash);
         if (!invitation) {
-            throw new Error('Token no encontrado');
+            throw new InvitationNotFoundException('Token no encontrado');
         }
         let correo = invitation.correo;
         const [localPart, domain] = correo.split('@');

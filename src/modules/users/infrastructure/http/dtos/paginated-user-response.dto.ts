@@ -22,7 +22,12 @@ export class PaginatedUserResponseDto {
     @ApiProperty({ type: PaginationMetaDto })
     meta: PaginationMetaDto;
 
-    constructor(data: UserResponseDto[], total: number, page: number, limit: number) {
+    constructor(
+        data: UserResponseDto[],
+        total: number,
+        page: number,
+        limit: number,
+    ) {
         this.data = data;
         this.meta = {
             page,

@@ -22,6 +22,8 @@ export interface IContactRepository {
 
     findByIdWithOrganization(id: number): Promise<ContactWithOrgName | null>;
 
-    findByOrganizationIdWithOrganization(idOrganizacion: string): Promise<ContactWithOrgName[]>;
+    findByOrganizationIdWithOrganization(
+        idOrganizacion: string,
+    ): Promise<ContactWithOrgName[]>;
 }
 export const IContactRepository = Symbol('IContactRepository');

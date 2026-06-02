@@ -12,194 +12,196 @@ import { UserState } from '@/modules/users/domain/enums/estado';
 import { UserRole } from '../../../src/shared/domain/enums/rol';
 
 describe('Security module', () => {
-	describe('AuthController HTTP endpoints', () => {
-		let controller: AuthController;
-		let authenticateUserUseCase: jest.Mocked<AuthenticateUserUseCase>;
-		let refreshSessionUseCase: jest.Mocked<RefreshSessionUseCase>;
-		let responseMock: jest.Mocked<Response>;
+    describe('AuthController HTTP endpoints', () => {
+        let controller: AuthController;
+        let authenticateUserUseCase: jest.Mocked<AuthenticateUserUseCase>;
+        let refreshSessionUseCase: jest.Mocked<RefreshSessionUseCase>;
+        let responseMock: jest.Mocked<Response>;
 
-		const createdAt = new Date('2024-01-01T00:00:00.000Z');
-		const updatedAt = new Date('2024-01-02T00:00:00.000Z');
+        const createdAt = new Date('2024-01-01T00:00:00.000Z');
+        const updatedAt = new Date('2024-01-02T00:00:00.000Z');
 
-		const buildUser = () =>
-			new User(
-				1,
-				'Ana',
-				'Paredes',
-				'ana@bioactiva.com',
-				'hashed-password',
-				createdAt,
-				UserRole.TRABAJADOR,
-				UserState.ACTIVO,
-				updatedAt,
-			);
+        const buildUser = () =>
+            new User(
+                1,
+                'Ana',
+                'Paredes',
+                'ana@bioactiva.com',
+                'hashed-password',
+                createdAt,
+                UserRole.TRABAJADOR,
+                UserState.ACTIVO,
+                updatedAt,
+            );
 
-		const buildTokenPair = () =>
-			new TokenPair(
-				'access-token-value',
-				'refresh-token-value',
-				900,
-				604800,
-			);
+        const buildTokenPair = () =>
+            new TokenPair(
+                'access-token-value',
+                'refresh-token-value',
+                900,
+                604800,
+            );
 
-		beforeEach(() => {
-			authenticateUserUseCase = {
-				execute: jest.fn(),
-			} as unknown as jest.Mocked<AuthenticateUserUseCase>;
+        beforeEach(() => {
+            authenticateUserUseCase = {
+                execute: jest.fn(),
+            } as unknown as jest.Mocked<AuthenticateUserUseCase>;
 
-			refreshSessionUseCase = {
-				execute: jest.fn(),
-			} as unknown as jest.Mocked<RefreshSessionUseCase>;
+            refreshSessionUseCase = {
+                execute: jest.fn(),
+            } as unknown as jest.Mocked<RefreshSessionUseCase>;
 
-			controller = new AuthController(
-				authenticateUserUseCase,
-				refreshSessionUseCase,
-			);
+            controller = new AuthController(
+                authenticateUserUseCase,
+                refreshSessionUseCase,
+            );
 
-			responseMock = {
-				cookie: jest.fn().mockReturnValue(responseMock),
-			} as unknown as jest.Mocked<Response>;
-		});
+            responseMock = {
+                cookie: jest.fn().mockReturnValue(responseMock),
+            } as unknown as jest.Mocked<Response>;
+        });
 
-		describe('login endpoint', () => {
-			it('should return access token and set refresh token cookie on successful login', async () => {
-				const tokenPair = buildTokenPair();
-				authenticateUserUseCase.execute.mockResolvedValue(tokenPair);
+        describe('login endpoint', () => {
+            it('should return access token and set refresh token cookie on successful login', async () => {
+                const tokenPair = buildTokenPair();
+                authenticateUserUseCase.execute.mockResolvedValue(tokenPair);
 
-				const result = await controller.login(
-					{ correo: 'ana@bioactiva.com', password: 'password' },
-					responseMock,
-				);
+                const result = await controller.login(
+                    { correo: 'ana@bioactiva.com', password: 'password' },
+                    responseMock,
+                );
 
-				expect(result).toEqual({
-					accessToken: 'access-token-value',
-					accessTokenExpiresIn: 900,
-				});
-				expect(responseMock.cookie).toHaveBeenCalledWith(
-					'refreshToken',
-					'refresh-token-value',
-					expect.objectContaining({
-						httpOnly: true,
-						path: '/auth/refresh',
-					}),
-				);
-			});
+                expect(result).toEqual({
+                    accessToken: 'access-token-value',
+                    accessTokenExpiresIn: 900,
+                });
+                expect(responseMock.cookie).toHaveBeenCalledWith(
+                    'refreshToken',
+                    'refresh-token-value',
+                    expect.objectContaining({
+                        httpOnly: true,
+                        path: '/auth/refresh',
+                    }),
+                );
+            });
 
-			it('should throw NotAuthorizedException on invalid credentials', async () => {
-				authenticateUserUseCase.execute.mockRejectedValue(
-					new NotAuthorizedException(''),
-				);
+            it('should throw NotAuthorizedException on invalid credentials', async () => {
+                authenticateUserUseCase.execute.mockRejectedValue(
+                    new NotAuthorizedException(''),
+                );
 
-				await expect(
-					controller.login(
-						{
-							correo: 'ana@bioactiva.com',
-							password: 'wrong-password',
-						},
-						responseMock,
-					),
-				).rejects.toThrow(NotAuthorizedException);
-			});
+                await expect(
+                    controller.login(
+                        {
+                            correo: 'ana@bioactiva.com',
+                            password: 'wrong-password',
+                        },
+                        responseMock,
+                    ),
+                ).rejects.toThrow(NotAuthorizedException);
+            });
 
-			it('should throw NotAuthorizedException when user is not authorized', async () => {
-				authenticateUserUseCase.execute.mockRejectedValue(
-					new NotAuthorizedException(''),
-				);
+            it('should throw NotAuthorizedException when user is not authorized', async () => {
+                authenticateUserUseCase.execute.mockRejectedValue(
+                    new NotAuthorizedException(''),
+                );
 
-				await expect(
-					controller.login(
-						{ correo: 'ana@bioactiva.com', password: 'password' },
-						responseMock,
-					),
-				).rejects.toThrow(NotAuthorizedException);
-			});
+                await expect(
+                    controller.login(
+                        { correo: 'ana@bioactiva.com', password: 'password' },
+                        responseMock,
+                    ),
+                ).rejects.toThrow(NotAuthorizedException);
+            });
 
-			it('should rethrow unexpected errors', async () => {
-				const unexpectedError = new Error('Unexpected error');
-				authenticateUserUseCase.execute.mockRejectedValue(unexpectedError);
+            it('should rethrow unexpected errors', async () => {
+                const unexpectedError = new Error('Unexpected error');
+                authenticateUserUseCase.execute.mockRejectedValue(
+                    unexpectedError,
+                );
 
-				await expect(
-					controller.login(
-						{ correo: 'ana@bioactiva.com', password: 'password' },
-						responseMock,
-					),
-				).rejects.toThrow('Unexpected error');
-			});
-		});
+                await expect(
+                    controller.login(
+                        { correo: 'ana@bioactiva.com', password: 'password' },
+                        responseMock,
+                    ),
+                ).rejects.toThrow('Unexpected error');
+            });
+        });
 
-		describe('refresh endpoint', () => {
-			it('should return new access token and refresh token when refresh token is valid', async () => {
-				const tokenPair = buildTokenPair();
-				refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
+        describe('refresh endpoint', () => {
+            it('should return new access token and refresh token when refresh token is valid', async () => {
+                const tokenPair = buildTokenPair();
+                refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
 
-				const result = await controller.refresh(
-					responseMock,
-					'valid-refresh-token',
-				);
+                const result = await controller.refresh(
+                    responseMock,
+                    'valid-refresh-token',
+                );
 
-				expect(result).toEqual({
-					accessToken: 'access-token-value',
-					accessTokenExpiresIn: 900,
-				});
-				expect(refreshSessionUseCase.execute).toHaveBeenCalledWith(
-					'valid-refresh-token',
-				);
-				expect(responseMock.cookie).toHaveBeenCalledWith(
-					'refreshToken',
-					'refresh-token-value',
-					expect.objectContaining({
-						httpOnly: true,
-					}),
-				);
-			});
+                expect(result).toEqual({
+                    accessToken: 'access-token-value',
+                    accessTokenExpiresIn: 900,
+                });
+                expect(refreshSessionUseCase.execute).toHaveBeenCalledWith(
+                    'valid-refresh-token',
+                );
+                expect(responseMock.cookie).toHaveBeenCalledWith(
+                    'refreshToken',
+                    'refresh-token-value',
+                    expect.objectContaining({
+                        httpOnly: true,
+                    }),
+                );
+            });
 
-			it('should throw UnauthorizedException when refresh token is missing', async () => {
-				await expect(
-					controller.refresh(responseMock, null),
-				).rejects.toThrow(UnauthorizedException);
-				expect(refreshSessionUseCase.execute).not.toHaveBeenCalled();
-			});
+            it('should throw UnauthorizedException when refresh token is missing', async () => {
+                await expect(
+                    controller.refresh(responseMock, null),
+                ).rejects.toThrow(UnauthorizedException);
+                expect(refreshSessionUseCase.execute).not.toHaveBeenCalled();
+            });
 
-			it('should throw NotAuthorizedException when refresh token is invalid', async () => {
-				refreshSessionUseCase.execute.mockRejectedValue(
-					new NotAuthorizedException(''),
-				);
+            it('should throw NotAuthorizedException when refresh token is invalid', async () => {
+                refreshSessionUseCase.execute.mockRejectedValue(
+                    new NotAuthorizedException(''),
+                );
 
-				await expect(
-					controller.refresh(responseMock, 'invalid-refresh-token'),
-				).rejects.toThrow(NotAuthorizedException);
-			});
+                await expect(
+                    controller.refresh(responseMock, 'invalid-refresh-token'),
+                ).rejects.toThrow(NotAuthorizedException);
+            });
 
-			it('should set secure cookie flag in production environment', async () => {
-				process.env.NODE_ENV = 'production';
-				const tokenPair = buildTokenPair();
-				refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
+            it('should set secure cookie flag in production environment', async () => {
+                process.env.NODE_ENV = 'production';
+                const tokenPair = buildTokenPair();
+                refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
 
-				await controller.refresh(responseMock, 'valid-refresh-token');
+                await controller.refresh(responseMock, 'valid-refresh-token');
 
-				expect(responseMock.cookie).toHaveBeenCalledWith(
-					'refreshToken',
-					'refresh-token-value',
-					expect.objectContaining({
-						secure: true,
-						httpOnly: true,
-					}),
-				);
+                expect(responseMock.cookie).toHaveBeenCalledWith(
+                    'refreshToken',
+                    'refresh-token-value',
+                    expect.objectContaining({
+                        secure: true,
+                        httpOnly: true,
+                    }),
+                );
 
-				delete process.env.NODE_ENV;
-			});
-		});
+                delete process.env.NODE_ENV;
+            });
+        });
 
-		describe('me endpoint', () => {
-			it('should return the authenticated user', () => {
-				const user = buildUser();
+        describe('me endpoint', () => {
+            it('should return the authenticated user', () => {
+                const user = buildUser();
 
-				const result = controller.me(user);
+                const result = controller.me(user);
 
-				expect(result).toEqual(user);
-				expect(result.correo).toBe('ana@bioactiva.com');
-				expect(result.estado).toBe(UserState.ACTIVO);
-			});
-		});
-	});
+                expect(result).toEqual(user);
+                expect(result.correo).toBe('ana@bioactiva.com');
+                expect(result.estado).toBe(UserState.ACTIVO);
+            });
+        });
+    });
 });

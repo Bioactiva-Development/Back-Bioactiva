@@ -1,5 +1,5 @@
 export enum EstadoActividad {
-    PENDIENTE,
-    REALIZADA,
-    CANCELADA,
+    PENDIENTE = 'PENDIENTE',
+    REALIZADA = 'REALIZADA',
+    CANCELADA = 'CANCELADA',
 }

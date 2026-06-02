@@ -66,18 +66,17 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA-SECRETS', variable: 'ENV_FILE')
                 ]) {
                     sh '''
-                        rm -f .env
-                        cp "$ENV_FILE" .env
-
-                        docker compose \
+                        BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva \
                             -f docker-compose.yml \
+                            --env-file "$ENV_FILE" \
                             --profile prod \
                             down
 
-                        docker compose \
+                        BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva \
                             -f docker-compose.yml \
+                            --env-file "$ENV_FILE" \
                             --profile prod \
                             up -d --build
                     '''

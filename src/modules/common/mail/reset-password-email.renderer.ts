@@ -44,7 +44,9 @@ function loadTemplate(): string {
         }
     }
 
-    throw new Error('No se pudo cargar la plantilla de restablecimiento de contraseña');
+    throw new Error(
+        'No se pudo cargar la plantilla de restablecimiento de contraseña',
+    );
 }
 
 export function renderResetPasswordEmailTemplate(

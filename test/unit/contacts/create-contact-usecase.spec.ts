@@ -5,210 +5,270 @@ import { Vocative } from '@/modules/contacts/domain/enums/vocative';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
 
 describe('Contacts module', () => {
-	describe('CreateContactUseCase', () => {
-		let useCase: CreateContactUseCase;
-		let contactRepository: any;
+    describe('CreateContactUseCase', () => {
+        let useCase: CreateContactUseCase;
+        let contactRepository: any;
 
-		const createContactDto = {
-			nombres: 'Juan',
-			apellidos: 'Perez',
-			vocativo: Vocative.SR,
-			cargo: 'Manager',
-			correo: 'juan@example.com',
-			telefono: '987654321',
-			correo2: null,
-			comentarios: 'Test contact',
-			idOrganizacion: 'org-123',
-			idAuthor: 1,
-		};
+        const createContactDto = {
+            nombres: 'Juan',
+            apellidos: 'Perez',
+            vocativo: Vocative.SR,
+            cargo: 'Manager',
+            correo: 'juan@example.com',
+            telefono: '987654321',
+            correo2: null,
+            comentarios: 'Test contact',
+            idOrganizacion: 'org-123',
+            idAuthor: 1,
+        };
 
-		beforeEach(() => {
-			contactRepository = {
-				findByEmail: jest.fn(),
-				findBySecondaryEmail: jest.fn(),
-				save: jest.fn(),
-				findById: jest.fn(),
-				findByOrganizationId: jest.fn(),
-				findAll: jest.fn(),
-			};
+        beforeEach(() => {
+            contactRepository = {
+                findByEmail: jest.fn(),
+                findBySecondaryEmail: jest.fn(),
+                save: jest.fn(),
+                findById: jest.fn(),
+                findByIdWithOrganization: jest.fn(),
+                findByOrganizationId: jest.fn(),
+                findAll: jest.fn(),
+            };
 
-			useCase = new CreateContactUseCase(contactRepository);
-		});
+            useCase = new CreateContactUseCase(contactRepository);
+        });
 
-		it('should create contact with valid data', async () => {
-			contactRepository.findByEmail.mockResolvedValue(null);
-			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
-			const savedContact = new Contact(
-				1,
-				createContactDto.nombres,
-				createContactDto.apellidos,
-				createContactDto.vocativo,
-				createContactDto.cargo,
-				createContactDto.correo,
-				createContactDto.telefono,
-				createContactDto.correo2,
-				createContactDto.comentarios,
-				createContactDto.idOrganizacion,
-				createContactDto.idAuthor,
-				new Date(),
-				new Date(),
-			);
-			contactRepository.save.mockResolvedValue(savedContact);
+        it('should create contact with valid data', async () => {
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const savedContact = new Contact(
+                1,
+                createContactDto.nombres,
+                createContactDto.apellidos,
+                createContactDto.vocativo,
+                createContactDto.cargo,
+                createContactDto.correo,
+                createContactDto.telefono,
+                createContactDto.correo2,
+                createContactDto.comentarios,
+                createContactDto.idOrganizacion,
+                createContactDto.idAuthor,
+                new Date(),
+                new Date(),
+            );
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
 
-			const result = await useCase.execute(createContactDto);
+            const result = await useCase.execute(createContactDto);
 
-			expect(result).toHaveProperty('id', 1);
-			expect(result).toHaveProperty('nombres', createContactDto.nombres);
-			expect(result).toHaveProperty('correo', createContactDto.correo);
-			expect(contactRepository.findByEmail).toHaveBeenCalledWith(createContactDto.correo);
-			expect(contactRepository.save).toHaveBeenCalled();
-		});
+            expect(result).toHaveProperty('id', 1);
+            expect(result).toHaveProperty('nombres', createContactDto.nombres);
+            expect(result).toHaveProperty('correo', createContactDto.correo);
+            expect(contactRepository.findByEmail).toHaveBeenCalledWith(
+                createContactDto.correo,
+            );
+            expect(contactRepository.save).toHaveBeenCalled();
+        });
 
-		it('should throw error when email already exists', async () => {
-			const existingContact = new Contact(
-				1,
-				'John',
-				'Doe',
-				Vocative.SR,
-				'Dev',
-				'juan@example.com',
-				'987654321',
-				null,
-				'Existing',
-				'org-123',
-				1,
-				new Date(),
-				new Date(),
-			);
+        it('should throw error when email already exists', async () => {
+            const existingContact = new Contact(
+                1,
+                'John',
+                'Doe',
+                Vocative.SR,
+                'Dev',
+                'juan@example.com',
+                '987654321',
+                null,
+                'Existing',
+                'org-123',
+                1,
+                new Date(),
+                new Date(),
+            );
 
-			contactRepository.findByEmail.mockResolvedValue(existingContact);
+            contactRepository.findByEmail.mockResolvedValue(existingContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                existingContact,
+            );
 
-			await expect(useCase.execute(createContactDto)).rejects.toThrow(
-				EmailAlreadyExistsException,
-			);
-		});
+            await expect(useCase.execute(createContactDto)).rejects.toThrow(
+                EmailAlreadyExistsException,
+            );
+        });
 
-		it('should throw error when secondary email already exists', async () => {
-			const dtoWithSecondaryEmail = {
-				...createContactDto,
-				correo2: 'secondary@example.com',
-			};
+        it('should create contact with secondary email when it is unique', async () => {
+            const dtoWithSecondaryEmail = {
+                ...createContactDto,
+                correo2: 'new.secondary@example.com',
+            };
 
-			const existingContact = new Contact(
-				2,
-				'Jane',
-				'Smith',
-				Vocative.SRA,
-				'Designer',
-				'jane@example.com',
-				'987654321',
-				'secondary@example.com',
-				'Existing',
-				'org-123',
-				1,
-				new Date(),
-				new Date(),
-			);
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const savedContact = new Contact(
+                1,
+                dtoWithSecondaryEmail.nombres,
+                dtoWithSecondaryEmail.apellidos,
+                dtoWithSecondaryEmail.vocativo,
+                dtoWithSecondaryEmail.cargo,
+                dtoWithSecondaryEmail.correo,
+                dtoWithSecondaryEmail.telefono,
+                'new.secondary@example.com',
+                dtoWithSecondaryEmail.comentarios,
+                dtoWithSecondaryEmail.idOrganizacion,
+                dtoWithSecondaryEmail.idAuthor,
+                new Date(),
+                new Date(),
+            );
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
 
-			contactRepository.findByEmail.mockResolvedValue(null);
-			contactRepository.findBySecondaryEmail.mockResolvedValue(existingContact);
+            const result = await useCase.execute(dtoWithSecondaryEmail);
 
-			await expect(useCase.execute(dtoWithSecondaryEmail)).rejects.toThrow(
-				EmailAlreadyExistsException,
-			);
-		});
+            expect(result.correo2).toBe('new.secondary@example.com');
+            expect(contactRepository.findBySecondaryEmail).toHaveBeenCalledWith(
+                'new.secondary@example.com',
+            );
+        });
 
-		it('should create contact without secondary email', async () => {
-			const dtoWithoutSecondaryEmail = {
-				...createContactDto,
-				correo2: null,
-			};
+        it('should throw error when secondary email already exists', async () => {
+            const dtoWithSecondaryEmail = {
+                ...createContactDto,
+                correo2: 'secondary@example.com',
+            };
 
-			contactRepository.findByEmail.mockResolvedValue(null);
-			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
-			const savedContact = new Contact(
-				1,
-				dtoWithoutSecondaryEmail.nombres,
-				dtoWithoutSecondaryEmail.apellidos,
-				dtoWithoutSecondaryEmail.vocativo,
-				dtoWithoutSecondaryEmail.cargo,
-				dtoWithoutSecondaryEmail.correo,
-				dtoWithoutSecondaryEmail.telefono,
-				dtoWithoutSecondaryEmail.correo2,
-				dtoWithoutSecondaryEmail.comentarios,
-				dtoWithoutSecondaryEmail.idOrganizacion,
-				dtoWithoutSecondaryEmail.idAuthor,
-				new Date(),
-				new Date(),
-			);
-			contactRepository.save.mockResolvedValue(savedContact);
+            const existingContact = new Contact(
+                2,
+                'Jane',
+                'Smith',
+                Vocative.SRA,
+                'Designer',
+                'jane@example.com',
+                '987654321',
+                'secondary@example.com',
+                'Existing',
+                'org-123',
+                1,
+                new Date(),
+                new Date(),
+            );
 
-			const result = await useCase.execute(dtoWithoutSecondaryEmail);
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(
+                existingContact,
+            );
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                existingContact,
+            );
 
-			expect(result).toHaveProperty('correo2', null);
-			expect(contactRepository.findBySecondaryEmail).not.toHaveBeenCalled();
-		});
+            await expect(
+                useCase.execute(dtoWithSecondaryEmail),
+            ).rejects.toThrow(EmailAlreadyExistsException);
+        });
 
-		it('should persist contact with corrected timestamps', async () => {
-			contactRepository.findByEmail.mockResolvedValue(null);
-			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
-			const beforeCreate = new Date();
-			const savedContact = new Contact(
-				1,
-				createContactDto.nombres,
-				createContactDto.apellidos,
-				createContactDto.vocativo,
-				createContactDto.cargo,
-				createContactDto.correo,
-				createContactDto.telefono,
-				createContactDto.correo2,
-				createContactDto.comentarios,
-				createContactDto.idOrganizacion,
-				createContactDto.idAuthor,
-				beforeCreate,
-				beforeCreate,
-			);
-			contactRepository.save.mockResolvedValue(savedContact);
+        it('should create contact without secondary email', async () => {
+            const dtoWithoutSecondaryEmail = {
+                ...createContactDto,
+                correo2: null,
+            };
 
-			const result = await useCase.execute(createContactDto);
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const savedContact = new Contact(
+                1,
+                dtoWithoutSecondaryEmail.nombres,
+                dtoWithoutSecondaryEmail.apellidos,
+                dtoWithoutSecondaryEmail.vocativo,
+                dtoWithoutSecondaryEmail.cargo,
+                dtoWithoutSecondaryEmail.correo,
+                dtoWithoutSecondaryEmail.telefono,
+                dtoWithoutSecondaryEmail.correo2,
+                dtoWithoutSecondaryEmail.comentarios,
+                dtoWithoutSecondaryEmail.idOrganizacion,
+                dtoWithoutSecondaryEmail.idAuthor,
+                new Date(),
+                new Date(),
+            );
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
 
-			expect(result.createdAt).toBeDefined();
-			expect(result.updatedAt).toBeDefined();
-			expect(result.createdAt.getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
-		});
+            const result = await useCase.execute(dtoWithoutSecondaryEmail);
 
-		it('should save contact with all required fields', async () => {
-			contactRepository.findByEmail.mockResolvedValue(null);
-			contactRepository.findBySecondaryEmail.mockResolvedValue(null);
-			const savedContact = new Contact(
-				1,
-				createContactDto.nombres,
-				createContactDto.apellidos,
-				createContactDto.vocativo,
-				createContactDto.cargo,
-				createContactDto.correo,
-				createContactDto.telefono,
-				createContactDto.correo2,
-				createContactDto.comentarios,
-				createContactDto.idOrganizacion,
-				createContactDto.idAuthor,
-				new Date(),
-				new Date(),
-			);
-			contactRepository.save.mockResolvedValue(savedContact);
+            expect(result).toHaveProperty('correo2', null);
+            expect(
+                contactRepository.findBySecondaryEmail,
+            ).not.toHaveBeenCalled();
+        });
 
-			await useCase.execute(createContactDto);
+        it('should persist contact with corrected timestamps', async () => {
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const beforeCreate = new Date();
+            const savedContact = new Contact(
+                1,
+                createContactDto.nombres,
+                createContactDto.apellidos,
+                createContactDto.vocativo,
+                createContactDto.cargo,
+                createContactDto.correo,
+                createContactDto.telefono,
+                createContactDto.correo2,
+                createContactDto.comentarios,
+                createContactDto.idOrganizacion,
+                createContactDto.idAuthor,
+                beforeCreate,
+                beforeCreate,
+            );
+            contactRepository.save.mockResolvedValue(savedContact);
+            contactRepository.findByIdWithOrganization.mockResolvedValue(
+                savedContact,
+            );
 
-			expect(contactRepository.save).toHaveBeenCalledWith(
-				expect.objectContaining({
-					nombres: createContactDto.nombres,
-					apellidos: createContactDto.apellidos,
-					vocativo: createContactDto.vocativo,
-					correo: createContactDto.correo,
-					telefono: createContactDto.telefono,
-					idOrganizacion: createContactDto.idOrganizacion,
-				}),
-			);
-		});
-	});
+            const result = await useCase.execute(createContactDto);
+
+            expect(result.createdAt).toBeDefined();
+            expect(result.updatedAt).toBeDefined();
+            expect(result.createdAt.getTime()).toBeGreaterThanOrEqual(
+                beforeCreate.getTime(),
+            );
+        });
+
+        it('should save contact with all required fields', async () => {
+            contactRepository.findByEmail.mockResolvedValue(null);
+            contactRepository.findBySecondaryEmail.mockResolvedValue(null);
+            const savedContact = new Contact(
+                1,
+                createContactDto.nombres,
+                createContactDto.apellidos,
+                createContactDto.vocativo,
+                createContactDto.cargo,
+                createContactDto.correo,
+                createContactDto.telefono,
+                createContactDto.correo2,
+                createContactDto.comentarios,
+                createContactDto.idOrganizacion,
+                createContactDto.idAuthor,
+                new Date(),
+                new Date(),
+            );
+            contactRepository.save.mockResolvedValue(savedContact);
+
+            await useCase.execute(createContactDto);
+
+            expect(contactRepository.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    nombres: createContactDto.nombres,
+                    apellidos: createContactDto.apellidos,
+                    vocativo: createContactDto.vocativo,
+                    correo: createContactDto.correo,
+                    telefono: createContactDto.telefono,
+                    idOrganizacion: createContactDto.idOrganizacion,
+                }),
+            );
+        });
+    });
 });
