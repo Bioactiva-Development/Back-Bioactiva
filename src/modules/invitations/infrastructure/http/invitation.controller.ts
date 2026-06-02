@@ -7,6 +7,8 @@ import { CreateInvitationUseCase } from '@/modules/invitations/application/use-c
 import { ListInvitationsUseCase } from '@/modules/invitations/application/use-cases/list-invitations.use-case';
 import { ObtainInfoUseCase } from '@/modules/invitations/application/use-cases/obtain-info-use-case';
 import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-cases/revoke-invitation.use-case';
+import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
+import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
 import { AcceptInvitationDto } from '@/modules/invitations/infrastructure/http/dto/accept-invitation.dto.htpp';
 import { CreateInvitationDto } from '@/modules/invitations/infrastructure/http/dto/create-invitation.dto.http';
 import { User } from '@/modules/users/domain/entities/user';
@@ -22,8 +24,10 @@ import {
     ParseIntPipe,
     Post,
     Query,
+    Res,
     UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 @Controller('invitations')
 export class InvitationController {
@@ -67,16 +71,38 @@ export class InvitationController {
     }
 
     @Post('accept')
-    async acceptInvitation(@Body() body: AcceptInvitationDto) {
+    async acceptInvitation(
+        @Body() body: AcceptInvitationDto,
+        @Res({ passthrough: true }) response: Response,
+    ): Promise<AuthResponseDto> {
         if (body.password !== body.confirmPassword) {
             throw new BadRequestException('Las contraseñas no coinciden');
         }
-        return this.acceptInvitationUseCase.execute(
+        const tokenPair = await this.acceptInvitationUseCase.execute(
             body.token,
             body.password,
             body.nombres,
             body.apellidos,
         );
+
+        this.setRefreshTokenCookie(response, tokenPair.refreshToken);
+
+        return AuthResponseDto.fromTokenPair(
+            tokenPair.accessToken,
+            tokenPair.accessTokenExpiresIn,
+        );
+    }
+
+    private setRefreshTokenCookie(response: Response, refreshToken: string) {
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'lax',
+            path: '/auth/refresh',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
     }
 
     @Delete(':id')
