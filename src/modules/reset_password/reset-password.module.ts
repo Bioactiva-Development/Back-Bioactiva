@@ -16,6 +16,7 @@ import { ResetPasswordQueueModule } from '@/modules/reset_password/infrastructur
 import { ResetPasswordController } from '@/modules/reset_password/infrastructure/http/reset-password.controller';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
+import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
 
 @Module({
     imports: [
@@ -48,6 +49,7 @@ import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.s
             provide: HashServicePort,
             useExisting: Sha256HashService,
         },
+        AllowedEmailDomainsConfig,
     ],
     exports: [
         RequestPasswordResetUseCase,
