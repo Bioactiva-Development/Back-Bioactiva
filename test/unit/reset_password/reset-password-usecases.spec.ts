@@ -3,6 +3,7 @@ import { RequestPasswordResetUseCase } from '@/modules/reset_password/applicatio
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ExpirePasswordResetTokenUseCase } from '@/modules/reset_password/application/use-cases/expire-password-reset-token.use-case';
+import { ResetTokenValidatorService } from '@/modules/reset_password/application/services/reset-token-validator.service';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
@@ -254,9 +255,11 @@ describe('Reset Password module', () => {
             };
 
             useCase = new ValidateResetTokenUseCase(
-                passwordResetRepository,
-                userRepository,
-                hashService,
+                new ResetTokenValidatorService(
+                    passwordResetRepository,
+                    userRepository,
+                    hashService,
+                ),
             );
         });
 
@@ -421,10 +424,14 @@ describe('Reset Password module', () => {
             };
 
             useCase = new ResetPasswordUseCase(
+                new ResetTokenValidatorService(
+                    passwordResetRepository,
+                    userRepository,
+                    hashService,
+                ),
                 passwordResetRepository,
                 userRepository,
                 passwordHasher,
-                hashService,
             );
         });
 
