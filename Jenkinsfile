@@ -105,7 +105,6 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_DEV', variable: 'ENV_FILE')
                 ]) {
                     sh '''
-                        cat "$ENV_FILE"
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \
