@@ -14,6 +14,7 @@ import { PasswordResetEmailPublisher } from '@/modules/reset_password/infrastruc
 import { PasswordResetExpirationPublisher } from '@/modules/reset_password/infrastructure/queue/password-reset-expiration.publisher';
 import { ResetPasswordQueueModule } from '@/modules/reset_password/infrastructure/queue/reset-password-queue.module';
 import { ResetPasswordController } from '@/modules/reset_password/infrastructure/http/reset-password.controller';
+import { ResetTokenValidatorService } from '@/modules/reset_password/application/services/reset-token-validator.service';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
 import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
@@ -31,6 +32,7 @@ import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowe
         ResetPasswordUseCase,
         ValidateResetTokenUseCase,
         ExpirePasswordResetTokenUseCase,
+        ResetTokenValidatorService,
         PrismaPasswordResetRepository,
         Sha256HashService,
         {

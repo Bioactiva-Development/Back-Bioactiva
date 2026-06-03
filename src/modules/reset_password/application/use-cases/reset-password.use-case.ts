@@ -11,48 +11,25 @@ import {
     PASSWORD_HASHER,
     type PasswordHasherPort,
 } from '@/modules/auth/domain/ports/password-hasher.port';
-import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
-import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
-import { ResetTokenExpiredException } from '@/modules/reset_password/domain/exeptions/reset-token-expired.exception';
-import { TokenStatus } from '@/shared/domain/enums/token_estado';
+import { ResetTokenValidatorService } from '@/modules/reset_password/application/services/reset-token-validator.service';
 
 export class ResetPasswordUseCase {
     constructor(
+        private readonly tokenValidator: ResetTokenValidatorService,
         @Inject(PASSWORD_RESET_REPOSITORY)
         private readonly passwordResetRepository: PasswordResetRepositoryPort,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: UserRepositoryPort,
         @Inject(PASSWORD_HASHER)
         private readonly passwordHasher: PasswordHasherPort,
-        @Inject(HashServicePort)
-        private readonly hashService: HashServicePort,
     ) {}
 
     async execute(
         token: string,
         newPassword: string,
     ): Promise<{ ok: boolean }> {
-        const tokenHash = this.hashService.hash(token);
-
-        const resetToken =
-            await this.passwordResetRepository.findByToken(tokenHash);
-
-        if (resetToken?.estado !== TokenStatus.PENDIENTE) {
-            throw new InvalidResetTokenException();
-        }
-
-        if (resetToken.expired_at < new Date()) {
-            resetToken.estado = TokenStatus.EXPIRADO;
-            await this.passwordResetRepository.save(resetToken);
-            throw new ResetTokenExpiredException();
-        }
-
-        const user = await this.userRepository.findById(resetToken.user_id);
-        if (!user) {
-            throw new InvalidResetTokenException(
-                'Usuario asociado no encontrado',
-            );
-        }
+        const { resetToken, user } =
+            await this.tokenValidator.resolveValidToken(token);
 
         const hashedPassword = await this.passwordHasher.hash(newPassword);
 
