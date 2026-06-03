@@ -125,6 +125,7 @@ describe('Reset Password module', () => {
                         estado: 'PENDIENTE',
                         proposito: 'RESET_PASSWORD',
                     },
+                    orderBy: { createdAt: 'desc' },
                 });
                 expect(result).toBeDefined();
             });

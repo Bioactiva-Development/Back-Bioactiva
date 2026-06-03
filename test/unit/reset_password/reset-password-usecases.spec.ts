@@ -10,6 +10,9 @@ import { PasswordResetToken } from '@/modules/reset_password/domain/entities/pas
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
 import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
 import { ResetTokenExpiredException } from '@/modules/reset_password/domain/exeptions/reset-token-expired.exception';
+import { ActiveResetTokenException } from '@/modules/reset_password/domain/exeptions/active-reset-token.exception';
+import { ResetPasswordDomainNotAllowedException } from '@/modules/reset_password/domain/exeptions/reset-password-domain-not-allowed.exception';
+import { UserNotFoundException } from '@/modules/users/domain/exceptions/user-not-found.exception';
 
 describe('Reset Password module', () => {
     /**
@@ -30,10 +33,28 @@ describe('Reset Password module', () => {
         let passwordResetNotification: any;
         let hashService: any;
         let expirationScheduler: any;
+        let allowedEmailDomainsConfig: any;
+
+        const makeUser = (
+            estado: UserState = UserState.ACTIVO,
+            id: number | null = 1,
+        ) =>
+            new User(
+                id,
+                'John',
+                'Doe',
+                'john@bioactiva.com',
+                'hashed-password',
+                new Date(),
+                UserRole.TRABAJADOR,
+                estado,
+                new Date(),
+            );
 
         beforeEach(() => {
             passwordResetRepository = {
                 save: jest.fn(),
+                findPendingByEmail: jest.fn().mockResolvedValue(null),
             };
             userRepository = {
                 findByCorreo: jest.fn(),
@@ -47,6 +68,10 @@ describe('Reset Password module', () => {
             expirationScheduler = {
                 scheduleExpiration: jest.fn(),
             };
+            // Por defecto sin dominios restringidos => se omite la validación de dominio.
+            allowedEmailDomainsConfig = {
+                getAllowedDomains: jest.fn().mockReturnValue([]),
+            };
 
             useCase = new RequestPasswordResetUseCase(
                 passwordResetRepository,
@@ -54,23 +79,12 @@ describe('Reset Password module', () => {
                 passwordResetNotification,
                 hashService,
                 expirationScheduler,
+                allowedEmailDomainsConfig,
             );
         });
 
         it('should request password reset for valid user', async () => {
-            const user = new User(
-                1,
-                'John',
-                'Doe',
-                'john@bioactiva.com',
-                'hashed-password',
-                new Date(),
-                UserRole.TRABAJADOR,
-                UserState.ACTIVO,
-                new Date(),
-            );
-
-            userRepository.findByCorreo.mockResolvedValue(user);
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
             passwordResetRepository.save.mockResolvedValue({ id: 1 });
 
             const result = await useCase.execute('john@bioactiva.com');
@@ -82,50 +96,99 @@ describe('Reset Password module', () => {
             expect(passwordResetRepository.save).toHaveBeenCalled();
         });
 
-        it('should silently return ok for non-existent user (security)', async () => {
+        it('should reject email whose domain is not allowed (400)', async () => {
+            allowedEmailDomainsConfig.getAllowedDomains.mockReturnValue([
+                'bioactiva.com',
+            ]);
+
+            await expect(
+                useCase.execute('attacker@gmail.com'),
+            ).rejects.toThrow(ResetPasswordDomainNotAllowedException);
+            expect(userRepository.findByCorreo).not.toHaveBeenCalled();
+        });
+
+        it('should throw UserNotFoundException for non-existent user (404)', async () => {
             userRepository.findByCorreo.mockResolvedValue(null);
 
-            const result = await useCase.execute('notfound@bioactiva.com');
-
-            expect(result).toEqual({ ok: true });
+            await expect(
+                useCase.execute('notfound@bioactiva.com'),
+            ).rejects.toThrow(UserNotFoundException);
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
-        it('should silently return ok for user without id', async () => {
-            const userWithoutId = new User(
-                null,
-                'John',
-                'Doe',
-                'john@bioactiva.com',
-                'hashed-password',
-                new Date(),
-                UserRole.TRABAJADOR,
-                UserState.ACTIVO,
-                new Date(),
+        it('should throw UserNotFoundException for user without id (404)', async () => {
+            userRepository.findByCorreo.mockResolvedValue(
+                makeUser(UserState.ACTIVO, null),
             );
 
-            userRepository.findByCorreo.mockResolvedValue(userWithoutId);
+            await expect(
+                useCase.execute('john@bioactiva.com'),
+            ).rejects.toThrow(UserNotFoundException);
+            expect(passwordResetRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should throw UserNotFoundException for inactive account (404)', async () => {
+            userRepository.findByCorreo.mockResolvedValue(
+                makeUser(UserState.SUSPENDIDO),
+            );
+
+            await expect(
+                useCase.execute('john@bioactiva.com'),
+            ).rejects.toThrow(UserNotFoundException);
+            expect(passwordResetRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should reject when a reset token was requested less than 5 minutes ago (409)', async () => {
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
+            const recentToken = new PasswordResetToken(
+                1,
+                1,
+                'hashed-token',
+                TokenStatus.PENDIENTE,
+                new Date(Date.now() - 60 * 1000), // hace 1 minuto
+                null,
+                new Date(Date.now() + 2 * 60 * 60 * 1000),
+            );
+            passwordResetRepository.findPendingByEmail.mockResolvedValue(
+                recentToken,
+            );
+
+            await expect(
+                useCase.execute('john@bioactiva.com'),
+            ).rejects.toThrow(ActiveResetTokenException);
+            expect(
+                expirationScheduler.scheduleExpiration,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('should expire the previous token and issue a new one when older than 5 minutes', async () => {
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
+            const oldToken = new PasswordResetToken(
+                1,
+                1,
+                'hashed-token',
+                TokenStatus.PENDIENTE,
+                new Date(Date.now() - 10 * 60 * 1000), // hace 10 minutos
+                null,
+                new Date(Date.now() + 2 * 60 * 60 * 1000),
+            );
+            passwordResetRepository.findPendingByEmail.mockResolvedValue(
+                oldToken,
+            );
+            passwordResetRepository.save.mockResolvedValue({ id: 2 });
 
             const result = await useCase.execute('john@bioactiva.com');
 
             expect(result).toEqual({ ok: true });
-            expect(passwordResetRepository.save).not.toHaveBeenCalled();
+            expect(oldToken.estado).toBe(TokenStatus.EXPIRADO);
+            // Una llamada persiste la expiración del anterior y otra el nuevo token.
+            expect(
+                passwordResetRepository.save.mock.calls.length,
+            ).toBeGreaterThanOrEqual(2);
         });
 
         it('should schedule expiration after token creation', async () => {
-            const user = new User(
-                1,
-                'John',
-                'Doe',
-                'john@bioactiva.com',
-                'hashed-password',
-                new Date(),
-                UserRole.TRABAJADOR,
-                UserState.ACTIVO,
-                new Date(),
-            );
-
-            userRepository.findByCorreo.mockResolvedValue(user);
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
             passwordResetRepository.save.mockResolvedValue({
                 id: 1,
                 expired_at: new Date(),
@@ -137,19 +200,7 @@ describe('Reset Password module', () => {
         });
 
         it('should send reset password email notification', async () => {
-            const user = new User(
-                1,
-                'John',
-                'Doe',
-                'john@bioactiva.com',
-                'hashed-password',
-                new Date(),
-                UserRole.TRABAJADOR,
-                UserState.ACTIVO,
-                new Date(),
-            );
-
-            userRepository.findByCorreo.mockResolvedValue(user);
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
             passwordResetRepository.save.mockResolvedValue({ id: 1 });
 
             await useCase.execute('john@bioactiva.com');
@@ -160,24 +211,11 @@ describe('Reset Password module', () => {
         });
 
         it('should set token expiration to 2 hours', async () => {
-            const user = new User(
-                1,
-                'John',
-                'Doe',
-                'john@bioactiva.com',
-                'hashed-password',
-                new Date(),
-                UserRole.TRABAJADOR,
-                UserState.ACTIVO,
-                new Date(),
-            );
-
-            userRepository.findByCorreo.mockResolvedValue(user);
+            userRepository.findByCorreo.mockResolvedValue(makeUser());
             passwordResetRepository.save.mockResolvedValue({ id: 1 });
 
             const beforeTime = Date.now();
             await useCase.execute('john@bioactiva.com');
-            const afterTime = Date.now();
 
             const saveCall = passwordResetRepository.save.mock.calls[0][0];
             const expirationTime = saveCall.expired_at.getTime();
