@@ -1,6 +1,7 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
-import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
+import { ORGANIZATION_REPOSITORY } from '@/modules/organizations/domain/ports/organization.repository';
+import type { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { SUNAT_SERVICE, type ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
 import { UpdateOrganizationDto } from '@/modules/organizations/application/dtos/update-organization.dto';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
@@ -8,9 +9,9 @@ import { InvalidRucException } from '@/modules/organizations/domain/exceptions/i
 
 export class UpdateOrganizationUseCase {
     constructor(
-        @Inject(IOrganizationRepository)
+        @Inject(ORGANIZATION_REPOSITORY)
         private readonly organizationRepository: IOrganizationRepository,
-        @Inject(ISunatService)
+        @Inject(SUNAT_SERVICE)
         private readonly sunatService: ISunatService,
     ) {}
 
@@ -50,7 +51,7 @@ export class UpdateOrganizationUseCase {
             throw new InvalidRucException(dto.ruc);
         }
 
-        organization.ruc = dto.ruc;
+        organization.updateRuc(dto.ruc);
     }
 
     private applyUpdates(

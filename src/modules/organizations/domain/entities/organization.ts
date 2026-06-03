@@ -53,4 +53,12 @@ export class Organization {
         this.idContactoActivo = null;
         this.updatedAt = new Date();
     }
+
+    updateRuc(ruc: string) {
+        if (!/^\d{11}$/.test(ruc)) {
+            throw new Error('El RUC debe tener 11 dígitos');
+        }
+        this.ruc = ruc;
+        this.updatedAt = new Date();
+    }
 }

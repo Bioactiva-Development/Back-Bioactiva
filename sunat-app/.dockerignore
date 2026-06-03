@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+.git/
+.pytest_cache/
+REPORTES/
+tests/
+*.md
+context.md
+promt.md

@@ -1,5 +1,8 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
+import {
+    IContactRepository,
+    ContactWithOrgName,
+} from '@/modules/contacts/domain/ports/contact.repository';
 import { ContactNotFoundException } from '@/modules/contacts/domain/exceptions/contact-not-found.exception';
 
 export class GetContactByIdUseCase {
@@ -9,7 +12,8 @@ export class GetContactByIdUseCase {
     ) {}
 
     async execute(id: number): Promise<ContactWithOrgName> {
-        const enriched = await this.contactRepository.findByIdWithOrganization(id);
+        const enriched =
+            await this.contactRepository.findByIdWithOrganization(id);
         if (!enriched) throw new ContactNotFoundException(id);
         return enriched;
     }

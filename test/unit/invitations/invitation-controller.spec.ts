@@ -69,16 +69,24 @@ describe('InvitationController', () => {
     });
 
     it('should accept invitation when passwords match', async () => {
-        acceptInvitationUseCase.execute.mockResolvedValue({ success: true });
+        acceptInvitationUseCase.execute.mockResolvedValue({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            accessTokenExpiresIn: 900,
+            refreshTokenExpiresIn: 604800,
+        } as any);
+        const response = { cookie: jest.fn() } as any;
 
-        const result = await controller.acceptInvitation({ token: 'token', password: 'pass123', confirmPassword: 'pass123', nombres: 'Juan', apellidos: 'Perez' });
+        const result = await controller.acceptInvitation({ token: 'token', password: 'pass123', confirmPassword: 'pass123', nombres: 'Juan', apellidos: 'Perez' }, response);
 
         expect(acceptInvitationUseCase.execute).toHaveBeenCalledWith('token', 'pass123', 'Juan', 'Perez');
-        expect(result).toEqual({ success: true });
+        expect(response.cookie).toHaveBeenCalled();
+        expect(result).toMatchObject({ accessToken: 'access-token' });
     });
 
     it('should throw when passwords do not match on accept', async () => {
-        await expect(controller.acceptInvitation({ token: 'token', password: 'pass1', confirmPassword: 'pass2', nombres: 'Juan', apellidos: 'Perez' }))
+        const response = { cookie: jest.fn() } as any;
+        await expect(controller.acceptInvitation({ token: 'token', password: 'pass1', confirmPassword: 'pass2', nombres: 'Juan', apellidos: 'Perez' }, response))
             .rejects.toThrow(BadRequestException);
     });
 

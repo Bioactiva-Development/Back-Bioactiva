@@ -5,108 +5,108 @@ import { Vocative } from '@/modules/contacts/domain/enums/vocative';
 import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 
 describe('Contacts module', () => {
-	/**
-	 * Contact entity
-	 * ----------
-	 * Responsable de:
-	 * - cambiar email del contacto
-	 * - marcar email como vencido
-	 * - mantener integridad de datos de contacto
-	 * - actualizar timestamps en cambios
-	 */
-	// STATUS: Implementación completa (métodos de dominio y validaciones).
-	describe('Contact entity domain rules', () => {
-		const createdAt = new Date('2024-01-01T00:00:00.000Z');
+    /**
+     * Contact entity
+     * ----------
+     * Responsable de:
+     * - cambiar email del contacto
+     * - marcar email como vencido
+     * - mantener integridad de datos de contacto
+     * - actualizar timestamps en cambios
+     */
+    // STATUS: Implementación completa (métodos de dominio y validaciones).
+    describe('Contact entity domain rules', () => {
+        const createdAt = new Date('2024-01-01T00:00:00.000Z');
 
-		const buildContact = () =>
-			new Contact(
-				1,
-				'Ana',
-				'Paredes',
-				Vocative.DOCTORA,
-				'Gerente Comercial',
-				'ana.paredes@techcorp.com',
-				'+51987654321',
-				'ana.p@personal.com',
-				'Primera contacto en Linkedin',
-				'org-1',
-				1,
-				createdAt,
-				createdAt,
-				EstadoCorreo.VIGENTE,
-			);
+        const buildContact = () =>
+            new Contact(
+                1,
+                'Ana',
+                'Paredes',
+                Vocative.DOCTORA,
+                'Gerente Comercial',
+                'ana.paredes@techcorp.com',
+                '+51987654321',
+                'ana.p@personal.com',
+                'Primera contacto en Linkedin',
+                'org-1',
+                1,
+                createdAt,
+                createdAt,
+                EstadoCorreo.VIGENTE,
+            );
 
-		it('should change email to valid address', () => {
-			const contact = buildContact();
-			const newEmail = 'ana.new@techcorp.com';
+        it('should change email to valid address', () => {
+            const contact = buildContact();
+            const newEmail = 'ana.new@techcorp.com';
 
-			contact.changeEmail(newEmail);
+            contact.changeEmail(newEmail);
 
-			expect(contact.correo).toBe(newEmail);
-			expect(contact.updatedAt).not.toEqual(createdAt);
-		});
+            expect(contact.correo).toBe(newEmail);
+            expect(contact.updatedAt).not.toEqual(createdAt);
+        });
 
-		it('should throw error when changing email to empty string', () => {
-			const contact = buildContact();
+        it('should throw error when changing email to empty string', () => {
+            const contact = buildContact();
 
-			expect(() => contact.changeEmail('')).toThrow(
-				'El correo no puede estar vacío',
-			);
-			expect(contact.correo).toBe('ana.paredes@techcorp.com'); // Original email unchanged
-		});
+            expect(() => contact.changeEmail('')).toThrow(
+                'El correo no puede estar vacío',
+            );
+            expect(contact.correo).toBe('ana.paredes@techcorp.com'); // Original email unchanged
+        });
 
-		it('should throw error when changing email to whitespace only', () => {
-			const contact = buildContact();
+        it('should throw error when changing email to whitespace only', () => {
+            const contact = buildContact();
 
-			expect(() => contact.changeEmail('   ')).toThrow(
-				'El correo no puede estar vacío',
-			);
-		});
+            expect(() => contact.changeEmail('   ')).toThrow(
+                'El correo no puede estar vacío',
+            );
+        });
 
-		it('should mark email as expired', () => {
-			const contact = buildContact();
-			const oldUpdatedAt = contact.updatedAt;
+        it('should mark email as expired', () => {
+            const contact = buildContact();
+            const oldUpdatedAt = contact.updatedAt;
 
-			contact.markExpired();
+            contact.markExpired();
 
-			expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
-			expect(contact.updatedAt.getTime()).toBeGreaterThan(
-				oldUpdatedAt.getTime(),
-			);
-		});
+            expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
+            expect(contact.updatedAt.getTime()).toBeGreaterThan(
+                oldUpdatedAt.getTime(),
+            );
+        });
 
-		it('should allow marking email as expired multiple times', () => {
-			const contact = buildContact();
-			contact.markExpired();
-			const firstExpiredAt = contact.updatedAt;
+        it('should allow marking email as expired multiple times', () => {
+            const contact = buildContact();
+            contact.markExpired();
+            const firstExpiredAt = contact.updatedAt;
 
-			// Mark expired again
-			contact.markExpired();
+            // Mark expired again
+            contact.markExpired();
 
-			expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
-			expect(contact.updatedAt.getTime()).toBeGreaterThanOrEqual(
-				firstExpiredAt.getTime(),
-			);
-		});
+            expect(contact.estado_correo).toBe(EstadoCorreo.VENCIDO);
+            expect(contact.updatedAt.getTime()).toBeGreaterThanOrEqual(
+                firstExpiredAt.getTime(),
+            );
+        });
 
-		it('should accept special characters and formats in email', () => {
-			const contact = buildContact();
-			const specialEmail = 'ana.paredes+tag@example.co.uk';
+        it('should accept special characters and formats in email', () => {
+            const contact = buildContact();
+            const specialEmail = 'ana.paredes+tag@example.co.uk';
 
-			contact.changeEmail(specialEmail);
+            contact.changeEmail(specialEmail);
 
-			expect(contact.correo).toBe(specialEmail);
-		});
+            expect(contact.correo).toBe(specialEmail);
+        });
 
-		it('should maintain other contact properties when changing email', () => {
-			const contact = buildContact();
-			const originalNombres = contact.nombres;
-			const originalCargo = contact.cargo;
+        it('should maintain other contact properties when changing email', () => {
+            const contact = buildContact();
+            const originalNombres = contact.nombres;
+            const originalCargo = contact.cargo;
 
-			contact.changeEmail('new.email@techcorp.com');
+            contact.changeEmail('new.email@techcorp.com');
 
-			expect(contact.nombres).toBe(originalNombres);
-			expect(contact.cargo).toBe(originalCargo);
-		});
-	});
+            expect(contact.nombres).toBe(originalNombres);
+            expect(contact.cargo).toBe(originalCargo);
+        });
+    });
 });

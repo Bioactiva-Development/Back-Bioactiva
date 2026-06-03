@@ -7,7 +7,12 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/infrastructure/jwt/guards/roles.guard';
 import { Roles } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
@@ -41,10 +46,19 @@ export class UserController {
         description:
             'Obtiene un listado paginado de usuarios con filtros opcionales. Solo accesible para administradores.',
     })
-    @ApiResponse({ status: 200, description: 'Listado paginado de usuarios', type: PaginatedUserResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado paginado de usuarios',
+        type: PaginatedUserResponseDto,
+    })
     @ApiResponse({ status: 401, description: 'No autenticado' })
-    @ApiResponse({ status: 403, description: 'No autorizado — se requiere rol ADMINISTRADOR' })
-    async findAll(@Query() query: ListUsersQueryDto): Promise<PaginatedUserResponseDto> {
+    @ApiResponse({
+        status: 403,
+        description: 'No autorizado — se requiere rol ADMINISTRADOR',
+    })
+    async findAll(
+        @Query() query: ListUsersQueryDto,
+    ): Promise<PaginatedUserResponseDto> {
         const dto = new ListUsersDto(
             query.search,
             query.role,
@@ -54,7 +68,12 @@ export class UserController {
         );
         const { data, total } = await this.getAllUsersUseCase.execute(dto);
         const responseData = data.map((user) => new UserResponseDto(user));
-        return new PaginatedUserResponseDto(responseData, total, dto.page, dto.limit);
+        return new PaginatedUserResponseDto(
+            responseData,
+            total,
+            dto.page,
+            dto.limit,
+        );
     }
 
     @Patch(':id/disable')
@@ -64,14 +83,20 @@ export class UserController {
         description:
             'Suspende el acceso de un usuario al sistema. Solo accesible para administradores. Un administrador no puede deshabilitarse a sí mismo.',
     })
-    @ApiResponse({ status: 204, description: 'Usuario deshabilitado exitosamente' })
+    @ApiResponse({
+        status: 204,
+        description: 'Usuario deshabilitado exitosamente',
+    })
     @ApiResponse({
         status: 409,
         description:
             'No se puede deshabilitar la propia cuenta o el usuario ya está deshabilitado',
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
-    @ApiResponse({ status: 403, description: 'No autorizado — se requiere rol ADMINISTRADOR' })
+    @ApiResponse({
+        status: 403,
+        description: 'No autorizado — se requiere rol ADMINISTRADOR',
+    })
     @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
     async disable(
         @Param() params: RevokeUserParamsDto,
@@ -87,7 +112,10 @@ export class UserController {
         description:
             'Reactiva el acceso de un usuario al sistema. Solo accesible para administradores.',
     })
-    @ApiResponse({ status: 204, description: 'Usuario habilitado exitosamente' })
+    @ApiResponse({
+        status: 204,
+        description: 'Usuario habilitado exitosamente',
+    })
     @ApiResponse({ status: 409, description: 'El usuario ya está habilitado' })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({

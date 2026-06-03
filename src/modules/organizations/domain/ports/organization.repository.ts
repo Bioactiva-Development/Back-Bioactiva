@@ -6,4 +6,4 @@ export interface IOrganizationRepository {
     findByRuc(ruc: string): Promise<Organization | null>;
     findAll(): Promise<Organization[]>;
 }
-export const IOrganizationRepository = Symbol('IOrganizationRepository');
+export const ORGANIZATION_REPOSITORY = Symbol('ORGANIZATION_REPOSITORY');
