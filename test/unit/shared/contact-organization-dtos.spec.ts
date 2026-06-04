@@ -8,7 +8,6 @@ import { HttpCreateOrganizationDto } from '@/modules/organizations/infrastructur
 import { HttpUpdateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/update-organization.dto.http';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { Vocative } from '@/modules/contacts/domain/enums/vocative';
-import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 import type { ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 
 describe('Contact DTOs', () => {
@@ -23,6 +22,50 @@ describe('Contact DTOs', () => {
             expect(dto.apellidos).toBe('Perez');
             expect(dto.correo).toBe('juan@example.com');
             expect(dto.idOrganizacion).toBe('org-1');
+        });
+
+        // Mantis #219: "cargo" es opcional y debe tolerar cadena vacía
+        it('should accept an empty cargo without error', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+                cargo: '',
+            });
+
+            const errors = await validate(dto);
+            const cargoError = errors.find((e) => e.property === 'cargo');
+
+            expect(cargoError).toBeUndefined();
+        });
+
+        it('should accept a contact without the cargo field', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+            });
+
+            const errors = await validate(dto);
+
+            expect(errors).toHaveLength(0);
+        });
+
+        it('should return a Spanish error when cargo exceeds 120 chars', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+                cargo: 'a'.repeat(121),
+            });
+
+            const errors = await validate(dto);
+            const cargoError = errors.find((e) => e.property === 'cargo');
+
+            expect(cargoError).toBeDefined();
+            expect(Object.values(cargoError!.constraints ?? {})).toContain(
+                'El cargo no debe superar los 120 caracteres.',
+            );
         });
     });
 
