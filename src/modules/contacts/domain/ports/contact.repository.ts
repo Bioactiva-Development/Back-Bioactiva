@@ -5,6 +5,13 @@ export type ContactWithOrgName = {
     organizationName: string;
 };
 
+export interface ListContactsParams {
+    idOrganization?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}
+
 export interface IContactRepository {
     save(contact: Contact): Promise<Contact>;
 
@@ -19,6 +26,10 @@ export interface IContactRepository {
     findAll(): Promise<Contact[]>;
 
     findAllWithOrganization(): Promise<ContactWithOrgName[]>;
+
+    list(params?: ListContactsParams): Promise<ContactWithOrgName[]>;
+
+    count(params?: Omit<ListContactsParams, 'page' | 'limit'>): Promise<number>;
 
     findByIdWithOrganization(id: number): Promise<ContactWithOrgName | null>;
 

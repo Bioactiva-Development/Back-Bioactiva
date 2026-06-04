@@ -46,6 +46,7 @@ describe('Contacts module', () => {
                     findUnique: jest.fn(),
                     findFirst: jest.fn(),
                     findMany: jest.fn(),
+                    count: jest.fn(),
                 },
             };
 
@@ -320,6 +321,81 @@ describe('Contacts module', () => {
                 const result = await repository.findByIdWithOrganization(999);
 
                 expect(result).toBeNull();
+            });
+        });
+
+        describe('list', () => {
+            it('should filter by organization and paginate', async () => {
+                const records = [
+                    { ...mockContactData, organizacion: { nombre: 'Org A' } },
+                ];
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    records,
+                );
+
+                const result = await repository.list({
+                    idOrganization: 'org-1',
+                    page: 2,
+                    limit: 5,
+                });
+
+                expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { idOrganizacion: 'org-1' },
+                        skip: 5,
+                        take: 5,
+                    }),
+                );
+                expect(result).toHaveLength(1);
+                expect(result[0].organizationName).toBe('Org A');
+            });
+
+            it('should apply a textual search across multiple fields', async () => {
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    [],
+                );
+
+                await repository.list({ search: 'ana' });
+
+                const callArg = (mockPrisma.contacto!.findMany as jest.Mock)
+                    .mock.calls[0][0] as any;
+                expect(callArg.where.OR).toEqual(
+                    expect.arrayContaining([
+                        {
+                            nombres: { contains: 'ana', mode: 'insensitive' },
+                        },
+                        {
+                            correo: { contains: 'ana', mode: 'insensitive' },
+                        },
+                    ]),
+                );
+            });
+
+            it('should default to page 1 and limit 10 with no params', async () => {
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    [],
+                );
+
+                await repository.list();
+
+                expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({ skip: 0, take: 10, where: {} }),
+                );
+            });
+        });
+
+        describe('count', () => {
+            it('should count contacts matching the filters', async () => {
+                (mockPrisma.contacto!.count as jest.Mock).mockResolvedValue(7);
+
+                const result = await repository.count({
+                    idOrganization: 'org-1',
+                });
+
+                expect(mockPrisma.contacto!.count).toHaveBeenCalledWith({
+                    where: { idOrganizacion: 'org-1' },
+                });
+                expect(result).toBe(7);
             });
         });
 

@@ -5,6 +5,7 @@ import {
     Get,
     Param,
     Patch,
+    Query,
     ParseIntPipe,
     UseGuards,
 } from '@nestjs/common';
@@ -27,7 +28,10 @@ import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
 import { CreateContactDto } from '@/modules/contacts/application/dtos/create-contact.dto';
+import { ListContactsDto } from '@/modules/contacts/application/dtos/list-contacts.dto';
 import { ContactResponseDto } from '@/modules/contacts/infrastructure/http/dtos/contact-response.dto';
+import { HttpListContactsQueryDto } from '@/modules/contacts/infrastructure/http/dtos/list-contacts-query.dto.http';
+import { PaginatedContactResponseDto } from '@/modules/contacts/infrastructure/http/dtos/paginated-contact-response.dto';
 
 @ApiTags('contacts')
 @ApiBearerAuth()
@@ -75,15 +79,31 @@ export class ContactController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Listar todos los contactos' })
+    @ApiOperation({
+        summary: 'Listar contactos con filtros y paginación',
+    })
     @ApiResponse({
         status: 200,
-        description: 'Listado de contactos obtenido',
-        type: [ContactResponseDto],
+        description: 'Listado paginado de contactos obtenido',
+        type: PaginatedContactResponseDto,
     })
-    async findAll(): Promise<ContactResponseDto[]> {
-        const result = await this.getAllContactsUseCase.execute();
-        return result.map((r) => new ContactResponseDto(r));
+    async findAll(
+        @Query() query: HttpListContactsQueryDto,
+    ): Promise<PaginatedContactResponseDto> {
+        const dto = new ListContactsDto(
+            query.idOrganization,
+            query.search,
+            query.page,
+            query.limit,
+        );
+        const { data, total } = await this.getAllContactsUseCase.execute(dto);
+        const responseData = data.map((r) => new ContactResponseDto(r));
+        return new PaginatedContactResponseDto(
+            responseData,
+            total,
+            dto.page,
+            dto.limit,
+        );
     }
 
     @Get('organization/:idOrganizacion')
