@@ -31,4 +31,13 @@ export class Contact {
         this.estado_correo = EstadoCorreo.VENCIDO;
         this.updatedAt = new Date();
     }
+
+    markActive() {
+        this.estado_correo = EstadoCorreo.VIGENTE;
+        this.updatedAt = new Date();
+    }
+
+    isActive(): boolean {
+        return this.estado_correo === EstadoCorreo.VIGENTE;
+    }
 }
