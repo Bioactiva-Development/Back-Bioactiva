@@ -23,9 +23,33 @@ describe('ContactController', () => {
     let getContactsByOrgUseCase: jest.Mocked<GetContactsByOrganizationUseCase>;
     let changeContactStatusUseCase: jest.Mocked<ChangeContactStatusUseCase>;
 
-    const mockUser = new User(1, 'Admin', 'User', 'admin@test.com', 'hash', new Date(), UserRole.ADMINISTRADOR, UserState.ACTIVO, new Date());
+    const mockUser = new User(
+        1,
+        'Admin',
+        'User',
+        'admin@test.com',
+        'hash',
+        new Date(),
+        UserRole.ADMINISTRADOR,
+        UserState.ACTIVO,
+        new Date(),
+    );
 
-    const mockContact = new Contact(1, 'Juan', 'Perez', Vocative.SR, 'Manager', 'juan@test.com', '999888777', null, 'Test', 'org-1', 1, new Date(), new Date());
+    const mockContact = new Contact(
+        1,
+        'Juan',
+        'Perez',
+        Vocative.SR,
+        'Manager',
+        'juan@test.com',
+        '999888777',
+        null,
+        'Test',
+        'org-1',
+        1,
+        new Date(),
+        new Date(),
+    );
 
     const enrichedContact = { contact: mockContact, organizationName: 'Org A' };
 
@@ -40,12 +64,30 @@ describe('ContactController', () => {
         const module = await Test.createTestingModule({
             controllers: [ContactController],
             providers: [
-                { provide: CreateContactUseCase, useValue: createContactUseCase },
-                { provide: UpdateContactUseCase, useValue: updateContactUseCase },
-                { provide: GetContactByIdUseCase, useValue: getContactByIdUseCase },
-                { provide: GetAllContactsUseCase, useValue: getAllContactsUseCase },
-                { provide: GetContactsByOrganizationUseCase, useValue: getContactsByOrgUseCase },
-                { provide: ChangeContactStatusUseCase, useValue: changeContactStatusUseCase },
+                {
+                    provide: CreateContactUseCase,
+                    useValue: createContactUseCase,
+                },
+                {
+                    provide: UpdateContactUseCase,
+                    useValue: updateContactUseCase,
+                },
+                {
+                    provide: GetContactByIdUseCase,
+                    useValue: getContactByIdUseCase,
+                },
+                {
+                    provide: GetAllContactsUseCase,
+                    useValue: getAllContactsUseCase,
+                },
+                {
+                    provide: GetContactsByOrganizationUseCase,
+                    useValue: getContactsByOrgUseCase,
+                },
+                {
+                    provide: ChangeContactStatusUseCase,
+                    useValue: changeContactStatusUseCase,
+                },
             ],
         }).compile();
 
@@ -55,7 +97,12 @@ describe('ContactController', () => {
     it('should create a contact', async () => {
         createContactUseCase.execute.mockResolvedValue(enrichedContact);
 
-        const dto = { nombres: 'Juan', apellidos: 'Perez', correo: 'juan@test.com', idOrganizacion: 'org-1' } as any;
+        const dto = {
+            nombres: 'Juan',
+            apellidos: 'Perez',
+            correo: 'juan@test.com',
+            idOrganizacion: 'org-1',
+        } as any;
         const result = await controller.create(dto, mockUser);
 
         expect(createContactUseCase.execute).toHaveBeenCalled();
@@ -90,7 +137,10 @@ describe('ContactController', () => {
     });
 
     it('should update a contact', async () => {
-        const updatedContact = { contact: { ...mockContact, nombres: 'Jane' }, organizationName: 'Org A' };
+        const updatedContact = {
+            contact: { ...mockContact, nombres: 'Jane' },
+            organizationName: 'Org A',
+        };
         updateContactUseCase.execute.mockResolvedValue(updatedContact);
 
         const dto = { nombres: 'Jane' } as any;
@@ -101,7 +151,22 @@ describe('ContactController', () => {
     });
 
     it('should change a contact status', async () => {
-        const contact = new Contact(1, 'Juan', 'Perez', Vocative.SR, 'Manager', 'juan@test.com', '999888777', null, 'Test', 'org-1', 1, new Date(), new Date(), EstadoCorreo.VENCIDO);
+        const contact = new Contact(
+            1,
+            'Juan',
+            'Perez',
+            Vocative.SR,
+            'Manager',
+            'juan@test.com',
+            '999888777',
+            null,
+            'Test',
+            'org-1',
+            1,
+            new Date(),
+            new Date(),
+            EstadoCorreo.VENCIDO,
+        );
         const expiredContact = { contact, organizationName: 'Org A' };
         changeContactStatusUseCase.execute.mockResolvedValue(expiredContact);
 

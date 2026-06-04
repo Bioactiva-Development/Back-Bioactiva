@@ -44,21 +44,30 @@ export class RequestPasswordResetUseCase {
 
     async execute(correo: string): Promise<{ ok: boolean }> {
         const domain = correo.split('@')[1]?.toLowerCase();
-        const allowedDomains = this.allowedEmailDomainsConfig.getAllowedDomains();
-        if (allowedDomains.length > 0 && (!domain || !allowedDomains.includes(domain))) {
+        const allowedDomains =
+            this.allowedEmailDomainsConfig.getAllowedDomains();
+        if (
+            allowedDomains.length > 0 &&
+            (!domain || !allowedDomains.includes(domain))
+        ) {
             throw new ResetPasswordDomainNotAllowedException();
         }
 
         const user = await this.userRepository.findByCorreo(correo);
         if (user?.id == null) {
-            throw new UserNotFoundException('El correo electrónico no está registrado en el sistema');
+            throw new UserNotFoundException(
+                'El correo electrónico no está registrado en el sistema',
+            );
         }
 
         if (!user.canAuthenticate()) {
-            throw new UserNotFoundException('El correo electrónico no está registrado en el sistema');
+            throw new UserNotFoundException(
+                'El correo electrónico no está registrado en el sistema',
+            );
         }
 
-        const existingToken = await this.passwordResetRepository.findPendingByEmail(correo);
+        const existingToken =
+            await this.passwordResetRepository.findPendingByEmail(correo);
         if (existingToken) {
             const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_MS);
             if (existingToken.created_at > rateLimitCutoff) {

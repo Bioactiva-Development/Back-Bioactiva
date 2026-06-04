@@ -9,13 +9,17 @@ describe('Invitation Processors', () => {
     let mockMailService: jest.Mocked<MailService>;
     let mockExpireInvitationUseCase: jest.Mocked<ExpireInvitationUseCase>;
 
-    const makeJob = (name: string, data: any) => ({
-        name,
-        data,
-    }) as any;
+    const makeJob = (name: string, data: any) =>
+        ({
+            name,
+            data,
+        }) as any;
 
     beforeEach(() => {
-        mockMailService = { sendInvitationEmail: jest.fn(), sendResetPasswordEmail: jest.fn() } as any;
+        mockMailService = {
+            sendInvitationEmail: jest.fn(),
+            sendResetPasswordEmail: jest.fn(),
+        } as any;
         mockExpireInvitationUseCase = { execute: jest.fn() } as any;
     });
 
@@ -31,7 +35,9 @@ describe('Invitation Processors', () => {
 
             await processor.process(job);
 
-            expect(mockMailService.sendInvitationEmail).toHaveBeenCalledWith(job.data);
+            expect(mockMailService.sendInvitationEmail).toHaveBeenCalledWith(
+                job.data,
+            );
         });
 
         it('should skip processing for non-matching job name', async () => {
@@ -46,16 +52,22 @@ describe('Invitation Processors', () => {
 
     describe('InvitationExpirationProcessor', () => {
         it('should expire invitation for matching job name', async () => {
-            const processor = new InvitationExpirationProcessor(mockExpireInvitationUseCase);
+            const processor = new InvitationExpirationProcessor(
+                mockExpireInvitationUseCase,
+            );
             mockExpireInvitationUseCase.execute.mockResolvedValue(true);
 
-            await processor.process(makeJob('expire-invitation', { invitationId: 1 }));
+            await processor.process(
+                makeJob('expire-invitation', { invitationId: 1 }),
+            );
 
             expect(mockExpireInvitationUseCase.execute).toHaveBeenCalledWith(1);
         });
 
         it('should skip processing for non-matching job name', async () => {
-            const processor = new InvitationExpirationProcessor(mockExpireInvitationUseCase);
+            const processor = new InvitationExpirationProcessor(
+                mockExpireInvitationUseCase,
+            );
             const job = makeJob('other-job', { invitationId: 1 });
 
             await processor.process(job);
@@ -64,10 +76,16 @@ describe('Invitation Processors', () => {
         });
 
         it('should handle already expired invitation gracefully', async () => {
-            const processor = new InvitationExpirationProcessor(mockExpireInvitationUseCase);
+            const processor = new InvitationExpirationProcessor(
+                mockExpireInvitationUseCase,
+            );
             mockExpireInvitationUseCase.execute.mockResolvedValue(false);
 
-            await expect(processor.process(makeJob('expire-invitation', { invitationId: 1 }))).resolves.toBeUndefined();
+            await expect(
+                processor.process(
+                    makeJob('expire-invitation', { invitationId: 1 }),
+                ),
+            ).resolves.toBeUndefined();
         });
     });
 });

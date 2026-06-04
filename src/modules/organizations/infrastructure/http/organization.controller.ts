@@ -34,7 +34,9 @@ export class OrganizationController {
     ) {}
 
     @Post()
-    async create(@Body() httpDto: HttpCreateOrganizationDto): Promise<OrganizationResponseDto> {
+    async create(
+        @Body() httpDto: HttpCreateOrganizationDto,
+    ): Promise<OrganizationResponseDto> {
         const org = await this.createOrganizationUseCase.execute(httpDto);
         return new OrganizationResponseDto(org);
     }
@@ -46,7 +48,9 @@ export class OrganizationController {
     }
 
     @Get('sunat/:query')
-    async querySunat(@Param('query') query: string): Promise<SunatCompanyResponseDto | SunatCompanyResponseDto[]> {
+    async querySunat(
+        @Param('query') query: string,
+    ): Promise<SunatCompanyResponseDto | SunatCompanyResponseDto[]> {
         const result = await this.querySunatUseCase.execute(query);
         if (!result || (Array.isArray(result) && result.length === 0)) {
             throw new NotFoundException(

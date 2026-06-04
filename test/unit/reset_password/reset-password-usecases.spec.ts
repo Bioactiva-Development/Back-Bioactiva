@@ -102,9 +102,9 @@ describe('Reset Password module', () => {
                 'bioactiva.com',
             ]);
 
-            await expect(
-                useCase.execute('attacker@gmail.com'),
-            ).rejects.toThrow(ResetPasswordDomainNotAllowedException);
+            await expect(useCase.execute('attacker@gmail.com')).rejects.toThrow(
+                ResetPasswordDomainNotAllowedException,
+            );
             expect(userRepository.findByCorreo).not.toHaveBeenCalled();
         });
 
@@ -122,9 +122,9 @@ describe('Reset Password module', () => {
                 makeUser(UserState.ACTIVO, null),
             );
 
-            await expect(
-                useCase.execute('john@bioactiva.com'),
-            ).rejects.toThrow(UserNotFoundException);
+            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
+                UserNotFoundException,
+            );
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
@@ -133,9 +133,9 @@ describe('Reset Password module', () => {
                 makeUser(UserState.SUSPENDIDO),
             );
 
-            await expect(
-                useCase.execute('john@bioactiva.com'),
-            ).rejects.toThrow(UserNotFoundException);
+            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
+                UserNotFoundException,
+            );
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
@@ -154,9 +154,9 @@ describe('Reset Password module', () => {
                 recentToken,
             );
 
-            await expect(
-                useCase.execute('john@bioactiva.com'),
-            ).rejects.toThrow(ActiveResetTokenException);
+            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
+                ActiveResetTokenException,
+            );
             expect(
                 expirationScheduler.scheduleExpiration,
             ).not.toHaveBeenCalled();

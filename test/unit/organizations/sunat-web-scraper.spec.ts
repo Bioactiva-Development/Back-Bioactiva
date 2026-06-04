@@ -1,4 +1,11 @@
-import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import {
+    describe,
+    expect,
+    it,
+    jest,
+    beforeEach,
+    afterEach,
+} from '@jest/globals';
 import { SunatWebScraperAdapter } from '@/modules/organizations/infrastructure/service/sunat-web-scraper.adapter';
 
 type FetchResult = { ok: boolean; status?: number; json: () => Promise<any> };
@@ -12,7 +19,7 @@ describe('SunatWebScraperAdapter', () => {
     beforeEach(() => {
         process.env.PYTHON_SCRAPER_URL = 'http://scraper:8000';
         mockFetch = jest.fn<typeof fetch>();
-        global.fetch = mockFetch as any;
+        global.fetch = mockFetch;
         adapter = new SunatWebScraperAdapter();
     });
 
@@ -92,7 +99,10 @@ describe('SunatWebScraperAdapter', () => {
         it('should return true for valid existing RUC', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
-                json: async () => ({ ruc: '20123456789', nombre: 'BIOACTIVA SAC' }),
+                json: async () => ({
+                    ruc: '20123456789',
+                    nombre: 'BIOACTIVA SAC',
+                }),
             } as FetchResult);
             expect(await adapter.validateRuc('20123456789')).toBe(true);
         });
@@ -112,8 +122,16 @@ describe('SunatWebScraperAdapter', () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: async () => [
-                    { ruc: '20123456789', nombre: 'EMPRESA UNO', ubicacion: 'LIMA' },
-                    { ruc: '20987654321', nombre: 'EMPRESA DOS', ubicacion: 'CUSCO' },
+                    {
+                        ruc: '20123456789',
+                        nombre: 'EMPRESA UNO',
+                        ubicacion: 'LIMA',
+                    },
+                    {
+                        ruc: '20987654321',
+                        nombre: 'EMPRESA DOS',
+                        ubicacion: 'CUSCO',
+                    },
                 ],
             } as FetchResult);
 
@@ -131,7 +149,11 @@ describe('SunatWebScraperAdapter', () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: async () => [
-                    { ruc: '20123456789', nombre: 'EMPRESA UNO', ubicacion: 'LIMA' },
+                    {
+                        ruc: '20123456789',
+                        nombre: 'EMPRESA UNO',
+                        ubicacion: 'LIMA',
+                    },
                 ],
             } as FetchResult);
 
@@ -146,7 +168,9 @@ describe('SunatWebScraperAdapter', () => {
         it('should leave ubicacion null when not provided', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
-                json: async () => [{ ruc: '20123456789', nombre: 'EMPRESA UNO' }],
+                json: async () => [
+                    { ruc: '20123456789', nombre: 'EMPRESA UNO' },
+                ],
             } as FetchResult);
 
             const [result] = await adapter.getByRazonSocial('EMPRESA');

@@ -57,10 +57,14 @@ export class ActivityController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+        description:
+            'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
-    @ApiResponse({ status: 404, description: 'Lead o responsable no encontrado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Lead o responsable no encontrado',
+    })
     @ApiResponse({
         status: 409,
         description: 'El lead ya tiene una actividad pendiente',
@@ -90,7 +94,10 @@ export class ActivityController {
         description: 'Listado paginado de actividades',
         type: PaginatedActivityResponseDto,
     })
-    @ApiResponse({ status: 400, description: 'Parámetros de consulta inválidos' })
+    @ApiResponse({
+        status: 400,
+        description: 'Parámetros de consulta inválidos',
+    })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     async findAll(
         @Query() query: ListActivitiesQueryDto,
@@ -140,7 +147,8 @@ export class ActivityController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+        description:
+            'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({

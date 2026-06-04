@@ -1,6 +1,12 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { PasswordResetEmailPublisher, RESET_PASSWORD_EMAIL_QUEUE } from '@/modules/reset_password/infrastructure/queue/password-reset-email.publisher';
-import { PasswordResetExpirationPublisher, RESET_PASSWORD_EXPIRATION_QUEUE } from '@/modules/reset_password/infrastructure/queue/password-reset-expiration.publisher';
+import {
+    PasswordResetEmailPublisher,
+    RESET_PASSWORD_EMAIL_QUEUE,
+} from '@/modules/reset_password/infrastructure/queue/password-reset-email.publisher';
+import {
+    PasswordResetExpirationPublisher,
+    RESET_PASSWORD_EXPIRATION_QUEUE,
+} from '@/modules/reset_password/infrastructure/queue/password-reset-expiration.publisher';
 import { Queue } from 'bullmq';
 
 describe('Reset Password Publishers', () => {
@@ -15,12 +21,18 @@ describe('Reset Password Publishers', () => {
     describe('PasswordResetEmailPublisher', () => {
         it('should enqueue reset password email with correct data', async () => {
             const publisher = new PasswordResetEmailPublisher(mockQueue);
-            await publisher.sendResetPasswordEmail('user@example.com', 'token-abc');
+            await publisher.sendResetPasswordEmail(
+                'user@example.com',
+                'token-abc',
+            );
 
             expect(mockQueue.add).toHaveBeenCalledWith(
                 'send-reset-password-email',
                 { correo: 'user@example.com', token: 'token-abc' },
-                expect.objectContaining({ attempts: 3, removeOnComplete: true }),
+                expect.objectContaining({
+                    attempts: 3,
+                    removeOnComplete: true,
+                }),
             );
         });
     });

@@ -82,10 +82,7 @@ describe('Reset password module', () => {
 
         it('should report expired:true when the token is past its expiration', async () => {
             passwordResetRepository.findByToken.mockResolvedValue(
-                buildToken(
-                    TokenStatus.PENDIENTE,
-                    new Date(Date.now() - 1000),
-                ),
+                buildToken(TokenStatus.PENDIENTE, new Date(Date.now() - 1000)),
             );
 
             const result = await useCase.execute('raw-token');

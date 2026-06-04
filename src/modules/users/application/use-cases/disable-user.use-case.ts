@@ -20,11 +20,15 @@ export class DisableUserUseCase {
 
         const user = await this.userRepository.findById(targetId);
         if (!user) {
-            throw new UserNotFoundException(`Usuario con id ${targetId} no encontrado`);
+            throw new UserNotFoundException(
+                `Usuario con id ${targetId} no encontrado`,
+            );
         }
 
         if (user.estado === UserState.SUSPENDIDO) {
-            throw new UserCannotBeRevokedException('El usuario ya está deshabilitado');
+            throw new UserCannotBeRevokedException(
+                'El usuario ya está deshabilitado',
+            );
         }
 
         user.deactivate();

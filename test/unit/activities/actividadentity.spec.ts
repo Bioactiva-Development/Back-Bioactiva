@@ -186,7 +186,7 @@ describe('Activities module', () => {
                 fechaInicio,
                 fechaFin,
                 TipoActividad.REUNION,
-                undefined as any, // Will use default
+                undefined, // Will use default
                 null,
                 null,
                 false,

@@ -40,7 +40,11 @@ describe('MailService', () => {
             sendResetPasswordEmail: jest.fn(),
         } as unknown as jest.Mocked<GraphMailProvider>;
 
-        mailService = new MailService(mockMockProvider, mockSmtpProvider, mockGraphProvider);
+        mailService = new MailService(
+            mockMockProvider,
+            mockSmtpProvider,
+            mockGraphProvider,
+        );
         delete process.env.MAIL_PROVIDER;
     });
 
@@ -55,9 +59,13 @@ describe('MailService', () => {
     describe('sendInvitationEmail', () => {
         it('should use mock provider when no MAIL_PROVIDER set', async () => {
             await mailService.sendInvitationEmail(invitationInput);
-            expect(mockMockProvider.sendInvitationEmail).toHaveBeenCalledWith(invitationInput);
+            expect(mockMockProvider.sendInvitationEmail).toHaveBeenCalledWith(
+                invitationInput,
+            );
             expect(mockSmtpProvider.sendInvitationEmail).not.toHaveBeenCalled();
-            expect(mockGraphProvider.sendInvitationEmail).not.toHaveBeenCalled();
+            expect(
+                mockGraphProvider.sendInvitationEmail,
+            ).not.toHaveBeenCalled();
         });
 
         it('should use mock provider by default', async () => {
@@ -69,15 +77,21 @@ describe('MailService', () => {
         it('should use smtp provider when MAIL_PROVIDER is smtp', async () => {
             process.env.MAIL_PROVIDER = 'smtp';
             await mailService.sendInvitationEmail(invitationInput);
-            expect(mockSmtpProvider.sendInvitationEmail).toHaveBeenCalledWith(invitationInput);
+            expect(mockSmtpProvider.sendInvitationEmail).toHaveBeenCalledWith(
+                invitationInput,
+            );
             expect(mockMockProvider.sendInvitationEmail).not.toHaveBeenCalled();
-            expect(mockGraphProvider.sendInvitationEmail).not.toHaveBeenCalled();
+            expect(
+                mockGraphProvider.sendInvitationEmail,
+            ).not.toHaveBeenCalled();
         });
 
         it('should use graph provider when MAIL_PROVIDER is graph', async () => {
             process.env.MAIL_PROVIDER = 'graph';
             await mailService.sendInvitationEmail(invitationInput);
-            expect(mockGraphProvider.sendInvitationEmail).toHaveBeenCalledWith(invitationInput);
+            expect(mockGraphProvider.sendInvitationEmail).toHaveBeenCalledWith(
+                invitationInput,
+            );
             expect(mockMockProvider.sendInvitationEmail).not.toHaveBeenCalled();
             expect(mockSmtpProvider.sendInvitationEmail).not.toHaveBeenCalled();
         });
@@ -86,19 +100,25 @@ describe('MailService', () => {
     describe('sendResetPasswordEmail', () => {
         it('should use mock provider by default', async () => {
             await mailService.sendResetPasswordEmail(resetInput);
-            expect(mockMockProvider.sendResetPasswordEmail).toHaveBeenCalledWith(resetInput);
+            expect(
+                mockMockProvider.sendResetPasswordEmail,
+            ).toHaveBeenCalledWith(resetInput);
         });
 
         it('should use smtp provider when MAIL_PROVIDER is smtp', async () => {
             process.env.MAIL_PROVIDER = 'smtp';
             await mailService.sendResetPasswordEmail(resetInput);
-            expect(mockSmtpProvider.sendResetPasswordEmail).toHaveBeenCalledWith(resetInput);
+            expect(
+                mockSmtpProvider.sendResetPasswordEmail,
+            ).toHaveBeenCalledWith(resetInput);
         });
 
         it('should use graph provider when MAIL_PROVIDER is graph', async () => {
             process.env.MAIL_PROVIDER = 'graph';
             await mailService.sendResetPasswordEmail(resetInput);
-            expect(mockGraphProvider.sendResetPasswordEmail).toHaveBeenCalledWith(resetInput);
+            expect(
+                mockGraphProvider.sendResetPasswordEmail,
+            ).toHaveBeenCalledWith(resetInput);
         });
     });
 });

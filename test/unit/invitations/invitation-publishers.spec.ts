@@ -14,7 +14,7 @@ describe('Invitation Publishers', () => {
 
     describe('InvitationEmailPublisher', () => {
         it('should enqueue invitation email', async () => {
-            const publisher = new InvitationEmailPublisher(mockQueue as any);
+            const publisher = new InvitationEmailPublisher(mockQueue);
             mockQueue.add.mockResolvedValue(undefined);
 
             await publisher.enqueueInvitationEmail({
@@ -41,7 +41,7 @@ describe('Invitation Publishers', () => {
 
     describe('InvitationExpirationPublisher', () => {
         it('should schedule expiration with correct delay', async () => {
-            const publisher = new InvitationExpirationPublisher(mockQueue as any);
+            const publisher = new InvitationExpirationPublisher(mockQueue);
             mockQueue.add.mockResolvedValue(undefined);
 
             const futureDate = new Date(Date.now() + 3600000);
@@ -61,7 +61,7 @@ describe('Invitation Publishers', () => {
         });
 
         it('should schedule expiration with zero delay when already expired', async () => {
-            const publisher = new InvitationExpirationPublisher(mockQueue as any);
+            const publisher = new InvitationExpirationPublisher(mockQueue);
             mockQueue.add.mockResolvedValue(undefined);
 
             const pastDate = new Date(Date.now() - 3600000);

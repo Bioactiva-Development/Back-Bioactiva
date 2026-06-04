@@ -23,7 +23,10 @@ describe('InvitationMapper', () => {
         });
 
         it('should throw when proposito is not INVITACION', () => {
-            const invalid = { ...validRecord, proposito: 'RESET_PASSWORD' as any };
+            const invalid = {
+                ...validRecord,
+                proposito: 'RESET_PASSWORD' as any,
+            };
             expect(() => InvitationMapper.toDomain(invalid as any)).toThrow(
                 'El token no es una invitación',
             );

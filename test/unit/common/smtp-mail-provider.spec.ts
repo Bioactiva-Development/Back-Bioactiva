@@ -32,7 +32,7 @@ describe('SmtpMailProvider', () => {
         await provider.sendInvitationEmail({
             correo: 'user@test.com',
             token: 'token-abc',
-            rol: 1 as any,
+            rol: 1,
             invitedBy: 1,
         });
 

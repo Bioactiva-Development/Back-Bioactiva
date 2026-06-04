@@ -98,7 +98,9 @@ describe('Organization DTOs', () => {
             });
 
             const errors = await validate(dto);
-            const ubicacionError = errors.find((e) => e.property === 'ubicacion');
+            const ubicacionError = errors.find(
+                (e) => e.property === 'ubicacion',
+            );
 
             expect(ubicacionError).toBeDefined();
             expect(Object.values(ubicacionError!.constraints ?? {})).toContain(
