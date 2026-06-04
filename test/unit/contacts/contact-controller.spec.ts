@@ -109,13 +109,34 @@ describe('ContactController', () => {
         expect(result.nombres).toBe('Juan');
     });
 
-    it('should find all contacts', async () => {
-        getAllContactsUseCase.execute.mockResolvedValue([enrichedContact]);
+    it('should find all contacts (paginated)', async () => {
+        getAllContactsUseCase.execute.mockResolvedValue({
+            data: [enrichedContact],
+            total: 1,
+        });
 
-        const result = await controller.findAll();
+        const result = await controller.findAll({ page: 1, limit: 10 } as any);
 
-        expect(result).toHaveLength(1);
-        expect(result[0].nombres).toBe('Juan');
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].nombres).toBe('Juan');
+        expect(result.meta.total).toBe(1);
+    });
+
+    it('should forward organization filter to the use case', async () => {
+        getAllContactsUseCase.execute.mockResolvedValue({
+            data: [enrichedContact],
+            total: 1,
+        });
+
+        await controller.findAll({
+            idOrganization: 'org-1',
+            page: 1,
+            limit: 10,
+        } as any);
+
+        expect(getAllContactsUseCase.execute).toHaveBeenCalledWith(
+            expect.objectContaining({ idOrganization: 'org-1' }),
+        );
     });
 
     it('should find contacts by organization', async () => {
