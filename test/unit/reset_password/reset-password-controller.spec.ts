@@ -5,17 +5,20 @@ import { ResetPasswordController } from '@/modules/reset_password/infrastructure
 import { RequestPasswordResetUseCase } from '@/modules/reset_password/application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
+import { ObtainResetInfoUseCase } from '@/modules/reset_password/application/use-cases/obtain-reset-info.use-case';
 
 describe('ResetPasswordController', () => {
     let controller: ResetPasswordController;
     let requestPasswordResetUseCase: jest.Mocked<RequestPasswordResetUseCase>;
     let resetPasswordUseCase: jest.Mocked<ResetPasswordUseCase>;
     let validateResetTokenUseCase: jest.Mocked<ValidateResetTokenUseCase>;
+    let obtainResetInfoUseCase: jest.Mocked<ObtainResetInfoUseCase>;
 
     beforeEach(async () => {
         requestPasswordResetUseCase = { execute: jest.fn() } as any;
         resetPasswordUseCase = { execute: jest.fn() } as any;
         validateResetTokenUseCase = { execute: jest.fn() } as any;
+        obtainResetInfoUseCase = { execute: jest.fn() } as any;
 
         const module = await Test.createTestingModule({
             controllers: [ResetPasswordController],
@@ -23,6 +26,7 @@ describe('ResetPasswordController', () => {
                 { provide: RequestPasswordResetUseCase, useValue: requestPasswordResetUseCase },
                 { provide: ResetPasswordUseCase, useValue: resetPasswordUseCase },
                 { provide: ValidateResetTokenUseCase, useValue: validateResetTokenUseCase },
+                { provide: ObtainResetInfoUseCase, useValue: obtainResetInfoUseCase },
             ],
         }).compile();
 
@@ -53,5 +57,20 @@ describe('ResetPasswordController', () => {
         const result = await controller.validateToken({ token: 'valid-token' });
         expect(validateResetTokenUseCase.execute).toHaveBeenCalledWith('valid-token');
         expect(result).toEqual({ valid: true });
+    });
+
+    it('should obtain reset token info on URL resolution (Mantis #240)', async () => {
+        obtainResetInfoUseCase.execute.mockResolvedValue({
+            correo: 'j***n@test.com',
+            expired: true,
+            used: false,
+        });
+        const result = await controller.obtainInfo('some-token');
+        expect(obtainResetInfoUseCase.execute).toHaveBeenCalledWith('some-token');
+        expect(result).toEqual({
+            correo: 'j***n@test.com',
+            expired: true,
+            used: false,
+        });
     });
 });
