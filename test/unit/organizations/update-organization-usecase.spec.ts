@@ -80,7 +80,7 @@ describe('Organizations module', () => {
                 nombre: updateDto.nombre,
             });
 
-            const result = await useCase.execute('org-1', updateDto);
+            await useCase.execute('org-1', updateDto);
 
             expect(mockRepository.findById).toHaveBeenCalledWith('org-1');
             expect(mockRepository.save).toHaveBeenCalled();
@@ -172,7 +172,9 @@ describe('Organizations module', () => {
         });
 
         it('should reject if new client code belongs to another organization (Mantis #189)', async () => {
-            const updateDto: UpdateOrganizationDto = { codigoCliente: 'CLI-999' };
+            const updateDto: UpdateOrganizationDto = {
+                codigoCliente: 'CLI-999',
+            };
 
             const orgForTest = new Organization(
                 'org-1',
@@ -216,9 +218,9 @@ describe('Organizations module', () => {
             (mockRepository.findById as jest.Mock).mockResolvedValue(
                 orgForTest,
             );
-            (
-                mockRepository.findByCodigoCliente as jest.Mock
-            ).mockResolvedValue(conflictingOrg);
+            (mockRepository.findByCodigoCliente as jest.Mock).mockResolvedValue(
+                conflictingOrg,
+            );
 
             await expect(useCase.execute('org-1', updateDto)).rejects.toThrow(
                 DuplicateClientCodeException,
@@ -238,9 +240,7 @@ describe('Organizations module', () => {
 
             await useCase.execute('org-1', updateDto);
 
-            expect(
-                mockRepository.findByCodigoCliente,
-            ).not.toHaveBeenCalled();
+            expect(mockRepository.findByCodigoCliente).not.toHaveBeenCalled();
         });
 
         it('should not validate RUC if unchanged', async () => {
@@ -316,7 +316,7 @@ describe('Organizations module', () => {
             };
             (mockRepository.save as jest.Mock).mockResolvedValue(updatedOrg);
 
-            const result = await useCase.execute('org-1', updateDto);
+            await useCase.execute('org-1', updateDto);
 
             expect(mockRepository.save).toHaveBeenCalled();
         });
