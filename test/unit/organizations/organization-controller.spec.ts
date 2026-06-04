@@ -26,10 +26,22 @@ describe('OrganizationController', () => {
         const module = await Test.createTestingModule({
             controllers: [OrganizationController],
             providers: [
-                { provide: CreateOrganizationUseCase, useValue: createOrganizationUseCase },
-                { provide: UpdateOrganizationUseCase, useValue: updateOrganizationUseCase },
-                { provide: GetOrganizationByIdUseCase, useValue: getOrganizationByIdUseCase },
-                { provide: GetAllOrganizationsUseCase, useValue: getAllOrganizationsUseCase },
+                {
+                    provide: CreateOrganizationUseCase,
+                    useValue: createOrganizationUseCase,
+                },
+                {
+                    provide: UpdateOrganizationUseCase,
+                    useValue: updateOrganizationUseCase,
+                },
+                {
+                    provide: GetOrganizationByIdUseCase,
+                    useValue: getOrganizationByIdUseCase,
+                },
+                {
+                    provide: GetAllOrganizationsUseCase,
+                    useValue: getAllOrganizationsUseCase,
+                },
                 { provide: QuerySunatUseCase, useValue: querySunatUseCase },
             ],
         }).compile();
@@ -38,7 +50,10 @@ describe('OrganizationController', () => {
     });
 
     it('should create organization', async () => {
-        createOrganizationUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Empresa SAC' });
+        createOrganizationUseCase.execute.mockResolvedValue({
+            id: 'org-1',
+            nombre: 'Empresa SAC',
+        });
         const dto = { nombre: 'Empresa SAC', ruc: '12345678901' } as any;
         const result = await controller.create(dto);
         expect(createOrganizationUseCase.execute).toHaveBeenCalledWith(dto);
@@ -46,28 +61,43 @@ describe('OrganizationController', () => {
     });
 
     it('should find all organizations', async () => {
-        getAllOrganizationsUseCase.execute.mockResolvedValue([{ id: 'org-1', nombre: 'Empresa SAC' }]);
+        getAllOrganizationsUseCase.execute.mockResolvedValue([
+            { id: 'org-1', nombre: 'Empresa SAC' },
+        ]);
         const result = await controller.findAll();
         expect(result).toHaveLength(1);
     });
 
     it('should find organization by id', async () => {
-        getOrganizationByIdUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Empresa SAC' });
+        getOrganizationByIdUseCase.execute.mockResolvedValue({
+            id: 'org-1',
+            nombre: 'Empresa SAC',
+        });
         const result = await controller.findOne('org-1');
-        expect(getOrganizationByIdUseCase.execute).toHaveBeenCalledWith('org-1');
+        expect(getOrganizationByIdUseCase.execute).toHaveBeenCalledWith(
+            'org-1',
+        );
         expect(result.nombre).toBe('Empresa SAC');
     });
 
     it('should update organization', async () => {
-        updateOrganizationUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Updated' });
+        updateOrganizationUseCase.execute.mockResolvedValue({
+            id: 'org-1',
+            nombre: 'Updated',
+        });
         const dto = { nombre: 'Updated' } as any;
         const result = await controller.update('org-1', dto);
-        expect(updateOrganizationUseCase.execute).toHaveBeenCalledWith('org-1', dto);
+        expect(updateOrganizationUseCase.execute).toHaveBeenCalledWith(
+            'org-1',
+            dto,
+        );
         expect(result.nombre).toBe('Updated');
     });
 
     it('should query SUNAT and return results', async () => {
-        querySunatUseCase.execute.mockResolvedValue([{ ruc: '12345678901', nombre: 'EMPRESA SAC' }]);
+        querySunatUseCase.execute.mockResolvedValue([
+            { ruc: '12345678901', nombre: 'EMPRESA SAC' },
+        ]);
         const result = await controller.querySunat('12345678901');
         expect(querySunatUseCase.execute).toHaveBeenCalledWith('12345678901');
         expect(result).toHaveLength(1);
@@ -75,11 +105,15 @@ describe('OrganizationController', () => {
 
     it('should throw NotFoundException when SUNAT query returns empty array', async () => {
         querySunatUseCase.execute.mockResolvedValue([]);
-        await expect(controller.querySunat('00000000000')).rejects.toThrow(NotFoundException);
+        await expect(controller.querySunat('00000000000')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 
     it('should throw NotFoundException when SUNAT query returns null', async () => {
         querySunatUseCase.execute.mockResolvedValue(null);
-        await expect(controller.querySunat('00000000000')).rejects.toThrow(NotFoundException);
+        await expect(controller.querySunat('00000000000')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 });

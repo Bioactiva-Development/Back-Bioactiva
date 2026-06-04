@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-    SUNAT_SERVICE,
     type ISunatService,
     SunatCompanyInfo,
 } from '@/modules/organizations/domain/ports/sunat.service';
@@ -64,14 +63,18 @@ export class SunatWebScraperAdapter implements ISunatService {
             }
 
             if (!response.ok) {
-                this.logger.warn(`Scraper respondió con ${response.status} para RUC ${ruc}`);
+                this.logger.warn(
+                    `Scraper respondió con ${response.status} para RUC ${ruc}`,
+                );
                 return null;
             }
 
             const body = (await response.json()) as PythonScraperRucResponse;
 
             if (!body.ruc) {
-                this.logger.warn(`Respuesta del scraper sin campo 'ruc': ${JSON.stringify(body).slice(0, 500)}`);
+                this.logger.warn(
+                    `Respuesta del scraper sin campo 'ruc': ${JSON.stringify(body).slice(0, 500)}`,
+                );
                 return null;
             }
 
@@ -92,7 +95,9 @@ export class SunatWebScraperAdapter implements ISunatService {
             });
 
             if (!response.ok) {
-                this.logger.warn(`Scraper respondió con ${response.status} para nombre ${razonSocial}`);
+                this.logger.warn(
+                    `Scraper respondió con ${response.status} para nombre ${razonSocial}`,
+                );
                 return [];
             }
 
@@ -113,7 +118,9 @@ export class SunatWebScraperAdapter implements ISunatService {
         }
     }
 
-    private mapRucResponseToCompany(res: PythonScraperRucResponse): SunatCompanyInfo {
+    private mapRucResponseToCompany(
+        res: PythonScraperRucResponse,
+    ): SunatCompanyInfo {
         return {
             ruc: res.ruc!,
             razonSocial: res.nombre ?? '',
@@ -126,7 +133,9 @@ export class SunatWebScraperAdapter implements ISunatService {
         };
     }
 
-    private mapNombreResultToCompany(res: PythonScraperNombreResult): SunatCompanyInfo | null {
+    private mapNombreResultToCompany(
+        res: PythonScraperNombreResult,
+    ): SunatCompanyInfo | null {
         if (!res.ruc) {
             return null;
         }

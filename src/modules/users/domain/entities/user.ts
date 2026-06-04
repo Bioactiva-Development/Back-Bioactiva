@@ -37,4 +37,14 @@ export class User {
     public canAuthenticate(): boolean {
         return this.estado === UserState.ACTIVO;
     }
+
+    /**
+     * Un usuario es provisional cuando fue creado por una invitación pero aún
+     * no completó su registro (no tiene contraseña). Sirve para distinguir a
+     * los usuarios huérfanos de invitaciones canceladas/expiradas de las
+     * cuentas reales ya registradas.
+     */
+    public isProvisional(): boolean {
+        return this.password.trim().length === 0;
+    }
 }

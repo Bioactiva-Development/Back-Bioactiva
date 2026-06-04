@@ -14,7 +14,11 @@ export class SunatCompanyResponseDto {
     @ApiProperty({ example: 'Ejemplo Corp' })
     nombreComercial: string;
 
-    @ApiProperty({ enum: EnterpriseType, example: 'EMPRESA_NACIONAL', nullable: true })
+    @ApiProperty({
+        enum: EnterpriseType,
+        example: 'EMPRESA_NACIONAL',
+        nullable: true,
+    })
     tipo: EnterpriseType | null;
 
     @ApiProperty({ example: 'AV. EJEMPLO 123, LIMA', nullable: true })

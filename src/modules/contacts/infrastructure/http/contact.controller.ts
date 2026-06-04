@@ -16,11 +16,13 @@ import {
 } from '@nestjs/swagger';
 import { CreateContactUseCase } from '@/modules/contacts/application/use-cases/create-contact.use-case';
 import { UpdateContactUseCase } from '@/modules/contacts/application/use-cases/update-contact.use-case';
+import { ChangeContactStatusUseCase } from '@/modules/contacts/application/use-cases/change-contact-status.use-case';
 import { GetContactByIdUseCase } from '@/modules/contacts/application/use-cases/get-contact-by-id.use-case';
 import { GetAllContactsUseCase } from '@/modules/contacts/application/use-cases/get-all-contacts.use-case';
 import { GetContactsByOrganizationUseCase } from '@/modules/contacts/application/use-cases/get-contacts-by-organization.use-case';
 import { HttpCreateContactDto } from '@/modules/contacts/infrastructure/http/dtos/create-contact.dto.http';
 import { HttpUpdateContactDto } from '@/modules/contacts/infrastructure/http/dtos/update-contact.dto.http';
+import { HttpChangeContactStatusDto } from '@/modules/contacts/infrastructure/http/dtos/change-contact-status.dto.http';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -38,6 +40,7 @@ export class ContactController {
         private readonly getContactByIdUseCase: GetContactByIdUseCase,
         private readonly getAllContactsUseCase: GetAllContactsUseCase,
         private readonly getContactsByOrgUseCase: GetContactsByOrganizationUseCase,
+        private readonly changeContactStatusUseCase: ChangeContactStatusUseCase,
     ) {}
 
     @Post()
@@ -110,6 +113,27 @@ export class ContactController {
         @Param('id', ParseIntPipe) id: number,
     ): Promise<ContactResponseDto> {
         const enriched = await this.getContactByIdUseCase.execute(id);
+        return new ContactResponseDto(enriched);
+    }
+
+    @Patch(':id/status')
+    @ApiOperation({
+        summary: 'Cambiar el estado de un contacto (VIGENTE / VENCIDO)',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Estado del contacto actualizado exitosamente',
+        type: ContactResponseDto,
+    })
+    @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
+    async changeStatus(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() httpDto: HttpChangeContactStatusDto,
+    ): Promise<ContactResponseDto> {
+        const enriched = await this.changeContactStatusUseCase.execute(
+            id,
+            httpDto.estado_correo,
+        );
         return new ContactResponseDto(enriched);
     }
 

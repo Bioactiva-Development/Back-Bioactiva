@@ -50,7 +50,7 @@ describe('Security module', () => {
             delete process.env.BCRYPT_SALT_ROUNDS;
 
             const hasher = new BcryptPasswordHasher();
-            const bcrypt = jest.requireMock('bcryptjs') as any;
+            const bcrypt = jest.requireMock('bcryptjs');
             bcrypt.hash.mockResolvedValue('hashed-password');
 
             await hasher.hash('secret-password');

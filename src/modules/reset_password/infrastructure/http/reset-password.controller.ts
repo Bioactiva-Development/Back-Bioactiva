@@ -2,13 +2,16 @@ import {
     BadRequestException,
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
+    Param,
     Post,
 } from '@nestjs/common';
 import { RequestPasswordResetUseCase } from '@/modules/reset_password/application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
+import { ObtainResetInfoUseCase } from '@/modules/reset_password/application/use-cases/obtain-reset-info.use-case';
 import { RequestResetDto } from './dto/request-reset.dto.http';
 import { ResetPasswordDto } from './dto/reset-password.dto.http';
 import { ValidateTokenDto } from './dto/validate-token.dto.http';
@@ -19,6 +22,7 @@ export class ResetPasswordController {
         private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
         private readonly resetPasswordUseCase: ResetPasswordUseCase,
         private readonly validateResetTokenUseCase: ValidateResetTokenUseCase,
+        private readonly obtainResetInfoUseCase: ObtainResetInfoUseCase,
     ) {}
 
     @Post('request')
@@ -41,5 +45,10 @@ export class ResetPasswordController {
     @HttpCode(HttpStatus.OK)
     async validateToken(@Body() body: ValidateTokenDto) {
         return this.validateResetTokenUseCase.execute(body.token);
+    }
+
+    @Get('info/:token')
+    async obtainInfo(@Param('token') token: string) {
+        return this.obtainResetInfoUseCase.execute(token);
     }
 }

@@ -6,6 +6,7 @@ import { ExpireInvitationUseCase } from '@/modules/invitations/application/use-c
 import { ListInvitationsUseCase } from '@/modules/invitations/application/use-cases/list-invitations.use-case';
 import { ObtainInfoUseCase } from '@/modules/invitations/application/use-cases/obtain-info-use-case';
 import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-cases/revoke-invitation.use-case';
+import { DeactivateInvitedUserService } from '@/modules/invitations/application/services/deactivate-invited-user.service';
 import { INVITATION_NOTIFICATION_PORT } from '@/modules/invitations/domain/port/invitation-notification.port';
 import { INVITATION_EXPIRATION_SCHEDULER_PORT } from '@/modules/invitations/domain/port/invitation-expiration-scheduler.port';
 import { INVITATION_POLICY } from '@/modules/invitations/domain/port/invitation-policy.port';
@@ -36,6 +37,7 @@ import { InvitationExpirationPublisher } from './infrastructure/queue/invitation
         ListInvitationsUseCase,
         ObtainInfoUseCase,
         RevokeInvitationUseCase,
+        DeactivateInvitedUserService,
         PrismaInvitationsRepository,
         InvitationPolicyService,
         AllowedEmailDomainsConfig,

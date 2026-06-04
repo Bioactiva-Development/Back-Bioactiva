@@ -10,7 +10,8 @@ export class CreateInvitationDto {
 
     @ApiProperty({
         example: 'nuevo.usuario@bioactiva.com',
-        description: 'Correo del usuario a invitar (debe ser un dominio permitido)',
+        description:
+            'Correo del usuario a invitar (debe ser un dominio permitido)',
     })
     @IsEmail()
     correo: string;

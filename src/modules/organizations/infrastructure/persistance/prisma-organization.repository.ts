@@ -39,6 +39,15 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         return record ? OrganizationMapper.toDomain(record) : null;
     }
 
+    async findByCodigoCliente(
+        codigoCliente: string,
+    ): Promise<Organization | null> {
+        const record = await this.prisma.organizacion.findUnique({
+            where: { codigoCliente },
+        });
+        return record ? OrganizationMapper.toDomain(record) : null;
+    }
+
     async findAll(): Promise<Organization[]> {
         const records = await this.prisma.organizacion.findMany();
         return records.map((record) => OrganizationMapper.toDomain(record));

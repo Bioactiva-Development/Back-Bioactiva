@@ -6,8 +6,8 @@ import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
+import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
-import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
 import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/create-organization.dto';
 
 describe('Organizations module', () => {
@@ -29,6 +29,7 @@ describe('Organizations module', () => {
         beforeEach(() => {
             mockRepository = {
                 findByRuc: jest.fn(),
+                findByCodigoCliente: jest.fn().mockResolvedValue(null),
                 save: jest.fn(),
                 findById: jest.fn(),
                 findAll: jest.fn(),
@@ -118,6 +119,10 @@ describe('Organizations module', () => {
                 '',
                 null,
                 Size.PEQUENO,
+                null,
+                null,
+                null,
+                1,
                 new Date(),
                 new Date(),
             );
@@ -131,13 +136,46 @@ describe('Organizations module', () => {
             );
         });
 
+        it('should reject if client code already exists (Mantis #189)', async () => {
+            // Escenario del ticket: dos organizaciones sin RUC con el mismo código
+            const dtoSinRuc = { ...validDto, ruc: null };
+            const existingOrg = new Organization(
+                'org-existing',
+                dtoSinRuc.codigoCliente,
+                'Otra Empresa',
+                'OtraCorp',
+                'Area',
+                undefined as any,
+                EnterpriseType.EMPRESA_NACIONAL,
+                '',
+                '',
+                null,
+                Size.PEQUENO,
+                'Actividad',
+                '',
+                null,
+                1,
+                new Date(),
+                new Date(),
+            );
+
+            (mockRepository.findByCodigoCliente as jest.Mock).mockResolvedValue(
+                existingOrg,
+            );
+
+            await expect(useCase.execute(dtoSinRuc)).rejects.toThrow(
+                DuplicateClientCodeException,
+            );
+            expect(mockRepository.save).not.toHaveBeenCalled();
+        });
+
         it('should reject if RUC is not valid in SUNAT', async () => {
             // When no local org exists we should persist the organization.
             (mockRepository.findByRuc as jest.Mock).mockResolvedValue(null);
             const dummySaved = {} as unknown as Organization;
             (mockRepository.save as jest.Mock).mockResolvedValue(dummySaved);
 
-            const result = await useCase.execute(validDto);
+            await useCase.execute(validDto);
             expect(mockRepository.save).toHaveBeenCalled();
         });
 
@@ -199,14 +237,14 @@ describe('Organizations module', () => {
         });
 
         it('should create organization without RUC when not provided', async () => {
-            const dtoWithoutRuc = { ...validDto, ruc: undefined };
+            const dtoWithoutRuc = { ...validDto, ruc: null };
             const persistedOrg = new Organization(
                 'org-1',
                 dtoWithoutRuc.codigoCliente,
                 dtoWithoutRuc.nombre,
                 dtoWithoutRuc.nombreComercial,
                 dtoWithoutRuc.subArea,
-                undefined as any,
+                null,
                 dtoWithoutRuc.tipo,
                 dtoWithoutRuc.linkedin,
                 dtoWithoutRuc.ubicacion,

@@ -13,6 +13,7 @@ import { InvalidInvitationDomainException } from '@/modules/invitations/domain/e
 import { InvalidInvitationTokenException } from '@/modules/invitations/domain/exceptions/invalid-invitation-token.exception';
 import { InvitationExpiredException } from '@/modules/invitations/domain/exceptions/invitation-expired.exception';
 import { InvitationAlreadyAcceptedException } from '@/modules/invitations/domain/exceptions/invitation-already-accepted.exception';
+import { UserAlreadyRegisteredException } from '@/modules/invitations/domain/exceptions/user-already-registered.exception';
 
 describe('Invitations module', () => {
     /**
@@ -80,6 +81,7 @@ describe('Invitations module', () => {
                 scheduleExpiration: jest.fn(),
             };
             userRepository = {
+                findByCorreo: jest.fn(() => Promise.resolve(null)),
                 save: jest.fn(),
             };
 
@@ -246,6 +248,108 @@ describe('Invitations module', () => {
                     role: UserRole.TRABAJADOR,
                 }),
             );
+        });
+
+        it('should re-invite a previously cancelled invitation reusing the provisional user', async () => {
+            const admin = buildAdmin();
+            const email = 'reinvited@bioactiva.com';
+            // Usuario provisional desactivado tras cancelar la invitación previa
+            const provisionalUser = new User(
+                7,
+                '',
+                '',
+                email,
+                '',
+                new Date(),
+                UserRole.TRABAJADOR,
+                UserState.SUSPENDIDO,
+                new Date(),
+            );
+
+            invitationPolicy.canCreateInvitation.mockReturnValue(true);
+            invitationPolicy.isAllowedDomain.mockReturnValue(true);
+            invitationsRepository.findPendingByEmail.mockResolvedValue(null);
+            userRepository.findByCorreo.mockResolvedValue(provisionalUser);
+            invitationsRepository.save.mockResolvedValue({
+                id: 2,
+                correo: email,
+            });
+
+            const result = await useCase.execute(
+                admin,
+                email,
+                UserRole.ADMINISTRADOR,
+            );
+
+            expect(result).toEqual({ ok: true });
+            // Reutiliza el mismo registro (mismo id) en vez de crear uno nuevo,
+            // restaurándolo a PENDIENTE con el rol de la nueva invitación.
+            expect(userRepository.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 7,
+                    correo: email,
+                    estado: UserState.PENDIENTE,
+                    role: UserRole.ADMINISTRADOR,
+                }),
+            );
+            expect(invitationsRepository.save).toHaveBeenCalled();
+            expect(
+                invitationNotification.enqueueInvitationEmail,
+            ).toHaveBeenCalled();
+        });
+
+        it('should reject re-invitation when a fully registered user already exists', async () => {
+            const admin = buildAdmin();
+            const email = 'active@bioactiva.com';
+            const activeUser = new User(
+                8,
+                'Active',
+                'User',
+                email,
+                'hashed-password',
+                new Date(),
+                UserRole.TRABAJADOR,
+                UserState.ACTIVO,
+                new Date(),
+            );
+
+            invitationPolicy.canCreateInvitation.mockReturnValue(true);
+            invitationPolicy.isAllowedDomain.mockReturnValue(true);
+            invitationsRepository.findPendingByEmail.mockResolvedValue(null);
+            userRepository.findByCorreo.mockResolvedValue(activeUser);
+
+            await expect(
+                useCase.execute(admin, email, UserRole.TRABAJADOR),
+            ).rejects.toThrow(UserAlreadyRegisteredException);
+            expect(userRepository.save).not.toHaveBeenCalled();
+            expect(invitationsRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should reject re-invitation of a deactivated registered user', async () => {
+            const admin = buildAdmin();
+            const email = 'suspended@bioactiva.com';
+            // Usuario real (con contraseña) que un admin desactivó: NO es provisional
+            const suspendedUser = new User(
+                9,
+                'Real',
+                'User',
+                email,
+                'hashed-password',
+                new Date(),
+                UserRole.TRABAJADOR,
+                UserState.SUSPENDIDO,
+                new Date(),
+            );
+
+            invitationPolicy.canCreateInvitation.mockReturnValue(true);
+            invitationPolicy.isAllowedDomain.mockReturnValue(true);
+            invitationsRepository.findPendingByEmail.mockResolvedValue(null);
+            userRepository.findByCorreo.mockResolvedValue(suspendedUser);
+
+            await expect(
+                useCase.execute(admin, email, UserRole.TRABAJADOR),
+            ).rejects.toThrow(UserAlreadyRegisteredException);
+            expect(userRepository.save).not.toHaveBeenCalled();
         });
     });
 
@@ -487,17 +591,24 @@ describe('Invitations module', () => {
     describe('RevokeInvitationUseCase', () => {
         let useCase: RevokeInvitationUseCase;
         let invitationsRepository: any;
+        let deactivateInvitedUser: any;
 
         beforeEach(() => {
             invitationsRepository = {
                 findById: jest.fn(),
                 save: jest.fn(),
             };
+            deactivateInvitedUser = {
+                execute: jest.fn(() => Promise.resolve()),
+            };
 
-            useCase = new RevokeInvitationUseCase(invitationsRepository);
+            useCase = new RevokeInvitationUseCase(
+                invitationsRepository,
+                deactivateInvitedUser,
+            );
         });
 
-        it('should revoke pending invitation', async () => {
+        it('should revoke pending invitation and deactivate its provisional user', async () => {
             const invitation = new InvitationToken(
                 1,
                 'user@bioactiva.com',
@@ -519,6 +630,9 @@ describe('Invitations module', () => {
             const result = await useCase.execute(1);
 
             expect(result.estado).toBe(TokenStatus.EXPIRADO);
+            expect(deactivateInvitedUser.execute).toHaveBeenCalledWith(
+                'user@bioactiva.com',
+            );
         });
 
         it('should throw if invitation not found', async () => {
@@ -540,14 +654,21 @@ describe('Invitations module', () => {
     describe('ExpireInvitationUseCase', () => {
         let useCase: ExpireInvitationUseCase;
         let invitationsRepository: any;
+        let deactivateInvitedUser: any;
 
         beforeEach(() => {
             invitationsRepository = {
                 findById: jest.fn(),
                 save: jest.fn(),
             };
+            deactivateInvitedUser = {
+                execute: jest.fn(() => Promise.resolve()),
+            };
 
-            useCase = new ExpireInvitationUseCase(invitationsRepository);
+            useCase = new ExpireInvitationUseCase(
+                invitationsRepository,
+                deactivateInvitedUser,
+            );
         });
 
         it('should expire pending invitation', async () => {
@@ -572,6 +693,9 @@ describe('Invitations module', () => {
             const result = await useCase.execute(1);
 
             expect(result).toBe(true);
+            expect(deactivateInvitedUser.execute).toHaveBeenCalledWith(
+                'user@bioactiva.com',
+            );
         });
 
         it('should return false if invitation not found', async () => {

@@ -108,9 +108,13 @@ describe('Integrations module', () => {
                     joinUrl: 'https://teams/join',
                 });
 
-                const result = await adapter.createCalendarEvent(1, eventInput, {
-                    onlineMeeting: true,
-                });
+                const result = await adapter.createCalendarEvent(
+                    1,
+                    eventInput,
+                    {
+                        onlineMeeting: true,
+                    },
+                );
 
                 expect(result.teamsJoinUrl).toBe('https://teams/join');
                 expect(
