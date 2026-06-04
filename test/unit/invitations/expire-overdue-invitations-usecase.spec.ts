@@ -8,13 +8,20 @@ describe('Invitations module', () => {
 	describe('ExpireOverdueInvitationsUseCase', () => {
 		let useCase: ExpireOverdueInvitationsUseCase;
 		let mockRepository: any;
+		let deactivateInvitedUser: any;
 
 		beforeEach(() => {
 			mockRepository = {
 				findPendingExpired: jest.fn(),
 				save: jest.fn(),
 			};
-			useCase = new ExpireOverdueInvitationsUseCase(mockRepository);
+			deactivateInvitedUser = {
+				execute: jest.fn(() => Promise.resolve()),
+			};
+			useCase = new ExpireOverdueInvitationsUseCase(
+				mockRepository,
+				deactivateInvitedUser,
+			);
 		});
 
 		it('should expire overdue invitations and return count', async () => {
@@ -29,6 +36,9 @@ describe('Invitations module', () => {
 			expect(result).toBe(2);
 			expect(mockRepository.findPendingExpired).toHaveBeenCalled();
 			expect(mockRepository.save).toHaveBeenCalledTimes(2);
+			expect(deactivateInvitedUser.execute).toHaveBeenCalledTimes(2);
+			expect(deactivateInvitedUser.execute).toHaveBeenCalledWith('user1@test.com');
+			expect(deactivateInvitedUser.execute).toHaveBeenCalledWith('user2@test.com');
 		});
 
 		it('should return 0 when no overdue invitations', async () => {
