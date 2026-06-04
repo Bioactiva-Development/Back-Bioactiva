@@ -68,16 +68,32 @@ describe('OrganizationController', () => {
         expect(result).toHaveLength(1);
     });
 
-    it('should find organization by id', async () => {
+    it('should find organization by id with embedded contacts', async () => {
         getOrganizationByIdUseCase.execute.mockResolvedValue({
-            id: 'org-1',
-            nombre: 'Empresa SAC',
+            organization: { id: 'org-1', nombre: 'Empresa SAC' },
+            contactos: [
+                {
+                    contact: { id: 1, nombres: 'Juan' },
+                    organizationName: 'Empresa SAC',
+                },
+            ],
+            totalContactos: 14,
         });
         const result = await controller.findOne('org-1');
         expect(getOrganizationByIdUseCase.execute).toHaveBeenCalledWith(
             'org-1',
         );
         expect(result.nombre).toBe('Empresa SAC');
+        expect(result.contactos).toHaveLength(1);
+        expect(result.contactos[0].nombres).toBe('Juan');
+        expect(result.totalContactos).toBe(14);
+    });
+
+    it('should throw NotFoundException when organization not found', async () => {
+        getOrganizationByIdUseCase.execute.mockResolvedValue(null);
+        await expect(controller.findOne('missing')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 
     it('should update organization', async () => {

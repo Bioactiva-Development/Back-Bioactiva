@@ -18,6 +18,7 @@ import { QuerySunatUseCase } from '@/modules/organizations/application/use-cases
 import { HttpCreateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/create-organization.dto.http';
 import { HttpUpdateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/update-organization.dto.http';
 import { OrganizationResponseDto } from '@/modules/organizations/infrastructure/http/dtos/organization-response.dto.http';
+import { OrganizationDetailResponseDto } from '@/modules/organizations/infrastructure/http/dtos/organization-detail-response.dto.http';
 import { SunatCompanyResponseDto } from '@/modules/organizations/infrastructure/http/dtos/sunat-company-response.dto.http';
 
 @ApiTags('organizations')
@@ -64,12 +65,18 @@ export class OrganizationController {
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string): Promise<OrganizationResponseDto> {
-        const org = await this.getOrganizationByIdUseCase.execute(id);
-        if (!org) {
+    async findOne(
+        @Param('id') id: string,
+    ): Promise<OrganizationDetailResponseDto> {
+        const detail = await this.getOrganizationByIdUseCase.execute(id);
+        if (!detail) {
             throw new NotFoundException('Organización no encontrada');
         }
-        return new OrganizationResponseDto(org);
+        return new OrganizationDetailResponseDto(
+            detail.organization,
+            detail.contactos,
+            detail.totalContactos,
+        );
     }
 
     @Patch(':id')
