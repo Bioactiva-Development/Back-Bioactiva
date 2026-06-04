@@ -6,6 +6,7 @@ import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
+import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
 import { UpdateOrganizationDto } from '@/modules/organizations/application/dtos/update-organization.dto';
@@ -51,6 +52,7 @@ describe('Organizations module', () => {
             mockRepository = {
                 findById: jest.fn(),
                 findByRuc: jest.fn(),
+                findByCodigoCliente: jest.fn().mockResolvedValue(null),
                 save: jest.fn(),
                 findAll: jest.fn(),
             };
@@ -167,6 +169,78 @@ describe('Organizations module', () => {
                 OrganizationAlreadyExistsException,
             );
             expect(mockSunatService.validateRuc).not.toHaveBeenCalled();
+        });
+
+        it('should reject if new client code belongs to another organization (Mantis #189)', async () => {
+            const updateDto: UpdateOrganizationDto = { codigoCliente: 'CLI-999' };
+
+            const orgForTest = new Organization(
+                'org-1',
+                'CLI-001',
+                'Tech Corp Peru',
+                'TechCorp',
+                'Technology',
+                '20123456789',
+                EnterpriseType.EMPRESA_NACIONAL,
+                'https://linkedin.com/company/techcorp',
+                'Lima, Peru',
+                Sector.TECNOLOGIA,
+                Size.GRANDE,
+                'Software Development',
+                'Microsoft, Google',
+                1,
+                1,
+                new Date('2024-01-01'),
+                new Date('2024-01-01'),
+            );
+            const conflictingOrg = new Organization(
+                'org-2',
+                'CLI-999',
+                'Other Corp',
+                'Other',
+                '',
+                null,
+                EnterpriseType.EMPRESA_NACIONAL,
+                '',
+                '',
+                null,
+                Size.PEQUENO,
+                '',
+                '',
+                null,
+                1,
+                new Date(),
+                new Date(),
+            );
+
+            (mockRepository.findById as jest.Mock).mockResolvedValue(
+                orgForTest,
+            );
+            (
+                mockRepository.findByCodigoCliente as jest.Mock
+            ).mockResolvedValue(conflictingOrg);
+
+            await expect(useCase.execute('org-1', updateDto)).rejects.toThrow(
+                DuplicateClientCodeException,
+            );
+            expect(mockRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should not check client code uniqueness if unchanged', async () => {
+            const updateDto: UpdateOrganizationDto = {
+                codigoCliente: 'CLI-001',
+            };
+
+            (mockRepository.findById as jest.Mock).mockResolvedValue(
+                existingOrg,
+            );
+            (mockRepository.save as jest.Mock).mockResolvedValue(existingOrg);
+
+            await useCase.execute('org-1', updateDto);
+
+            expect(
+                mockRepository.findByCodigoCliente,
+            ).not.toHaveBeenCalled();
         });
 
         it('should not validate RUC if unchanged', async () => {
