@@ -5,6 +5,8 @@ import {
 } from '@/modules/invitations/domain/port/invitations-repository.port';
 import { InvitationInfoDto } from '@/modules/invitations/application/dto/invitation-info.dto';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
+import { InvitationNotFoundException } from '@/modules/invitations/domain/exceptions/invitation-not-found.exception';
+import { maskEmail } from '@/shared/domain/utils/mask-email';
 
 export class ObtainInfoUseCase {
     constructor(
@@ -19,19 +21,10 @@ export class ObtainInfoUseCase {
         const invitation =
             await this.invitationsRepository.findByToken(token_hash);
         if (!invitation) {
-            throw new Error('Token no encontrado');
+            throw new InvitationNotFoundException('Token no encontrado');
         }
-        let correo = invitation.correo;
-        const [localPart, domain] = correo.split('@');
-        const maskedLocalPart =
-            localPart.length <= 2
-                ? localPart[0] + '*'.repeat(localPart.length - 1)
-                : localPart[0] +
-                  '*'.repeat(localPart.length - 2) +
-                  localPart.slice(-1);
-        correo = maskedLocalPart + '@' + domain;
         return {
-            correo,
+            correo: maskEmail(invitation.correo),
             expired: invitation.isExpired(),
             accepted: invitation.isAccepted(),
         };

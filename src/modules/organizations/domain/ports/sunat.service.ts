@@ -6,10 +6,10 @@ export interface SunatCompanyInfo {
     ruc: string;
     razonSocial: string;
     nombreComercial: string;
-    tipo: EnterpriseType;
+    tipo: EnterpriseType | null;
     ubicacion: string | null;
     actividadEconomica: string | null;
-    tamano: Size;
+    tamano: Size | null;
     sector: Sector | null;
 }
 
@@ -19,4 +19,4 @@ export interface ISunatService {
     getByRazonSocial(razonSocial: string): Promise<SunatCompanyInfo[]>;
 }
 
-export const ISunatService = Symbol('ISunatService');
+export const SUNAT_SERVICE = Symbol('SUNAT_SERVICE');

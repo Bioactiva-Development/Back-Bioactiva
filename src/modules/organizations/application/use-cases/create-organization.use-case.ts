@@ -1,13 +1,15 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import { ORGANIZATION_REPOSITORY } from '@/modules/organizations/domain/ports/organization.repository';
+import type { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/create-organization.dto';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
+import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 
 export class CreateOrganizationUseCase {
     constructor(
-        @Inject(IOrganizationRepository)
+        @Inject(ORGANIZATION_REPOSITORY)
         private readonly organizationRepository: IOrganizationRepository,
     ) {}
 
@@ -26,6 +28,14 @@ export class CreateOrganizationUseCase {
             if (existingOrg) {
                 throw new OrganizationAlreadyExistsException(dto.ruc);
             }
+        }
+
+        const existingByCode =
+            await this.organizationRepository.findByCodigoCliente(
+                dto.codigoCliente,
+            );
+        if (existingByCode) {
+            throw new DuplicateClientCodeException(dto.codigoCliente);
         }
 
         const organization = new Organization(

@@ -1,16 +1,21 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
-import { ISunatService } from '@/modules/organizations/domain/ports/sunat.service';
+import { ORGANIZATION_REPOSITORY } from '@/modules/organizations/domain/ports/organization.repository';
+import type { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import {
+    SUNAT_SERVICE,
+    type ISunatService,
+} from '@/modules/organizations/domain/ports/sunat.service';
 import { UpdateOrganizationDto } from '@/modules/organizations/application/dtos/update-organization.dto';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
+import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 
 export class UpdateOrganizationUseCase {
     constructor(
-        @Inject(IOrganizationRepository)
+        @Inject(ORGANIZATION_REPOSITORY)
         private readonly organizationRepository: IOrganizationRepository,
-        @Inject(ISunatService)
+        @Inject(SUNAT_SERVICE)
         private readonly sunatService: ISunatService,
     ) {}
 
@@ -24,10 +29,33 @@ export class UpdateOrganizationUseCase {
         }
 
         await this.handleRucUpdate(dto, organization);
+        await this.handleCodigoClienteUpdate(dto, organization);
         this.applyUpdates(dto, organization);
         organization.updatedAt = new Date();
 
         return await this.organizationRepository.save(organization);
+    }
+
+    private async handleCodigoClienteUpdate(
+        dto: UpdateOrganizationDto,
+        organization: Organization,
+    ): Promise<void> {
+        if (
+            !dto.codigoCliente ||
+            dto.codigoCliente === organization.codigoCliente
+        ) {
+            return;
+        }
+
+        const existingOrg =
+            await this.organizationRepository.findByCodigoCliente(
+                dto.codigoCliente,
+            );
+        if (existingOrg && existingOrg.id !== organization.id) {
+            throw new DuplicateClientCodeException(dto.codigoCliente);
+        }
+
+        organization.codigoCliente = dto.codigoCliente;
     }
 
     private async handleRucUpdate(
@@ -50,7 +78,7 @@ export class UpdateOrganizationUseCase {
             throw new InvalidRucException(dto.ruc);
         }
 
-        organization.ruc = dto.ruc;
+        organization.updateRuc(dto.ruc);
     }
 
     private applyUpdates(
@@ -62,9 +90,6 @@ export class UpdateOrganizationUseCase {
         }
         if (dto.nombreComercial) {
             organization.updateCommercialName(dto.nombreComercial);
-        }
-        if (dto.codigoCliente) {
-            organization.codigoCliente = dto.codigoCliente;
         }
         if (dto.subArea !== undefined) {
             organization.subArea = dto.subArea;

@@ -16,8 +16,14 @@ describe('UserController', () => {
             controllers: [UserController],
             providers: [
                 { provide: GetAllUsersUseCase, useValue: getAllUsersUseCase },
-                { provide: DisableUserUseCase, useValue: { execute: jest.fn() } },
-                { provide: EnableUserUseCase, useValue: { execute: jest.fn() } },
+                {
+                    provide: DisableUserUseCase,
+                    useValue: { execute: jest.fn() },
+                },
+                {
+                    provide: EnableUserUseCase,
+                    useValue: { execute: jest.fn() },
+                },
             ],
         }).compile();
 
@@ -44,7 +50,13 @@ describe('UserController', () => {
             total: 0,
         });
 
-        const query = { search: 'john', role: 'TRABAJADOR', estado: 'ACTIVO', page: 1, limit: 20 } as any;
+        const query = {
+            search: 'john',
+            role: 'TRABAJADOR',
+            estado: 'ACTIVO',
+            page: 1,
+            limit: 20,
+        } as any;
         const result = await controller.findAll(query);
 
         expect(getAllUsersUseCase.execute).toHaveBeenCalled();

@@ -7,9 +7,16 @@ describe('Application DTOs', () => {
     describe('CreateContactDto', () => {
         it('should create instance with all fields', () => {
             const dto = new CreateContactDto(
-                'Juan', 'Perez', 'Ing.', 'Gerente',
-                'juan@example.com', '999888777', 'juan2@example.com',
-                'Comentario', 'org-1', 1,
+                'Juan',
+                'Perez',
+                'Ing.',
+                'Gerente',
+                'juan@example.com',
+                '999888777',
+                'juan2@example.com',
+                'Comentario',
+                'org-1',
+                1,
             );
             expect(dto.nombres).toBe('Juan');
             expect(dto.apellidos).toBe('Perez');
@@ -22,10 +29,20 @@ describe('Application DTOs', () => {
     describe('CreateOrganizationDto', () => {
         it('should create instance with all fields', () => {
             const dto = new CreateOrganizationDto(
-                'CLI-001', 'Empresa SAC', 'Empresa',
-                'SubArea', '12345678901', 'CLIENTE',
-                'https://linkedin.com', 'Lima', 'Tecnologia',
-                'PEQUENIO', 'Comercio', 'Alianza', 'contact-1', 1,
+                'CLI-001',
+                'Empresa SAC',
+                'Empresa',
+                'SubArea',
+                '12345678901',
+                'CLIENTE',
+                'https://linkedin.com',
+                'Lima',
+                'Tecnologia',
+                'PEQUENIO',
+                'Comercio',
+                'Alianza',
+                'contact-1',
+                1,
             );
             expect(dto.nombre).toBe('Empresa SAC');
             expect(dto.ruc).toBe('12345678901');
@@ -37,10 +54,20 @@ describe('Application DTOs', () => {
     describe('UpdateOrganizationDto', () => {
         it('should create instance with partial fields', () => {
             const dto = new UpdateOrganizationDto(
-                undefined, 'Updated SAC', undefined,
-                undefined, undefined, undefined,
-                undefined, undefined, undefined,
-                undefined, undefined, undefined, undefined, 1,
+                undefined,
+                'Updated SAC',
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                1,
             );
             expect(dto.nombre).toBe('Updated SAC');
             expect(dto.codigoCliente).toBeUndefined();

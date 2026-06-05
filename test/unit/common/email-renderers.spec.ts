@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
-const mockTemplate = '<html>{{recipientEmail}} - {{roleLabel}} - {{invitationLink}}</html>';
+const mockTemplate =
+    '<html>{{recipientEmail}} - {{roleLabel}} - {{invitationLink}}</html>';
 const mockFsReadFileSync = jest.fn();
 const mockJoin = jest.fn();
 
@@ -35,7 +36,9 @@ describe('Email Renderers', () => {
             mockJoin.mockReturnValue('/fake/path/invitation.html');
             mockFsReadFileSync.mockReturnValue(mockTemplate);
 
-            const { renderInvitationEmailTemplate } = require('@/modules/common/mail/invitation-email.renderer');
+            const {
+                renderInvitationEmailTemplate,
+            } = require('@/modules/common/mail/invitation-email.renderer');
             const result = renderInvitationEmailTemplate({
                 correo: 'user@example.com',
                 token: 'token-abc',
@@ -45,14 +48,20 @@ describe('Email Renderers', () => {
 
             expect(result).toContain('user@example.com');
             expect(result).toContain('Trabajador');
-            expect(result).toContain('https://app.bioactiva.com/accept-invitation?token=token-abc');
+            expect(result).toContain(
+                'https://app.bioactiva.com/accept-invitation?token=token-abc',
+            );
         });
 
         it('should escape HTML characters in values', () => {
             mockJoin.mockReturnValue('/fake/path/invitation.html');
-            mockFsReadFileSync.mockReturnValue('<html>{{recipientEmail}}</html>');
+            mockFsReadFileSync.mockReturnValue(
+                '<html>{{recipientEmail}}</html>',
+            );
 
-            const { renderInvitationEmailTemplate } = require('@/modules/common/mail/invitation-email.renderer');
+            const {
+                renderInvitationEmailTemplate,
+            } = require('@/modules/common/mail/invitation-email.renderer');
             const result = renderInvitationEmailTemplate({
                 correo: '<script>alert("xss")</script>',
                 token: 'token',
@@ -66,22 +75,30 @@ describe('Email Renderers', () => {
 
         it('should throw when template file is not found', () => {
             mockJoin.mockReturnValue('/nonexistent/invitation.html');
-            mockFsReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+            mockFsReadFileSync.mockImplementation(() => {
+                throw new Error('ENOENT');
+            });
 
-            const { renderInvitationEmailTemplate } = require('@/modules/common/mail/invitation-email.renderer');
-            expect(() => renderInvitationEmailTemplate({
-                correo: 'test@example.com',
-                token: 'token',
-                rol: 1 as any,
-                invitedBy: 1,
-            })).toThrow('No se pudo cargar la plantilla de invitación');
+            const {
+                renderInvitationEmailTemplate,
+            } = require('@/modules/common/mail/invitation-email.renderer');
+            expect(() =>
+                renderInvitationEmailTemplate({
+                    correo: 'test@example.com',
+                    token: 'token',
+                    rol: 1 as any,
+                    invitedBy: 1,
+                }),
+            ).toThrow('No se pudo cargar la plantilla de invitación');
         });
 
         it('should use cached template on subsequent calls', () => {
             mockJoin.mockReturnValue('/fake/path/invitation.html');
             mockFsReadFileSync.mockReturnValue(mockTemplate);
 
-            const { renderInvitationEmailTemplate } = require('@/modules/common/mail/invitation-email.renderer');
+            const {
+                renderInvitationEmailTemplate,
+            } = require('@/modules/common/mail/invitation-email.renderer');
             renderInvitationEmailTemplate({
                 correo: 'first@example.com',
                 token: 'token1',
@@ -102,7 +119,9 @@ describe('Email Renderers', () => {
             mockJoin.mockReturnValue('/fake/path/invitation.html');
             mockFsReadFileSync.mockReturnValue('{{roleLabel}}');
 
-            const { renderInvitationEmailTemplate } = require('@/modules/common/mail/invitation-email.renderer');
+            const {
+                renderInvitationEmailTemplate,
+            } = require('@/modules/common/mail/invitation-email.renderer');
             const result = renderInvitationEmailTemplate({
                 correo: 'admin@example.com',
                 token: 'token',
@@ -117,23 +136,33 @@ describe('Email Renderers', () => {
     describe('renderResetPasswordEmailTemplate', () => {
         it('should render template with all placeholders replaced', () => {
             mockJoin.mockReturnValue('/fake/path/reset-password.html');
-            mockFsReadFileSync.mockReturnValue('<html>{{recipientEmail}} - {{resetLink}}</html>');
+            mockFsReadFileSync.mockReturnValue(
+                '<html>{{recipientEmail}} - {{resetLink}}</html>',
+            );
 
-            const { renderResetPasswordEmailTemplate } = require('@/modules/common/mail/reset-password-email.renderer');
+            const {
+                renderResetPasswordEmailTemplate,
+            } = require('@/modules/common/mail/reset-password-email.renderer');
             const result = renderResetPasswordEmailTemplate({
                 correo: 'user@example.com',
                 token: 'token-reset',
             });
 
             expect(result).toContain('user@example.com');
-            expect(result).toContain('https://app.bioactiva.com/reset-password?token=token-reset');
+            expect(result).toContain(
+                'https://app.bioactiva.com/reset-password?token=token-reset',
+            );
         });
 
         it('should escape HTML characters in values', () => {
             mockJoin.mockReturnValue('/fake/path/reset-password.html');
-            mockFsReadFileSync.mockReturnValue('<html>{{recipientEmail}}</html>');
+            mockFsReadFileSync.mockReturnValue(
+                '<html>{{recipientEmail}}</html>',
+            );
 
-            const { renderResetPasswordEmailTemplate } = require('@/modules/common/mail/reset-password-email.renderer');
+            const {
+                renderResetPasswordEmailTemplate,
+            } = require('@/modules/common/mail/reset-password-email.renderer');
             const result = renderResetPasswordEmailTemplate({
                 correo: '<img src=x onerror=alert(1)>',
                 token: 'token',
@@ -144,13 +173,21 @@ describe('Email Renderers', () => {
 
         it('should throw when template file is not found', () => {
             mockJoin.mockReturnValue('/nonexistent/reset-password.html');
-            mockFsReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+            mockFsReadFileSync.mockImplementation(() => {
+                throw new Error('ENOENT');
+            });
 
-            const { renderResetPasswordEmailTemplate } = require('@/modules/common/mail/reset-password-email.renderer');
-            expect(() => renderResetPasswordEmailTemplate({
-                correo: 'test@example.com',
-                token: 'token',
-            })).toThrow('No se pudo cargar la plantilla de restablecimiento de contraseña');
+            const {
+                renderResetPasswordEmailTemplate,
+            } = require('@/modules/common/mail/reset-password-email.renderer');
+            expect(() =>
+                renderResetPasswordEmailTemplate({
+                    correo: 'test@example.com',
+                    token: 'token',
+                }),
+            ).toThrow(
+                'No se pudo cargar la plantilla de restablecimiento de contraseña',
+            );
         });
     });
 });

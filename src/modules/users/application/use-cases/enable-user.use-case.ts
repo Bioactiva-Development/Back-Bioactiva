@@ -14,11 +14,15 @@ export class EnableUserUseCase {
     async execute(targetId: number): Promise<void> {
         const user = await this.userRepository.findById(targetId);
         if (!user) {
-            throw new UserNotFoundException(`Usuario con id ${targetId} no encontrado`);
+            throw new UserNotFoundException(
+                `Usuario con id ${targetId} no encontrado`,
+            );
         }
 
         if (user.estado === UserState.ACTIVO) {
-            throw new UserCannotBeRevokedException('El usuario ya está habilitado');
+            throw new UserCannotBeRevokedException(
+                'El usuario ya está habilitado',
+            );
         }
 
         user.activate();

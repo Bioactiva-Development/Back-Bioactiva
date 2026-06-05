@@ -21,6 +21,11 @@ import {
     PASSWORD_HASHER,
     type PasswordHasherPort,
 } from '@/modules/auth/domain/ports/password-hasher.port';
+import {
+    TOKEN_SERVICE,
+    type TokenServicePort,
+} from '@/modules/auth/domain/ports/token-service.port';
+import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserState } from '@/modules/users/domain/enums/estado';
 
@@ -37,6 +42,8 @@ export class AcceptInvitationUseCase {
         private readonly userRepository: UserRepositoryPort,
         @Inject(PASSWORD_HASHER)
         private readonly passwordHasher: PasswordHasherPort,
+        @Inject(TOKEN_SERVICE)
+        private readonly tokenService: TokenServicePort,
     ) {}
 
     async execute(
@@ -44,7 +51,7 @@ export class AcceptInvitationUseCase {
         password: string,
         nombres: string,
         apellidos: string,
-    ): Promise<void> {
+    ): Promise<TokenPair> {
         const token_hash = this.hashService.hash(token);
         const invitation =
             await this.invitationsRepository.findByToken(token_hash);
@@ -87,6 +94,21 @@ export class AcceptInvitationUseCase {
             UserState.ACTIVO,
             new Date(),
         );
-        await this.userRepository.save(activatedUser);
+        const savedUser = await this.userRepository.save(activatedUser);
+
+        const accessToken = await this.tokenService.signAccessToken({
+            sub: String(savedUser.id),
+            correo: savedUser.correo,
+            nombres: savedUser.nombres,
+            apellidos: savedUser.apellidos,
+            role: savedUser.role,
+            estado: savedUser.estado,
+        });
+
+        const refreshToken = await this.tokenService.signRefreshToken({
+            sub: String(savedUser.id),
+        });
+
+        return new TokenPair(accessToken, refreshToken, 900, 604800);
     }
 }

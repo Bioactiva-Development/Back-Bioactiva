@@ -1,6 +1,9 @@
 import { extractCookieFromRequest } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
 import { currentUserFromRequest } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
-import { Roles, ROLES_KEY } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
+import {
+    Roles,
+    ROLES_KEY,
+} from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 
@@ -51,7 +54,10 @@ describe('security decorators helpers', () => {
 
     describe('Roles decorator', () => {
         it('should set metadata with given roles', () => {
-            const decorated = Roles(UserRole.ADMINISTRADOR, UserRole.TRABAJADOR);
+            const decorated = Roles(
+                UserRole.ADMINISTRADOR,
+                UserRole.TRABAJADOR,
+            );
             expect(decorated).toBeDefined();
             expect(Array.isArray(decorated)).toBe(false);
         });

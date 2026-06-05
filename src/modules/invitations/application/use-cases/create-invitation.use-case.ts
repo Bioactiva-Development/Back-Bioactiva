@@ -12,6 +12,7 @@ import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { InvalidInvitationDomainException } from '@/modules/invitations/domain/exceptions/invalid-invitation-domain.exception';
+import { UserAlreadyRegisteredException } from '@/modules/invitations/domain/exceptions/user-already-registered.exception';
 import { InvitationToken } from '@/modules/invitations/domain/entities/invitation_token';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
@@ -66,6 +67,13 @@ export class CreateInvitationUseCase {
             );
         }
 
+        const existingUser = await this.userRepository.findByCorreo(correo);
+        if (existingUser && !existingUser.isProvisional()) {
+            throw new UserAlreadyRegisteredException(
+                'Ya existe un usuario registrado con este correo',
+            );
+        }
+
         const token = randomUUID();
         const tokenHash = this.hashService.hash(token);
         if (actor.id === null) {
@@ -82,18 +90,21 @@ export class CreateInvitationUseCase {
             null,
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         );
-        const newUser = new User(
-            null,
-            '',
-            '',
+        // Reutiliza al usuario provisional huérfano de una invitación previa
+        // (cancelada/expirada) en vez de recrearlo, evitando violar el unique
+        // de correo. Lo restaura a PENDIENTE con el rol de la nueva invitación.
+        const provisionalUser = new User(
+            existingUser?.id ?? null,
+            existingUser?.nombres ?? '',
+            existingUser?.apellidos ?? '',
             correo,
             '',
-            new Date(),
+            existingUser?.created_at ?? new Date(),
             rol,
             UserState.PENDIENTE,
             new Date(),
         );
-        await this.userRepository.save(newUser);
+        await this.userRepository.save(provisionalUser);
         await this.invitationsRepository.save(invitation);
         await this.invitationExpirationScheduler.scheduleExpiration({
             invitationId: invitation.id!,

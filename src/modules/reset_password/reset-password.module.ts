@@ -5,6 +5,7 @@ import { UsersModule } from '@/modules/users/user.module';
 import { RequestPasswordResetUseCase } from '@/modules/reset_password/application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
+import { ObtainResetInfoUseCase } from '@/modules/reset_password/application/use-cases/obtain-reset-info.use-case';
 import { ExpirePasswordResetTokenUseCase } from '@/modules/reset_password/application/use-cases/expire-password-reset-token.use-case';
 import { PASSWORD_RESET_REPOSITORY } from '@/modules/reset_password/domain/ports/password-reset-repository.port';
 import { PASSWORD_RESET_NOTIFICATION } from '@/modules/reset_password/domain/ports/password-reset-notification.port';
@@ -14,8 +15,10 @@ import { PasswordResetEmailPublisher } from '@/modules/reset_password/infrastruc
 import { PasswordResetExpirationPublisher } from '@/modules/reset_password/infrastructure/queue/password-reset-expiration.publisher';
 import { ResetPasswordQueueModule } from '@/modules/reset_password/infrastructure/queue/reset-password-queue.module';
 import { ResetPasswordController } from '@/modules/reset_password/infrastructure/http/reset-password.controller';
+import { ResetTokenValidatorService } from '@/modules/reset_password/application/services/reset-token-validator.service';
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.service';
+import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
 
 @Module({
     imports: [
@@ -29,7 +32,9 @@ import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.s
         RequestPasswordResetUseCase,
         ResetPasswordUseCase,
         ValidateResetTokenUseCase,
+        ObtainResetInfoUseCase,
         ExpirePasswordResetTokenUseCase,
+        ResetTokenValidatorService,
         PrismaPasswordResetRepository,
         Sha256HashService,
         {
@@ -48,6 +53,7 @@ import { Sha256HashService } from '@/shared/infrastructure/service/sha256-hash.s
             provide: HashServicePort,
             useExisting: Sha256HashService,
         },
+        AllowedEmailDomainsConfig,
     ],
     exports: [
         RequestPasswordResetUseCase,

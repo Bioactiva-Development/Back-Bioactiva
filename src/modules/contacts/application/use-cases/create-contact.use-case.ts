@@ -1,5 +1,8 @@
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
-import { IContactRepository, ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
+import {
+    IContactRepository,
+    ContactWithOrgName,
+} from '@/modules/contacts/domain/ports/contact.repository';
 import { CreateContactDto } from '@/modules/contacts/application/dtos/create-contact.dto';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { EmailAlreadyExistsException } from '@/modules/contacts/domain/exceptions/email-already-exists.exception';
@@ -47,7 +50,9 @@ export class CreateContactUseCase {
         );
 
         const saved = await this.contactRepository.save(newContact);
-        const enriched = await this.contactRepository.findByIdWithOrganization(saved.id);
+        const enriched = await this.contactRepository.findByIdWithOrganization(
+            saved.id,
+        );
         return enriched!;
     }
 }

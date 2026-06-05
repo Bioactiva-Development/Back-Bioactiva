@@ -28,7 +28,7 @@ export class AdminInitializerService implements OnApplicationBootstrap {
         await this.initializeData();
     }
 
-    private async initializeData() {
+    async initializeData() {
         const adminCount = await this.userRepository.count({
             where: { role: UserRole.ADMINISTRADOR },
         });

@@ -6,7 +6,10 @@ import {
     Body,
     Param,
     NotFoundException,
+    UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CreateOrganizationUseCase } from '@/modules/organizations/application/use-cases/create-organization.use-case';
 import { UpdateOrganizationUseCase } from '@/modules/organizations/application/use-cases/update-organization.use-case';
 import { GetOrganizationByIdUseCase } from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
@@ -14,7 +17,13 @@ import { GetAllOrganizationsUseCase } from '@/modules/organizations/application/
 import { QuerySunatUseCase } from '@/modules/organizations/application/use-cases/query-sunat.use-case';
 import { HttpCreateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/create-organization.dto.http';
 import { HttpUpdateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/update-organization.dto.http';
+import { OrganizationResponseDto } from '@/modules/organizations/infrastructure/http/dtos/organization-response.dto.http';
+import { OrganizationDetailResponseDto } from '@/modules/organizations/infrastructure/http/dtos/organization-detail-response.dto.http';
+import { SunatCompanyResponseDto } from '@/modules/organizations/infrastructure/http/dtos/sunat-company-response.dto.http';
 
+@ApiTags('organizations')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('organizations')
 export class OrganizationController {
     constructor(
@@ -26,36 +35,56 @@ export class OrganizationController {
     ) {}
 
     @Post()
-    async create(@Body() httpDto: HttpCreateOrganizationDto) {
-        return await this.createOrganizationUseCase.execute(httpDto);
+    async create(
+        @Body() httpDto: HttpCreateOrganizationDto,
+    ): Promise<OrganizationResponseDto> {
+        const org = await this.createOrganizationUseCase.execute(httpDto);
+        return new OrganizationResponseDto(org);
     }
 
     @Get()
-    async findAll() {
-        return await this.getAllOrganizationsUseCase.execute();
+    async findAll(): Promise<OrganizationResponseDto[]> {
+        const orgs = await this.getAllOrganizationsUseCase.execute();
+        return orgs.map((org) => new OrganizationResponseDto(org));
     }
 
     @Get('sunat/:query')
-    async querySunat(@Param('query') query: string) {
+    async querySunat(
+        @Param('query') query: string,
+    ): Promise<SunatCompanyResponseDto | SunatCompanyResponseDto[]> {
         const result = await this.querySunatUseCase.execute(query);
         if (!result || (Array.isArray(result) && result.length === 0)) {
             throw new NotFoundException(
                 'No se encontraron resultados en SUNAT para la organización consultada.',
             );
         }
-        return result;
+        if (Array.isArray(result)) {
+            return result.map((item) => new SunatCompanyResponseDto(item));
+        }
+        return new SunatCompanyResponseDto(result);
     }
 
     @Get(':id')
-    async findOne(@Param('id') id: string) {
-        return await this.getOrganizationByIdUseCase.execute(id);
+    async findOne(
+        @Param('id') id: string,
+    ): Promise<OrganizationDetailResponseDto> {
+        const detail = await this.getOrganizationByIdUseCase.execute(id);
+        if (!detail) {
+            throw new NotFoundException('Organización no encontrada');
+        }
+        return new OrganizationDetailResponseDto(
+            detail.organization,
+            detail.contactos,
+            detail.totalContactos,
+        );
     }
 
     @Patch(':id')
     async update(
         @Param('id') id: string,
         @Body() httpDto: HttpUpdateOrganizationDto,
-    ) {
-        return await this.updateOrganizationUseCase.execute(id, httpDto);
+    ): Promise<OrganizationResponseDto> {
+        const org = await this.updateOrganizationUseCase.execute(id, httpDto);
+        return new OrganizationResponseDto(org);
     }
 }

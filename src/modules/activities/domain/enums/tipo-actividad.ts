@@ -1,5 +1,6 @@
 export enum TipoActividad {
-    LLAMADA,
-    REUNION,
-    TAREA,
+    REUNION = 'REUNION',
+    LLAMADA = 'LLAMADA',
+    EMAIL = 'EMAIL',
+    OTRO = 'OTRO',
 }
