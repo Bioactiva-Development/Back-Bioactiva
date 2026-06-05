@@ -15,19 +15,19 @@ export class ResetService {
 
     async resetDatabase(): Promise<void> {
         const tables = [
-            'paso_seguimiento',
-            'secuencia_seguimiento',
-            'recordatorio_actividad',
-            'notificacion',
-            'actividad',
-            'cotizacion',
-            'lead',
-            'contacto',
-            'organizacion',
-            'integracion_microsoft',
-            'user_token',
-            'template_email',
-            'usuario',
+            'PasoSeguimiento',
+            'SecuenciaSeguimiento',
+            'RecordatorioActividad',
+            'Notificacion',
+            'Actividad',
+            'Cotizacion',
+            'Lead',
+            'Contacto',
+            'Organizacion',
+            'IntegracionMicrosoft',
+            'UserToken',
+            'TemplateEmail',
+            'Usuario',
         ];
 
         await this.prismaService.$executeRawUnsafe(
