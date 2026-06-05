@@ -22,6 +22,6 @@ import { UserController } from '@/modules/users/infrastructure/http/user.control
         DisableUserUseCase,
         EnableUserUseCase,
     ],
-    exports: [USER_REPOSITORY],
+    exports: [USER_REPOSITORY, AdminInitializerService],
 })
 export class UsersModule {}
