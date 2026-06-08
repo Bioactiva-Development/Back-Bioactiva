@@ -112,10 +112,11 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
     private async getAvgClosingTime(baseFilter: any): Promise<number> {
         const rows: any[] = await this.prisma.$queryRawUnsafe(
             `
-        SELECT AVG(EXTRACT(DAY FROM (l."updatedAt" - l."createdAt"))) AS avg_days
+        SELECT AVG(EXTRACT(DAY FROM (l."fechaCierre" - l."createdAt"))) AS avg_days
         FROM "Lead" l
         WHERE l.estado = $1
           AND l."deletedAt" IS NULL
+          AND l."fechaCierre" IS NOT NULL
           AND l."createdAt" >= $2
           AND l."createdAt" <= $3
     `,
@@ -127,10 +128,11 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         if (baseFilter.idEncargado) {
             const rowsFiltered: any[] = await this.prisma.$queryRawUnsafe(
                 `
-            SELECT AVG(EXTRACT(DAY FROM (l."updatedAt" - l."createdAt"))) AS avg_days
+            SELECT AVG(EXTRACT(DAY FROM (l."fechaCierre" - l."createdAt"))) AS avg_days
             FROM "Lead" l
             WHERE l.estado = $1
               AND l."deletedAt" IS NULL
+              AND l."fechaCierre" IS NOT NULL
               AND l."createdAt" >= $2
               AND l."createdAt" <= $3
               AND l."idEncargado" = $4
