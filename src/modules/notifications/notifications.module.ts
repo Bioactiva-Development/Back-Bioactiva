@@ -9,14 +9,23 @@ import { NOTIFICATION_SCHEDULER } from '@/modules/notifications/domain/ports/not
 import { EMAIL_TEMPLATE_READER } from '@/modules/notifications/domain/ports/email-template-reader.port';
 import { NOTIFICATION_MAILER } from '@/modules/notifications/domain/ports/notification-mailer.port';
 import { ACTIVITY_CONTEXT_READER } from '@/modules/notifications/domain/ports/activity-context-reader.port';
+import { STALE_LEAD_READER } from '@/modules/notifications/domain/ports/stale-lead-reader.port';
+import { IN_APP_NOTIFICATION_REPOSITORY } from '@/modules/notifications/domain/ports/in-app-notification-repository.port';
 import { PrismaNotificationRepository } from '@/modules/notifications/infrastructure/persistance/prisma-notification.repository';
 import { PrismaEmailTemplateReader } from '@/modules/notifications/infrastructure/persistance/prisma-email-template-reader';
 import { PrismaActivityContextReader } from '@/modules/notifications/infrastructure/persistance/prisma-activity-context-reader';
+import { PrismaStaleLeadReader } from '@/modules/notifications/infrastructure/persistance/prisma-stale-lead-reader';
+import { PrismaInAppNotificationRepository } from '@/modules/notifications/infrastructure/persistance/prisma-in-app-notification.repository';
 import {
     NotificationSchedulerPublisher,
     NOTIFICATIONS_QUEUE,
 } from '@/modules/notifications/infrastructure/queue/notification-scheduler.publisher';
 import { NotificationProcessor } from '@/modules/notifications/infrastructure/queue/notification.processor';
+import {
+    StaleLeadAlertScheduler,
+    STALE_LEAD_ALERTS_QUEUE,
+} from '@/modules/notifications/infrastructure/queue/stale-lead-alert.scheduler';
+import { StaleLeadAlertProcessor } from '@/modules/notifications/infrastructure/queue/stale-lead-alert.processor';
 import { NotificationMailerAdapter } from '@/modules/notifications/infrastructure/mail/notification-mailer.adapter';
 import { ActivityCompletionAdapter } from '@/modules/notifications/infrastructure/activities/activity-completion.adapter';
 import { NotificationsController } from '@/modules/notifications/infrastructure/http/notifications.controller';
@@ -28,6 +37,9 @@ import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/
 import { CompleteActivityFollowUpUseCase } from '@/modules/notifications/application/use-cases/complete-activity-follow-up.use-case';
 import { SendInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-internal-email.use-case';
 import { SendExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-external-email.use-case';
+import { GenerateStaleLeadAlertsUseCase } from '@/modules/notifications/application/use-cases/generate-stale-lead-alerts.use-case';
+import { ListInAppNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-in-app-notifications.use-case';
+import { MarkInAppNotificationReadUseCase } from '@/modules/notifications/application/use-cases/mark-in-app-notification-read.use-case';
 
 @Module({
     imports: [
@@ -35,6 +47,7 @@ import { SendExternalEmailUseCase } from '@/modules/notifications/application/us
         MailModule,
         RedisModule,
         BullModule.registerQueue({ name: NOTIFICATIONS_QUEUE }),
+        BullModule.registerQueue({ name: STALE_LEAD_ALERTS_QUEUE }),
     ],
     controllers: [NotificationsController],
     providers: [
@@ -63,6 +76,13 @@ import { SendExternalEmailUseCase } from '@/modules/notifications/application/us
             provide: NOTIFICATION_MAILER,
             useExisting: NotificationMailerAdapter,
         },
+        PrismaStaleLeadReader,
+        { provide: STALE_LEAD_READER, useExisting: PrismaStaleLeadReader },
+        PrismaInAppNotificationRepository,
+        {
+            provide: IN_APP_NOTIFICATION_REPOSITORY,
+            useExisting: PrismaInAppNotificationRepository,
+        },
         CreateReminderUseCase,
         CreateFollowUpUseCase,
         CancelNotificationUseCase,
@@ -71,7 +91,12 @@ import { SendExternalEmailUseCase } from '@/modules/notifications/application/us
         CompleteActivityFollowUpUseCase,
         SendInternalEmailUseCase,
         SendExternalEmailUseCase,
+        GenerateStaleLeadAlertsUseCase,
+        ListInAppNotificationsUseCase,
+        MarkInAppNotificationReadUseCase,
         NotificationProcessor,
+        StaleLeadAlertScheduler,
+        StaleLeadAlertProcessor,
         ActivityCompletionAdapter,
         { provide: FOLLOW_UP_CANCELER, useExisting: ActivityCompletionAdapter },
     ],

@@ -261,6 +261,7 @@ model Lead {
   actividades  Actividad[]
   cotizaciones Cotizacion[]
   notificacionesProgramadas NotificacionProgramada[]
+  notificaciones Notificacion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -435,6 +436,8 @@ model UserToken {
   createdAt DateTime @default(now())
 }
 
+// Notificación in-app (la "campana"). Puede referir a una actividad o a un lead
+// (p. ej. la alerta automática de leads >30d sin cambio de estado, CU007).
 model Notificacion {
   id Int @id @default(autoincrement())
 
@@ -445,8 +448,11 @@ model Notificacion {
   idUsuario Int
   usuario Usuario @relation(fields: [idUsuario], references: [id])
 
-  idActividad Int
-  actividad Actividad @relation(fields: [idActividad], references: [id])
+  idActividad Int?
+  actividad Actividad? @relation(fields: [idActividad], references: [id])
+
+  idLead Int?
+  lead Lead? @relation(fields: [idLead], references: [id])
 
   createdAt DateTime @default(now())
 }

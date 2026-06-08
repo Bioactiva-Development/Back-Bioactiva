@@ -5,21 +5,27 @@ import {
     Get,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
     Query,
     UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
+import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
+import { User } from '@/modules/users/domain/entities/user';
 import { CreateReminderUseCase } from '@/modules/notifications/application/use-cases/create-reminder.use-case';
 import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-cases/create-follow-up.use-case';
 import { CancelNotificationUseCase } from '@/modules/notifications/application/use-cases/cancel-notification.use-case';
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
+import { ListInAppNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-in-app-notifications.use-case';
+import { MarkInAppNotificationReadUseCase } from '@/modules/notifications/application/use-cases/mark-in-app-notification-read.use-case';
 import { HttpCreateReminderDto } from '@/modules/notifications/infrastructure/http/dto/create-reminder.dto.http';
 import { HttpCreateFollowUpDto } from '@/modules/notifications/infrastructure/http/dto/create-follow-up.dto.http';
 import { ListNotificationsQueryDto } from '@/modules/notifications/infrastructure/http/dto/list-notifications-query.dto.http';
 import { NotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/notification-response.dto';
+import { InAppNotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/in-app-notification-response.dto';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -32,6 +38,8 @@ export class NotificationsController {
         private readonly cancelNotificationUseCase: CancelNotificationUseCase,
         private readonly listNotificationsUseCase: ListNotificationsUseCase,
         private readonly listActiveTemplatesUseCase: ListActiveTemplatesUseCase,
+        private readonly listInAppNotificationsUseCase: ListInAppNotificationsUseCase,
+        private readonly markInAppNotificationReadUseCase: MarkInAppNotificationReadUseCase,
     ) {}
 
     @Post('reminders')
@@ -99,6 +107,32 @@ export class NotificationsController {
     })
     async listTemplates() {
         return this.listActiveTemplatesUseCase.execute();
+    }
+
+    @Get('in-app')
+    @ApiOperation({
+        summary: 'Listar las notificaciones in-app del usuario autenticado',
+    })
+    async listInApp(
+        @CurrentUser() user: User,
+    ): Promise<InAppNotificationResponseDto[]> {
+        const notifications = await this.listInAppNotificationsUseCase.execute(
+            user.id!,
+        );
+        return notifications.map(
+            (notification) => new InAppNotificationResponseDto(notification),
+        );
+    }
+
+    @Patch('in-app/:id/read')
+    @ApiOperation({ summary: 'Marcar una notificación in-app como leída' })
+    async markInAppRead(
+        @Param('id', ParseIntPipe) id: number,
+        @CurrentUser() user: User,
+    ): Promise<InAppNotificationResponseDto> {
+        const notification =
+            await this.markInAppNotificationReadUseCase.execute(id, user.id!);
+        return new InAppNotificationResponseDto(notification);
     }
 
     @Delete(':id')

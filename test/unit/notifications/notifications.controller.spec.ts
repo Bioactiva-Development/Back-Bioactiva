@@ -6,6 +6,8 @@ import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-c
 import { CancelNotificationUseCase } from '@/modules/notifications/application/use-cases/cancel-notification.use-case';
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
+import { ListInAppNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-in-app-notifications.use-case';
+import { MarkInAppNotificationReadUseCase } from '@/modules/notifications/application/use-cases/mark-in-app-notification-read.use-case';
 import { ScheduledNotification } from '@/modules/notifications/domain/entities/scheduled-notification';
 import { NotificationStatus } from '@/modules/notifications/domain/enums/notification-status';
 import { NotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/notification-response.dto';
@@ -59,6 +61,14 @@ describe('Notifications module', () => {
                     },
                     {
                         provide: ListActiveTemplatesUseCase,
+                        useValue: { execute: jest.fn() },
+                    },
+                    {
+                        provide: ListInAppNotificationsUseCase,
+                        useValue: { execute: jest.fn() },
+                    },
+                    {
+                        provide: MarkInAppNotificationReadUseCase,
                         useValue: { execute: jest.fn() },
                     },
                 ],
