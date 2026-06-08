@@ -42,10 +42,11 @@ describe('Dashboard module', () => {
 
                 mockPrisma.actividad.count.mockResolvedValue(250);
 
-                // 5 raw queries (no encargado filter = 1 call each)
+                // 4 raw queries, no encargado filter = 1 call each, issued in this order:
+                // getAvgClosingTime, getAvgProposalStageTime, getPipelineAmount, getClosedRevenue.
+                // (conversionRate/proposalToCloseRate come from lead.groupBy, not a raw query.)
                 mockPrisma.$queryRawUnsafe
                     .mockResolvedValueOnce([{ avg_days: '30.5' }])
-                    .mockResolvedValueOnce([{ closed_count: '20', total_decided: '30' }])
                     .mockResolvedValueOnce([{ avg_days: '15.2' }])
                     .mockResolvedValueOnce([{ total: '200000' }])
                     .mockResolvedValueOnce([{ total: '45000', avg_ticket: '2250' }]);
@@ -80,7 +81,7 @@ describe('Dashboard module', () => {
                 mockPrisma.actividad.count.mockResolvedValue(0);
 
                 // When idEncargado is truthy, each raw method calls $queryRawUnsafe TWICE
-                // (unfiltered first, then filtered). 5 methods x 2 = 10 calls.
+                // (unfiltered first, then filtered). 4 raw methods x 2 = 8 calls.
                 // Promise.all interleaves execution, so use mockResolvedValue (not Once)
                 // so every call gets the same response regardless of order.
                 mockPrisma.$queryRawUnsafe.mockResolvedValue([
@@ -89,7 +90,7 @@ describe('Dashboard module', () => {
 
                 const result = await repository.getMetrics(queryWithEncargado);
 
-                expect(mockPrisma.$queryRawUnsafe.mock.calls).toHaveLength(10);
+                expect(mockPrisma.$queryRawUnsafe.mock.calls).toHaveLength(8);
                 expect(result.averageTicketAmount).toBe(0);
                 expect(result.avgClosingTimeDays).toBe(0);
                 expect(result.proposalToCloseRate).toBe(0);
