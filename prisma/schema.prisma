@@ -253,6 +253,10 @@ model Lead {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
   ultimoCambioEstado DateTime @default(now())
+  // Momento en que el lead pasa a CIERRE_CON_VENTA. Se registra una sola vez al
+  // cerrar la venta; permite medir el tiempo de cierre real sin depender de
+  // updatedAt (que se mueve con cualquier edición posterior del lead).
+  fechaCierre DateTime?
 }
 
 model Actividad {

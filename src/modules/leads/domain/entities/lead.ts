@@ -18,9 +18,17 @@ export class Lead {
         public updated_at: Date,
         public deleted_at: Date | null,
         public ultimo_cambio: Date,
+        public fecha_cierre: Date | null = null,
     ) {}
 
     changeState(estado: LeadState) {
+        if (estado === LeadState.CIERRE_CON_VENTA) {
+            // Se sella la fecha de cierre al concretar la venta.
+            this.fecha_cierre = new Date();
+        } else if (this.estado === LeadState.CIERRE_CON_VENTA) {
+            // Si el lead sale de CIERRE_CON_VENTA, la fecha deja de ser válida.
+            this.fecha_cierre = null;
+        }
         this.estado = estado;
         this.updated_at = new Date();
         this.ultimo_cambio = new Date();
