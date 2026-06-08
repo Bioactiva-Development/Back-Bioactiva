@@ -47,4 +47,22 @@ export class MailService {
 
         return this.mockProvider.sendResetPasswordEmail(input);
     }
+
+    async sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        const provider = process.env.MAIL_PROVIDER ?? 'mock';
+
+        if (provider === 'graph') {
+            return this.graphProvider.sendGenericEmail(input);
+        }
+
+        if (provider === 'smtp') {
+            return this.smtpProvider.sendGenericEmail(input);
+        }
+
+        return this.mockProvider.sendGenericEmail(input);
+    }
 }

@@ -81,4 +81,30 @@ export class GraphMailProvider implements MailProviderPort {
             saveToSentItems: true,
         });
     }
+
+    async sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        const client = this.createGraphClient();
+
+        await client.api(`/users/${process.env.MAIL_FROM}/sendMail`).post({
+            message: {
+                subject: input.subject,
+                body: {
+                    contentType: 'HTML',
+                    content: input.html,
+                },
+                toRecipients: [
+                    {
+                        emailAddress: {
+                            address: input.to,
+                        },
+                    },
+                ],
+            },
+            saveToSentItems: true,
+        });
+    }
 }
