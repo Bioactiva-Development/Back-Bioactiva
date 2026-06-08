@@ -17,6 +17,7 @@ import { ActivitiesModule } from '@/modules/activities/activities.module';
 import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
 import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
+import { ResetModule } from '@/modules/reset/reset.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { DashboardModule } from '@/modules/dashboard/dashboard.module';
         MicrosoftIntegrationModule,
         CotizacionesModule,
         DashboardModule,
+        ResetModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
