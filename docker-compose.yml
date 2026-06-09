@@ -163,6 +163,9 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-development:8000}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/recaptcha-account.json
+    volumes:
+      - ./credentials/recaptcha-account.json:/app/credentials/recaptcha-account.json:ro
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"
