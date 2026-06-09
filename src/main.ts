@@ -31,6 +31,7 @@ async function bootstrap() {
                     frameAncestors: ["'none'"],
                 },
             },
+            //testing
             crossOriginResourcePolicy: { policy: 'cross-origin' },
         }),
     );
