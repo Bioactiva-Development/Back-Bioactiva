@@ -20,11 +20,24 @@ export class StaleLeadAlertScheduler implements OnModuleInit {
     ) {}
 
     async onModuleInit(): Promise<void> {
-        await this.queue.upsertJobScheduler(
-            'stale-lead-alert-daily',
-            { pattern: '0 9 * * *' },
-            { name: GENERATE_STALE_LEAD_ALERTS_JOB },
-        );
-        this.logger.log('Job diario de alerta de leads estancados registrado');
+        // El registro del cron NUNCA debe tumbar el arranque de la app: si Redis
+        // no está disponible en el boot, se registra el error y se continúa (la
+        // app queda operativa; el job puede registrarse en un arranque posterior).
+        try {
+            await this.queue.upsertJobScheduler(
+                'stale-lead-alert-daily',
+                { pattern: '0 9 * * *' },
+                { name: GENERATE_STALE_LEAD_ALERTS_JOB },
+            );
+            this.logger.log(
+                'Job diario de alerta de leads estancados registrado',
+            );
+        } catch (error) {
+            this.logger.error(
+                `No se pudo registrar el job de alerta de leads estancados: ${
+                    error instanceof Error ? error.message : 'error desconocido'
+                }`,
+            );
+        }
     }
 }
