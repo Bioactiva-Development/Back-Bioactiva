@@ -133,18 +133,6 @@ services:
       dockerfile: Dockerfile
     container_name: bioactiva-backend-development
     restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
     depends_on:
       bioactiva-sunat-development:
         condition: service_healthy

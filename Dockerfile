@@ -29,4 +29,9 @@ COPY src/modules/common/mail/templates ./src/modules/common/mail/templates
 
 EXPOSE 3000
 
+# Healthcheck HTTP contra GET / (sin auth). Lee PORT del entorno (default 3000);
+# start-period cubre el `prisma migrate deploy` + boot antes de contar fallos.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD node -e "const p=process.env.PORT||3000;require('http').get('http://localhost:'+p+'/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+
 CMD ["node", "-r", "tsconfig-paths/register", "dist/main"]
