@@ -31,7 +31,6 @@ async function bootstrap() {
                     frameAncestors: ["'none'"],
                 },
             },
-            // La API y el frontend viven en orígenes distintos
             crossOriginResourcePolicy: { policy: 'cross-origin' },
         }),
     );
