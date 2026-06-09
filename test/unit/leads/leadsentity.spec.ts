@@ -56,6 +56,33 @@ describe('Leads module', () => {
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
         });
 
+        it('should stamp fecha_cierre when closing with sale', () => {
+            const lead = buildLead();
+            expect(lead.fecha_cierre).toBeNull();
+
+            lead.changeState(LeadState.CIERRE_CON_VENTA);
+
+            expect(lead.fecha_cierre).toBeInstanceOf(Date);
+        });
+
+        it('should clear fecha_cierre when leaving CIERRE_CON_VENTA', () => {
+            const lead = buildLead();
+            lead.changeState(LeadState.CIERRE_CON_VENTA);
+            expect(lead.fecha_cierre).toBeInstanceOf(Date);
+
+            lead.changeState(LeadState.EN_PROSPECTO);
+
+            expect(lead.fecha_cierre).toBeNull();
+        });
+
+        it('should not stamp fecha_cierre on non-closing transitions', () => {
+            const lead = buildLead();
+
+            lead.changeState(LeadState.OFERTADO);
+
+            expect(lead.fecha_cierre).toBeNull();
+        });
+
         it('should assign new responsible user', () => {
             const lead = buildLead();
             const oldUpdatedAt = lead.updated_at;

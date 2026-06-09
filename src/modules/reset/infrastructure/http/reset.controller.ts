@@ -1,7 +1,7 @@
 import {
-    BadRequestException,
     Controller,
     Get,
+    ImATeapotException,
     Query,
 } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -23,7 +23,7 @@ export class ResetController {
         @Query('confirm') confirm: string,
     ): Promise<{ message: string }> {
         if (confirm !== 'true') {
-            throw new BadRequestException(
+            throw new ImATeapotException(
                 'Debe proporcionar ?confirm=true para reiniciar la base de datos',
             );
         }

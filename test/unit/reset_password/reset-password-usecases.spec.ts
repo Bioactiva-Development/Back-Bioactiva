@@ -12,8 +12,6 @@ import { TokenStatus } from '@/shared/domain/enums/token_estado';
 import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
 import { ResetTokenExpiredException } from '@/modules/reset_password/domain/exeptions/reset-token-expired.exception';
 import { ActiveResetTokenException } from '@/modules/reset_password/domain/exeptions/active-reset-token.exception';
-import { ResetPasswordDomainNotAllowedException } from '@/modules/reset_password/domain/exeptions/reset-password-domain-not-allowed.exception';
-import { UserNotFoundException } from '@/modules/users/domain/exceptions/user-not-found.exception';
 
 describe('Reset Password module', () => {
     /**
@@ -97,45 +95,49 @@ describe('Reset Password module', () => {
             expect(passwordResetRepository.save).toHaveBeenCalled();
         });
 
-        it('should reject email whose domain is not allowed (400)', async () => {
+        // Anti-enumeración: cuando el correo no es elegible, el caso de uso
+        // siempre responde { ok: true } sin revelar el motivo (dominio no
+        // permitido, usuario inexistente/sin id o cuenta inactiva).
+        it('should silently succeed (ok:true) when email domain is not allowed', async () => {
             allowedEmailDomainsConfig.getAllowedDomains.mockReturnValue([
                 'bioactiva.com',
             ]);
 
-            await expect(useCase.execute('attacker@gmail.com')).rejects.toThrow(
-                ResetPasswordDomainNotAllowedException,
-            );
+            const result = await useCase.execute('attacker@gmail.com');
+
+            expect(result).toEqual({ ok: true });
             expect(userRepository.findByCorreo).not.toHaveBeenCalled();
-        });
-
-        it('should throw UserNotFoundException for non-existent user (404)', async () => {
-            userRepository.findByCorreo.mockResolvedValue(null);
-
-            await expect(
-                useCase.execute('notfound@bioactiva.com'),
-            ).rejects.toThrow(UserNotFoundException);
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
-        it('should throw UserNotFoundException for user without id (404)', async () => {
+        it('should silently succeed (ok:true) for non-existent user', async () => {
+            userRepository.findByCorreo.mockResolvedValue(null);
+
+            const result = await useCase.execute('notfound@bioactiva.com');
+
+            expect(result).toEqual({ ok: true });
+            expect(passwordResetRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should silently succeed (ok:true) for user without id', async () => {
             userRepository.findByCorreo.mockResolvedValue(
                 makeUser(UserState.ACTIVO, null),
             );
 
-            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
-                UserNotFoundException,
-            );
+            const result = await useCase.execute('john@bioactiva.com');
+
+            expect(result).toEqual({ ok: true });
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
-        it('should throw UserNotFoundException for inactive account (404)', async () => {
+        it('should silently succeed (ok:true) for inactive account', async () => {
             userRepository.findByCorreo.mockResolvedValue(
                 makeUser(UserState.SUSPENDIDO),
             );
 
-            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
-                UserNotFoundException,
-            );
+            const result = await useCase.execute('john@bioactiva.com');
+
+            expect(result).toEqual({ ok: true });
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 

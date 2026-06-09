@@ -18,6 +18,7 @@ describe('Activities module', () => {
     describe('CompleteActivityUseCase', () => {
         let useCase: CompleteActivityUseCase;
         let activityRepository: any;
+        let followUpCanceler: any;
 
         const buildActividad = (estado = EstadoActividad.PENDIENTE) =>
             new Actividad(
@@ -44,10 +45,16 @@ describe('Activities module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
-            useCase = new CompleteActivityUseCase(activityRepository);
+            followUpCanceler = {
+                onActivityCompleted: jest.fn(),
+            };
+            useCase = new CompleteActivityUseCase(
+                activityRepository,
+                followUpCanceler,
+            );
         });
 
-        it('should complete a pending activity', async () => {
+        it('should complete a pending activity and cancel its pending follow-up', async () => {
             const actividad = buildActividad();
             activityRepository.findById.mockResolvedValue(actividad);
             activityRepository.saveWithRelations.mockResolvedValue({
@@ -59,6 +66,9 @@ describe('Activities module', () => {
             expect(actividad.estado).toBe(EstadoActividad.REALIZADA);
             expect(activityRepository.saveWithRelations).toHaveBeenCalledWith(
                 actividad,
+            );
+            expect(followUpCanceler.onActivityCompleted).toHaveBeenCalledWith(
+                1,
             );
         });
 

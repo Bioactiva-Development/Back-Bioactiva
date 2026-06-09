@@ -289,6 +289,12 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
                         estado: LeadMapper.mapStateToPrisma(leadState),
                         updatedAt: new Date(),
                         ultimoCambioEstado: new Date(),
+                        // Solo se sella la fecha de cierre cuando la venta se
+                        // concreta; otras transiciones la dejan intacta.
+                        fechaCierre:
+                            leadState === LeadState.CIERRE_CON_VENTA
+                                ? new Date()
+                                : undefined,
                     },
                 }),
             ]);

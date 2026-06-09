@@ -5,6 +5,7 @@ import {
     Patch,
     Body,
     Param,
+    Query,
     NotFoundException,
     UseGuards,
 } from '@nestjs/common';
@@ -48,9 +49,9 @@ export class OrganizationController {
         return orgs.map((org) => new OrganizationResponseDto(org));
     }
 
-    @Get('sunat/:query')
+    @Get('sunat')
     async querySunat(
-        @Param('query') query: string,
+        @Query('query') query: string,
     ): Promise<SunatCompanyResponseDto | SunatCompanyResponseDto[]> {
         const result = await this.querySunatUseCase.execute(query);
         if (!result || (Array.isArray(result) && result.length === 0)) {

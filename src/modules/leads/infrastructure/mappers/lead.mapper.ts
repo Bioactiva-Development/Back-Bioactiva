@@ -48,6 +48,7 @@ export class LeadMapper {
             record.updatedAt,
             record.deletedAt,
             record.ultimoCambioEstado,
+            record.fechaCierre,
         );
     }
     static toPersistence(lead: Lead): Prisma.LeadCreateInput {
@@ -66,6 +67,7 @@ export class LeadMapper {
             canalCaptacion: lead.canal_captacion,
             ultimoCambioEstado: lead.ultimo_cambio,
             deletedAt: lead.deleted_at,
+            fechaCierre: lead.fecha_cierre,
         };
     }
 }
