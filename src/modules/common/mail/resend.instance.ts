@@ -50,4 +50,19 @@ export class ResendMailProvider {
             html: renderResetPasswordEmailTemplate(input),
         });
     }
+
+    async sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        const resend = ResendMailProvider.getInstance();
+
+        await resend.emails.send({
+            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+            to: input.to,
+            subject: input.subject,
+            html: input.html,
+        });
+    }
 }

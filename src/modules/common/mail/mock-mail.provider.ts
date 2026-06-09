@@ -27,4 +27,13 @@ export class MockMailProvider implements MailProviderPort {
         );
         await new Promise((resolve) => setTimeout(resolve, 100));
     }
+
+    async sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        this.logger.log(`Mock generic mail to ${input.to} -> ${input.subject}`);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
 }

@@ -18,6 +18,7 @@ import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-int
 import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { ResetModule } from '@/modules/reset/reset.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 @Module({
     imports: [
@@ -34,6 +35,7 @@ import { ResetModule } from '@/modules/reset/reset.module';
         CotizacionesModule,
         DashboardModule,
         ResetModule,
+        NotificationsModule,
 
         ConfigModule.forRoot({
             isGlobal: true,

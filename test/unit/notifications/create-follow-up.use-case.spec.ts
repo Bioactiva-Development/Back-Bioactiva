@@ -1,0 +1,103 @@
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-cases/create-follow-up.use-case';
+import { NotificationType } from '@/modules/notifications/domain/enums/notification-type';
+import { ClientEmailRequiredException } from '@/modules/notifications/domain/exceptions/client-email-required.exception';
+import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
+
+describe('Notifications module', () => {
+    describe('CreateFollowUpUseCase', () => {
+        let useCase: CreateFollowUpUseCase;
+        let repository: any;
+        let scheduler: any;
+        let templateReader: any;
+        let contextReader: any;
+
+        const context = {
+            idActividad: 1,
+            idLead: 2,
+            idResponsable: 3,
+            responsableEmail: 'resp@bioactiva.com',
+            fechaFin: new Date('2099-01-10T14:00:00.000Z'),
+            estado: 'PENDIENTE',
+            contactEmails: ['cliente@empresa.com'],
+        };
+
+        const command = () => ({
+            idActividad: 1,
+            internal: {
+                fechaEnvio: new Date(2099, 0, 1, 14, 0, 0),
+                idTemplate: 5,
+                asunto: 'Interno',
+                cuerpo: 'Cuerpo interno',
+            },
+            external: {
+                correoCliente: 'cliente@empresa.com',
+                fechaEnvio: new Date(2099, 0, 1, 16, 0, 0),
+                idTemplate: 6,
+                asunto: 'Externo',
+                cuerpo: 'Cuerpo externo',
+            },
+        });
+
+        beforeEach(() => {
+            repository = {
+                save: jest.fn(async (n: any) => {
+                    if (n.id === null) {
+                        n.id = 20;
+                    }
+                    return n;
+                }),
+                findActiveByActivity: jest.fn().mockResolvedValue(null),
+            };
+            scheduler = {
+                scheduleInternal: jest
+                    .fn()
+                    .mockResolvedValue('notif-internal-20'),
+                scheduleExternal: jest
+                    .fn()
+                    .mockResolvedValue('notif-external-20'),
+            };
+            templateReader = {
+                findActiveById: jest
+                    .fn()
+                    .mockResolvedValue({ id: 1, activo: true }),
+            };
+            contextReader = {
+                getByActivityId: jest.fn().mockResolvedValue(context),
+            };
+            useCase = new CreateFollowUpUseCase(
+                repository,
+                scheduler,
+                templateReader,
+                contextReader,
+            );
+        });
+
+        it('creates a follow-up and schedules both emails', async () => {
+            const result = await useCase.execute(command());
+
+            expect(result.tipo).toBe(NotificationType.SEGUIMIENTO);
+            expect(result.correo_cliente).toBe('cliente@empresa.com');
+            expect(scheduler.scheduleInternal).toHaveBeenCalled();
+            expect(scheduler.scheduleExternal).toHaveBeenCalled();
+            expect(result.job_id_interno).toBe('notif-internal-20');
+            expect(result.job_id_externo).toBe('notif-external-20');
+        });
+
+        it('rejects a client email not associated to the lead', async () => {
+            const cmd = command();
+            cmd.external.correoCliente = 'otro@externo.com';
+            await expect(useCase.execute(cmd)).rejects.toThrow(
+                ClientEmailRequiredException,
+            );
+        });
+
+        it('rejects when external email is not after internal', async () => {
+            const cmd = command();
+            cmd.external.fechaEnvio = new Date(2099, 0, 1, 14, 0, 0);
+            await expect(useCase.execute(cmd)).rejects.toThrow(
+                InvalidScheduleDateException,
+            );
+        });
+    });
+});

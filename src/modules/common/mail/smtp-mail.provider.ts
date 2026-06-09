@@ -28,4 +28,13 @@ export class SmtpMailProvider implements MailProviderPort {
         const resendProvider = new ResendMailProvider();
         await resendProvider.sendResetPasswordEmail(input);
     }
+
+    async sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        const resendProvider = new ResendMailProvider();
+        await resendProvider.sendGenericEmail(input);
+    }
 }
