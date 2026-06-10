@@ -98,4 +98,19 @@ export class PrismaInvitationsRepository implements InvitationsRepositoryPort {
 
         return InvitationMapper.toDomain(record);
     }
+
+    async expireAllPending(ids: number[]): Promise<number> {
+        if (ids.length === 0) {
+            return 0;
+        }
+        const result = await this.prisma.userToken.updateMany({
+            where: {
+                id: { in: ids },
+                proposito: PrismaTokenPurpose.INVITACION,
+                estado: PrismaTokenStatus.PENDIENTE,
+            },
+            data: { estado: PrismaTokenStatus.EXPIRADO },
+        });
+        return result.count;
+    }
 }

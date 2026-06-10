@@ -10,6 +10,8 @@ const CIERRE_CON_VENTA = 'CIERRE_CON_VENTA';
 const CIERRE_SIN_VENTA = 'CIERRE_SIN_VENTA';
 const OFERTADO = 'OFERTADO';
 
+const STALLED_DAYS = 30;
+
 @Injectable()
 export class PrismaDashboardRepository implements DashboardRepositoryPort {
     private readonly logger = new Logger(PrismaDashboardRepository.name);
@@ -20,291 +22,200 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         const startDate =
             query.startDate ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
         const endDate = query.endDate ?? new Date();
-        const encargadoFilter = query.idEncargado;
+        const idEncargado = query.idEncargado;
+        const stalledCutoff = new Date(
+            Date.now() - STALLED_DAYS * 24 * 60 * 60 * 1000,
+        );
 
-        const baseLeadFilter: any = {
-            createdAt: { gte: startDate, lte: endDate },
-            deletedAt: null,
-        };
-        if (encargadoFilter) {
-            baseLeadFilter.idEncargado = encargadoFilter;
-        }
-
-        const baseActividadFilter: any = {
-            deletedAt: null,
-            lead: {
-                createdAt: { gte: startDate, lte: endDate },
-                deletedAt: null,
-            },
-        };
-        if (encargadoFilter) {
-            baseActividadFilter.lead = {
-                ...baseActividadFilter.lead,
-                idEncargado: encargadoFilter,
-            };
-        }
-
-        const [
-            totalLeads,
-            conversionData,
-            avgClosingRaw,
-            proposalStageRaw,
-            activityData,
-            pipelineRaw,
-            closedRaw,
-            stalledData,
-        ] = await Promise.all([
-            this.countTotalLeads(baseLeadFilter),
-            this.getConversionData(baseLeadFilter),
-            this.getAvgClosingTime(baseLeadFilter),
-            this.getAvgProposalStageTime(baseLeadFilter),
-            this.getActivityData(baseActividadFilter),
-            this.getPipelineAmount(baseLeadFilter),
-            this.getClosedRevenue(baseLeadFilter, startDate, endDate),
-            this.getStalledLeads(baseLeadFilter),
+        // Tres consultas en total (antes hasta 13). Cada una usa una sola
+        // conexión del pool, así que el endpoint más pesado deja de provocar
+        // ráfagas de conexiones contra la base de datos compartida.
+        const [leadAgg, quotationAgg, activityCount] = await Promise.all([
+            this.getLeadAggregates(startDate, endDate, idEncargado, stalledCutoff),
+            this.getQuotationAggregates(startDate, endDate, idEncargado),
+            this.getActivityCount(startDate, endDate, idEncargado),
         ]);
 
-        const totalLeadsCount = totalLeads || 1;
-        const closedCount = conversionData.closedCount;
-        const closedPlusLost =
-            conversionData.closedCount + conversionData.lostCount;
+        const totalLeads = leadAgg.totalLeads;
+        const closedCount = leadAgg.closedCount;
+        const closedPlusLost = leadAgg.closedCount + leadAgg.lostCount;
 
         return {
             totalLeads,
-            averageTicketAmount: closedRaw.averageTicket,
+            averageTicketAmount: quotationAgg.averageTicket,
             conversionRate:
                 totalLeads > 0 ? (closedCount / totalLeads) * 100 : 0,
-            avgClosingTimeDays: avgClosingRaw,
+            avgClosingTimeDays: leadAgg.avgClosingDays,
             proposalToCloseRate:
                 closedPlusLost > 0 ? (closedCount / closedPlusLost) * 100 : 0,
-            avgProposalStageDays: proposalStageRaw,
+            avgProposalStageDays: leadAgg.avgProposalDays,
             avgActivitiesPerLead:
-                totalLeadsCount > 0 ? activityData / totalLeadsCount : 0,
-            pipelineTotalAmount: pipelineRaw,
-            closedRevenue: closedRaw.total,
-            stalledLeadPercentage: stalledData,
+                totalLeads > 0 ? activityCount / totalLeads : 0,
+            pipelineTotalAmount: quotationAgg.pipelineTotal,
+            closedRevenue: quotationAgg.closedTotal,
+            stalledLeadPercentage:
+                totalLeads > 0
+                    ? (leadAgg.stalledCount / totalLeads) * 100
+                    : 0,
             periodStart: startDate,
             periodEnd: endDate,
         };
     }
 
-    private async countTotalLeads(baseFilter: any): Promise<number> {
-        return this.prisma.lead.count({ where: baseFilter });
-    }
-
-    private async getConversionData(
-        baseFilter: any,
-    ): Promise<{ closedCount: number; lostCount: number }> {
-        const groups = await this.prisma.lead.groupBy({
-            by: ['estado'],
-            where: baseFilter,
-            _count: { id: true },
-        });
-        let closedCount = 0;
-        let lostCount = 0;
-        for (const g of groups) {
-            if (g.estado === CIERRE_CON_VENTA) closedCount = g._count.id;
-            if (g.estado === CIERRE_SIN_VENTA) lostCount = g._count.id;
-        }
-        return { closedCount, lostCount };
-    }
-
-    private async getAvgClosingTime(baseFilter: any): Promise<number> {
-        const rows: any[] = await this.prisma.$queryRawUnsafe(
-            `
-        SELECT AVG(EXTRACT(DAY FROM (l."fechaCierre" - l."createdAt"))) AS avg_days
-        FROM "Lead" l
-        WHERE l.estado = $1
-          AND l."deletedAt" IS NULL
-          AND l."fechaCierre" IS NOT NULL
-          AND l."createdAt" >= $2
-          AND l."createdAt" <= $3
-    `,
-            CIERRE_CON_VENTA,
-            baseFilter.createdAt.gte,
-            baseFilter.createdAt.lte,
-        );
-
-        if (baseFilter.idEncargado) {
-            const rowsFiltered: any[] = await this.prisma.$queryRawUnsafe(
-                `
-            SELECT AVG(EXTRACT(DAY FROM (l."fechaCierre" - l."createdAt"))) AS avg_days
-            FROM "Lead" l
-            WHERE l.estado = $1
-              AND l."deletedAt" IS NULL
-              AND l."fechaCierre" IS NOT NULL
-              AND l."createdAt" >= $2
-              AND l."createdAt" <= $3
-              AND l."idEncargado" = $4
-        `,
-                CIERRE_CON_VENTA,
-                baseFilter.createdAt.gte,
-                baseFilter.createdAt.lte,
-                baseFilter.idEncargado,
-            );
-
-            return Number(rowsFiltered[0]?.avg_days ?? 0);
-        }
-
-        return Number(rows[0]?.avg_days ?? 0);
-    }
-
-    private async getAvgProposalStageTime(baseFilter: any): Promise<number> {
-        const rows: any[] = await this.prisma.$queryRawUnsafe(
-            `
-            SELECT AVG(EXTRACT(DAY FROM (NOW() - l."ultimoCambioEstado"))) AS avg_days
-            FROM "Lead" l
-            WHERE l.estado = $1
-              AND l."deletedAt" IS NULL
-              AND l."createdAt" >= $2
-              AND l."createdAt" <= $3
-        `,
-            OFERTADO,
-            baseFilter.createdAt.gte,
-            baseFilter.createdAt.lte,
-        );
-
-        if (baseFilter.idEncargado) {
-            const rowsFiltered: any[] = await this.prisma.$queryRawUnsafe(
-                `
-                SELECT AVG(EXTRACT(DAY FROM (NOW() - l."ultimoCambioEstado"))) AS avg_days
-                FROM "Lead" l
-                WHERE l.estado = $1
-                  AND l."deletedAt" IS NULL
-                  AND l."createdAt" >= $2
-                  AND l."createdAt" <= $3
-                  AND l."idEncargado" = $4
-            `,
-                OFERTADO,
-                baseFilter.createdAt.gte,
-                baseFilter.createdAt.lte,
-                baseFilter.idEncargado,
-            );
-            return Number(rowsFiltered[0]?.avg_days ?? 0);
-        }
-
-        return Number(rows[0]?.avg_days ?? 0);
-    }
-
-    private async getActivityData(baseFilter: any): Promise<number> {
-        return this.prisma.actividad.count({ where: baseFilter });
-    }
-
-    private async getPipelineAmount(baseFilter: any): Promise<number> {
-        const rows: any[] = await this.prisma.$queryRawUnsafe(
-            `
-            SELECT COALESCE(SUM(c.monto), 0) AS total
-            FROM "Cotizacion" c
-            INNER JOIN "Lead" l ON l.id = c."idLead"
-            WHERE l.estado NOT IN ($1, $2)
-              AND l."deletedAt" IS NULL
-              AND c."deletedAt" IS NULL
-              AND l."createdAt" >= $3
-              AND l."createdAt" <= $4
-        `,
-            CIERRE_CON_VENTA,
-            CIERRE_SIN_VENTA,
-            baseFilter.createdAt.gte,
-            baseFilter.createdAt.lte,
-        );
-
-        if (baseFilter.idEncargado) {
-            const rowsFiltered: any[] = await this.prisma.$queryRawUnsafe(
-                `
-                SELECT COALESCE(SUM(c.monto), 0) AS total
-                FROM "Cotizacion" c
-                INNER JOIN "Lead" l ON l.id = c."idLead"
-                WHERE l.estado NOT IN ($1, $2)
-                  AND l."deletedAt" IS NULL
-                  AND c."deletedAt" IS NULL
-                  AND l."createdAt" >= $3
-                  AND l."createdAt" <= $4
-                  AND l."idEncargado" = $5
-            `,
-                CIERRE_CON_VENTA,
-                CIERRE_SIN_VENTA,
-                baseFilter.createdAt.gte,
-                baseFilter.createdAt.lte,
-                baseFilter.idEncargado,
-            );
-            return Number(rowsFiltered[0]?.total ?? 0);
-        }
-
-        return Number(rows[0]?.total ?? 0);
-    }
-
-    private async getClosedRevenue(
-        baseFilter: any,
+    /**
+     * Agrega en una sola pasada sobre "Lead" todas las métricas derivadas de los
+     * leads: totales, conversión, tiempos promedio y leads estancados. Sustituye
+     * a countTotalLeads + getConversionData + getAvgClosingTime +
+     * getAvgProposalStageTime + getStalledLeads (antes 5 métodos / 7 consultas).
+     */
+    private async getLeadAggregates(
         startDate: Date,
         endDate: Date,
-    ): Promise<{ total: number; averageTicket: number }> {
+        idEncargado: number | undefined,
+        stalledCutoff: Date,
+    ): Promise<{
+        totalLeads: number;
+        closedCount: number;
+        lostCount: number;
+        avgClosingDays: number;
+        avgProposalDays: number;
+        stalledCount: number;
+    }> {
+        // $1..$4 fijos; $5 opcional (idEncargado).
+        const params: unknown[] = [
+            CIERRE_CON_VENTA,
+            CIERRE_SIN_VENTA,
+            OFERTADO,
+            startDate,
+            endDate,
+            stalledCutoff,
+        ];
+        const encargadoClause = idEncargado
+            ? ` AND l."idEncargado" = $${params.push(idEncargado)}`
+            : '';
+
         const rows: any[] = await this.prisma.$queryRawUnsafe(
             `
             SELECT
-                COALESCE(SUM(c.monto), 0) AS total,
-                COALESCE(AVG(c.monto), 0) AS avg_ticket
-            FROM "Cotizacion" c
-            INNER JOIN "Lead" l ON l.id = c."idLead"
-            WHERE l.estado = $1
-              AND l."deletedAt" IS NULL
-              AND c."deletedAt" IS NULL
-              AND c."createdAt" >= $2
-              AND c."createdAt" <= $3
+                COUNT(*) AS total_leads,
+                COUNT(*) FILTER (WHERE l.estado = $1) AS closed_count,
+                COUNT(*) FILTER (WHERE l.estado = $2) AS lost_count,
+                AVG(EXTRACT(DAY FROM (l."fechaCierre" - l."createdAt")))
+                    FILTER (
+                        WHERE l.estado = $1 AND l."fechaCierre" IS NOT NULL
+                    ) AS avg_closing_days,
+                AVG(EXTRACT(DAY FROM (NOW() - l."ultimoCambioEstado")))
+                    FILTER (WHERE l.estado = $3) AS avg_proposal_days,
+                COUNT(*) FILTER (
+                    WHERE l."ultimoCambioEstado" < $6
+                      AND l.estado NOT IN ($1, $2)
+                ) AS stalled_count
+            FROM "Lead" l
+            WHERE l."deletedAt" IS NULL
+              AND l."createdAt" >= $4
+              AND l."createdAt" <= $5
+              ${encargadoClause}
         `,
-            CIERRE_CON_VENTA,
-            startDate,
-            endDate,
+            ...params,
         );
 
-        if (baseFilter.idEncargado) {
-            const rowsFiltered: any[] = await this.prisma.$queryRawUnsafe(
-                `
-                SELECT
-                    COALESCE(SUM(c.monto), 0) AS total,
-                    COALESCE(AVG(c.monto), 0) AS avg_ticket
-                FROM "Cotizacion" c
-                INNER JOIN "Lead" l ON l.id = c."idLead"
-                WHERE l.estado = $1
-                  AND l."deletedAt" IS NULL
-                  AND c."deletedAt" IS NULL
-                  AND c."createdAt" >= $2
-                  AND c."createdAt" <= $3
-                  AND l."idEncargado" = $4
-            `,
-                CIERRE_CON_VENTA,
-                startDate,
-                endDate,
-                baseFilter.idEncargado,
-            );
-            return {
-                total: Number(rowsFiltered[0]?.total ?? 0),
-                averageTicket: Number(rowsFiltered[0]?.avg_ticket ?? 0),
-            };
-        }
-
+        const row = rows[0] ?? {};
         return {
-            total: Number(rows[0]?.total ?? 0),
-            averageTicket: Number(rows[0]?.avg_ticket ?? 0),
+            totalLeads: Number(row.total_leads ?? 0),
+            closedCount: Number(row.closed_count ?? 0),
+            lostCount: Number(row.lost_count ?? 0),
+            avgClosingDays: Number(row.avg_closing_days ?? 0),
+            avgProposalDays: Number(row.avg_proposal_days ?? 0),
+            stalledCount: Number(row.stalled_count ?? 0),
         };
     }
 
-    private async getStalledLeads(baseFilter: any): Promise<number> {
-        const total = await this.prisma.lead.count({ where: baseFilter });
-        if (total === 0) return 0;
+    /**
+     * Agrega en una sola consulta sobre "Cotizacion" ⋈ "Lead" el monto en
+     * pipeline, el ingreso cerrado y el ticket promedio. Sustituye a
+     * getPipelineAmount + getClosedRevenue (antes 2 métodos / hasta 4 consultas).
+     *
+     * Nota: pipeline filtra por la fecha de creación del lead; el ingreso cerrado
+     * filtra por la fecha de creación de la cotización. Por eso ambos predicados
+     * de fecha viven dentro del FILTER de cada métrica, no en el WHERE común.
+     */
+    private async getQuotationAggregates(
+        startDate: Date,
+        endDate: Date,
+        idEncargado: number | undefined,
+    ): Promise<{
+        pipelineTotal: number;
+        closedTotal: number;
+        averageTicket: number;
+    }> {
+        const params: unknown[] = [
+            CIERRE_CON_VENTA,
+            CIERRE_SIN_VENTA,
+            startDate,
+            endDate,
+        ];
+        const encargadoClause = idEncargado
+            ? ` AND l."idEncargado" = $${params.push(idEncargado)}`
+            : '';
 
-        const stalledFilter = {
-            ...baseFilter,
-            ultimoCambioEstado: {
-                lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            },
-            estado: {
-                notIn: [CIERRE_CON_VENTA as any, CIERRE_SIN_VENTA as any],
-            },
+        const rows: any[] = await this.prisma.$queryRawUnsafe(
+            `
+            SELECT
+                COALESCE(SUM(c.monto) FILTER (
+                    WHERE l.estado NOT IN ($1, $2)
+                      AND l."createdAt" >= $3
+                      AND l."createdAt" <= $4
+                ), 0) AS pipeline_total,
+                COALESCE(SUM(c.monto) FILTER (
+                    WHERE l.estado = $1
+                      AND c."createdAt" >= $3
+                      AND c."createdAt" <= $4
+                ), 0) AS closed_total,
+                COALESCE(AVG(c.monto) FILTER (
+                    WHERE l.estado = $1
+                      AND c."createdAt" >= $3
+                      AND c."createdAt" <= $4
+                ), 0) AS closed_avg_ticket
+            FROM "Cotizacion" c
+            INNER JOIN "Lead" l ON l.id = c."idLead"
+            WHERE l."deletedAt" IS NULL
+              AND c."deletedAt" IS NULL
+              ${encargadoClause}
+        `,
+            ...params,
+        );
+
+        const row = rows[0] ?? {};
+        return {
+            pipelineTotal: Number(row.pipeline_total ?? 0),
+            closedTotal: Number(row.closed_total ?? 0),
+            averageTicket: Number(row.closed_avg_ticket ?? 0),
         };
+    }
 
-        const stalledCount = await this.prisma.lead.count({
-            where: stalledFilter,
+    /**
+     * Cuenta las actividades del periodo (no soft-deleted) cuyos leads caen en el
+     * rango y, opcionalmente, pertenecen al encargado.
+     */
+    private async getActivityCount(
+        startDate: Date,
+        endDate: Date,
+        idEncargado: number | undefined,
+    ): Promise<number> {
+        const leadFilter: {
+            createdAt: { gte: Date; lte: Date };
+            deletedAt: null;
+            idEncargado?: number;
+        } = {
+            createdAt: { gte: startDate, lte: endDate },
+            deletedAt: null,
+        };
+        if (idEncargado) {
+            leadFilter.idEncargado = idEncargado;
+        }
+
+        return this.prisma.actividad.count({
+            where: { deletedAt: null, lead: leadFilter },
         });
-        return (stalledCount / total) * 100;
     }
 }

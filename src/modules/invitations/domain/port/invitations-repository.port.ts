@@ -13,6 +13,11 @@ export interface InvitationsRepositoryPort {
     findByToken(token: string): Promise<InvitationToken | null>;
     findPendingByEmail(correo: string): Promise<InvitationToken | null>;
     save(invitation: InvitationToken): Promise<InvitationToken>;
+    /**
+     * Marca como EXPIRADO, en una sola operación, las invitaciones aún
+     * pendientes cuyos ids se indiquen. Devuelve cuántas se actualizaron.
+     */
+    expireAllPending(ids: number[]): Promise<number>;
 }
 
 export const INVITATIONS_REPOSITORY = Symbol('INVITATIONS_REPOSITORY');

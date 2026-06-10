@@ -33,17 +33,36 @@ function getPgPool(): Pool {
     }
 
     if (!globalForPrisma.__bioactivaPgPool) {
+        // El servidor Postgres es compartido entre entornos (dev/test apuntan al
+        // mismo host) y tiene un `max_connections` limitado. Por eso el pool se
+        // mantiene pequeño por defecto: el cupo del servidor se reparte entre
+        // todos los procesos conectados, no es exclusivo de esta instancia.
+        const max = Number(process.env.DATABASE_POOL_MAX ?? 5);
+        const appName =
+            process.env.DATABASE_APP_NAME ??
+            `bioactiva-backend-${process.env.NODE_ENV ?? 'dev'}`;
+
         globalForPrisma.__bioactivaPgPool = new Pool({
             connectionString: databaseUrl,
-            // Límite de conexiones por instancia. Mantenerlo bajo evita saturar
-            // el servidor cuando hay varias réplicas del backend.
-            max: Number(process.env.DATABASE_POOL_MAX ?? 10),
-            // Libera conexiones inactivas para no retenerlas indefinidamente.
+            max,
+            // Libera conexiones inactivas rápido para devolver cupo al servidor.
             idleTimeoutMillis: Number(
-                process.env.DATABASE_POOL_IDLE_MS ?? 30_000,
+                process.env.DATABASE_POOL_IDLE_MS ?? 10_000,
             ),
+            // Si no hay slot libre en `connectionTimeoutMillis`, falla rápido en
+            // lugar de quedar colgado indefinidamente esperando una conexión.
             connectionTimeoutMillis: Number(
                 process.env.DATABASE_POOL_CONN_TIMEOUT_MS ?? 10_000,
+            ),
+            // Recicla cada conexión tras N usos para evitar conexiones longevas
+            // que el servidor pueda considerar zombis tras reinicios del backend.
+            maxUses: Number(process.env.DATABASE_POOL_MAX_USES ?? 7_500),
+            // Identifica nuestras conexiones en `pg_stat_activity`, lo que permite
+            // diagnosticar y cerrar conexiones colgadas con pg_terminate_backend.
+            application_name: appName,
+            // Evita que una sesión quede "idle in transaction" reteniendo cupo.
+            idle_in_transaction_session_timeout: Number(
+                process.env.DATABASE_IDLE_TX_TIMEOUT_MS ?? 30_000,
             ),
         });
 
@@ -55,7 +74,7 @@ function getPgPool(): Pool {
         });
 
         logger.log(
-            `Pool de Postgres inicializado (max=${process.env.DATABASE_POOL_MAX ?? 10})`,
+            `Pool de Postgres inicializado (max=${max}, application_name=${appName})`,
         );
     }
 

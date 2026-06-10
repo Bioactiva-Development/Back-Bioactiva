@@ -19,6 +19,18 @@ export class PrismaInAppNotificationRepository
         return InAppNotificationMapper.toDomain(created);
     }
 
+    async createMany(notifications: InAppNotification[]): Promise<number> {
+        if (notifications.length === 0) {
+            return 0;
+        }
+        const result = await this.prisma.notificacion.createMany({
+            data: notifications.map((n) =>
+                InAppNotificationMapper.toCreateData(n),
+            ),
+        });
+        return result.count;
+    }
+
     async save(notification: InAppNotification): Promise<InAppNotification> {
         const updated = await this.prisma.notificacion.update({
             where: { id: notification.id! },
@@ -44,17 +56,24 @@ export class PrismaInAppNotificationRepository
         );
     }
 
-    async hasRecentLeadAlert(
-        idLead: number,
+    async findLeadIdsWithRecentAlert(
+        idLeads: number[],
         sinceDays: number,
-    ): Promise<boolean> {
+    ): Promise<number[]> {
+        if (idLeads.length === 0) {
+            return [];
+        }
         const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
-        const count = await this.prisma.notificacion.count({
+        const rows = await this.prisma.notificacion.findMany({
             where: {
-                idLead,
+                idLead: { in: idLeads },
                 createdAt: { gte: since },
             },
+            select: { idLead: true },
+            distinct: ['idLead'],
         });
-        return count > 0;
+        return rows
+            .map((row) => row.idLead)
+            .filter((id): id is number => id !== null);
     }
 }

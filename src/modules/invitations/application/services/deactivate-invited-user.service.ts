@@ -33,4 +33,27 @@ export class DeactivateInvitedUserService {
         user.deactivate();
         await this.userRepository.save(user);
     }
+
+    /**
+     * Versión por lotes de {@link execute}: resuelve todos los correos con una
+     * sola consulta (evita el N+1 de lecturas) y desactiva solo las cuentas
+     * provisionales aún no suspendidas. Mantiene la idempotencia: correos sin
+     * usuario, ya registrados o ya suspendidos se ignoran.
+     */
+    async executeMany(correos: string[]): Promise<void> {
+        if (correos.length === 0) {
+            return;
+        }
+
+        const users = await this.userRepository.findByCorreos(correos);
+        const provisionales = users.filter(
+            (user) =>
+                user.isProvisional() && user.estado !== UserState.SUSPENDIDO,
+        );
+
+        for (const user of provisionales) {
+            user.deactivate();
+            await this.userRepository.save(user);
+        }
+    }
 }
