@@ -66,11 +66,26 @@ describe('Security module', () => {
             const activeUser = buildActiveUser();
             authUserRepository.findById.mockResolvedValue(activeUser);
 
-            const result = await strategy.validate({ sub: '1' });
+            const result = await strategy.validate({
+                sub: '1',
+                tokenVersion: activeUser.tokenVersion,
+            });
 
             expect(result).toEqual(activeUser);
             expect(result.estado).toBe(UserState.ACTIVO);
             expect(authUserRepository.findById).toHaveBeenCalledWith(1);
+        });
+
+        // Mantis #271: sesión única — un token con una tokenVersion previa
+        // (emitido antes de una nueva autenticación) debe rechazarse.
+        it('should throw UnauthorizedException when tokenVersion is stale', async () => {
+            const activeUser = buildActiveUser();
+            activeUser.tokenVersion = 5;
+            authUserRepository.findById.mockResolvedValue(activeUser);
+
+            await expect(
+                strategy.validate({ sub: '1', tokenVersion: 4 }),
+            ).rejects.toThrow(UnauthorizedException);
         });
 
         it('should throw UnauthorizedException when user is not found', async () => {

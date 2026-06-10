@@ -164,6 +164,7 @@ model Usuario {
   estado        UserStatus @default(PENDIENTE)
   correo        String    @unique @db.VarChar(254)
   password      String    @db.VarChar(255)
+  tokenVersion  Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -12,6 +12,12 @@ export class User {
         public readonly role: UserRole,
         public estado: UserState,
         public updated_at: Date,
+        /**
+         * Versión de sesión. Cada autenticación nueva la incrementa, por lo que
+         * los tokens emitidos con una versión anterior dejan de ser válidos
+         * (sesión única por cuenta — Mantis #271).
+         */
+        public tokenVersion: number = 0,
     ) {}
     activate() {
         if (this.estado === UserState.ACTIVO) {

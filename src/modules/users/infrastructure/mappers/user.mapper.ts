@@ -60,6 +60,7 @@ export class UserMapper {
             this.mapRole(record.rol),
             this.mapState(record.estado),
             record.updatedAt,
+            record.tokenVersion,
         );
     }
 
@@ -71,6 +72,7 @@ export class UserMapper {
             password: user.password,
             rol: this.mapRoleToPrisma(user.role),
             estado: this.mapStateToPrisma(user.estado),
+            tokenVersion: user.tokenVersion,
         };
     }
 }

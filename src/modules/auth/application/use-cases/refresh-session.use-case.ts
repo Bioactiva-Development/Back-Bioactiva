@@ -30,6 +30,13 @@ export class RefreshSessionUseCase {
             throw new NotAuthorizedException('El usuario no está activo');
         }
 
+        // El refresh solo es válido para la sesión vigente: si el usuario se
+        // autenticó de nuevo en otro dispositivo, su tokenVersion avanzó y este
+        // token quedó obsoleto (sesión única por cuenta — Mantis #271).
+        if (claims.tokenVersion !== user.tokenVersion) {
+            throw new NotAuthorizedException('La sesión ha expirado');
+        }
+
         const newAccessToken = await this.tokenService.signAccessToken({
             sub: claims.sub,
             correo: user.correo,
