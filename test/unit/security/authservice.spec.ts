@@ -228,6 +228,34 @@ describe('Security module', () => {
             );
         });
 
+        // Mantis #104: un refresh token expirado/ inválido debe traducirse a
+        // 401 (NotAuthorizedException), no propagarse como error 500.
+        it('should reject refresh with 401 when the refresh token is invalid or expired', async () => {
+            const verifyRefreshToken = jest.fn() as any;
+            verifyRefreshToken.mockRejectedValue(new Error('jwt expired'));
+
+            const signAccessToken = jest.fn() as any;
+            const findById = jest.fn() as any;
+
+            const tokenService: any = {
+                verifyRefreshToken,
+                signAccessToken,
+                signRefreshToken: jest.fn() as any,
+            };
+            const authUserRepository: any = { findById };
+
+            const useCase = new RefreshSessionUseCase(
+                tokenService,
+                authUserRepository,
+            );
+
+            await expect(useCase.execute('expired-token')).rejects.toThrow(
+                'La sesión ha expirado',
+            );
+            expect(findById).not.toHaveBeenCalled();
+            expect(signAccessToken).not.toHaveBeenCalled();
+        });
+
         it('should reject refresh when the user does not exist', async () => {
             const verifyRefreshToken = jest.fn() as any;
             verifyRefreshToken.mockResolvedValue({

@@ -9,6 +9,7 @@ import {
 import { TokenPair } from '@/modules/auth/domain/value-objects/token_pair';
 import { NotAuthorizedException } from '@/modules/auth/domain/exceptions/not-authorized.exeption';
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
+import type { RefreshJwtClaims } from '@/modules/auth/domain/value-objects/jwt_claims';
 
 export class RefreshSessionUseCase {
     constructor(
@@ -19,7 +20,16 @@ export class RefreshSessionUseCase {
     ) {}
 
     async execute(refreshToken: string): Promise<TokenPair> {
-        const claims = await this.tokenService.verifyRefreshToken(refreshToken);
+        // Un refresh token expirado o inválido debe traducirse a 401 para que
+        // el cliente cierre la sesión y redirija al login; sin este try/catch
+        // el error de verificación se propagaría como 500 (Mantis #104).
+        let claims: RefreshJwtClaims;
+        try {
+            claims = await this.tokenService.verifyRefreshToken(refreshToken);
+        } catch {
+            throw new NotAuthorizedException('La sesión ha expirado');
+        }
+
         const user = await this.authUserRepository.findById(Number(claims.sub));
 
         if (!user) {
