@@ -16,14 +16,21 @@ export class ExpireOverdueInvitationsUseCase {
         const overdueInvitations =
             await this.invitationsRepository.findPendingExpired(now);
 
-        let expiredCount = 0;
-
-        for (const invitation of overdueInvitations) {
-            invitation.expire();
-            await this.invitationsRepository.save(invitation);
-            await this.deactivateInvitedUser.execute(invitation.correo);
-            expiredCount += 1;
+        if (overdueInvitations.length === 0) {
+            return 0;
         }
+
+        // Expira todas las invitaciones en una sola operación (antes: un UPDATE
+        // por invitación).
+        const expiredCount = await this.invitationsRepository.expireAllPending(
+            overdueInvitations.map((invitation) => invitation.id!),
+        );
+
+        // Desactiva en bloque los usuarios provisionales asociados (antes: una
+        // lectura + escritura por correo).
+        await this.deactivateInvitedUser.executeMany(
+            overdueInvitations.map((invitation) => invitation.correo),
+        );
 
         return expiredCount;
     }

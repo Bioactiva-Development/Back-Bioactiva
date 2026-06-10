@@ -25,8 +25,14 @@ describe('Notifications module', () => {
                 getStaleLeads: jest.fn().mockResolvedValue(staleLeads),
             };
             inAppRepository = {
-                hasRecentLeadAlert: jest.fn().mockResolvedValue(false),
-                create: jest.fn(),
+                // Por defecto ningún lead tiene alerta reciente.
+                findLeadIdsWithRecentAlert: jest.fn().mockResolvedValue([]),
+                // createMany devuelve cuántas notificaciones recibió.
+                createMany: jest
+                    .fn()
+                    .mockImplementation((arr: unknown[]) =>
+                        Promise.resolve(arr.length),
+                    ),
             };
             useCase = new GenerateStaleLeadAlertsUseCase(
                 staleLeadReader,
@@ -38,22 +44,35 @@ describe('Notifications module', () => {
             const result = await useCase.execute();
 
             expect(result.created).toBe(2);
-            expect(inAppRepository.create).toHaveBeenCalledTimes(2);
-            const firstAlert = inAppRepository.create.mock.calls[0][0];
-            expect(firstAlert.id_usuario).toBe(10);
-            expect(firstAlert.id_lead).toBe(1);
+            // Un único INSERT masivo con las dos alertas.
+            expect(inAppRepository.createMany).toHaveBeenCalledTimes(1);
+            const alerts = inAppRepository.createMany.mock.calls[0][0];
+            expect(alerts).toHaveLength(2);
+            expect(alerts[0].id_usuario).toBe(10);
+            expect(alerts[0].id_lead).toBe(1);
         });
 
         it('skips leads already alerted within the window', async () => {
-            inAppRepository.hasRecentLeadAlert.mockImplementation(
-                async (idLead: number) => idLead === 1,
-            );
+            // El lead 1 ya tiene alerta reciente; solo debe crearse la del 2.
+            inAppRepository.findLeadIdsWithRecentAlert.mockResolvedValue([1]);
 
             const result = await useCase.execute();
 
             expect(result.created).toBe(1);
-            expect(inAppRepository.create).toHaveBeenCalledTimes(1);
-            expect(inAppRepository.create.mock.calls[0][0].id_lead).toBe(2);
+            const alerts = inAppRepository.createMany.mock.calls[0][0];
+            expect(alerts).toHaveLength(1);
+            expect(alerts[0].id_lead).toBe(2);
+        });
+
+        it('checks recent alerts with a single batched query', async () => {
+            await useCase.execute();
+
+            expect(
+                inAppRepository.findLeadIdsWithRecentAlert,
+            ).toHaveBeenCalledTimes(1);
+            expect(
+                inAppRepository.findLeadIdsWithRecentAlert.mock.calls[0][0],
+            ).toEqual([1, 2]);
         });
 
         it('creates nothing when there are no stale leads', async () => {
@@ -62,7 +81,10 @@ describe('Notifications module', () => {
             const result = await useCase.execute();
 
             expect(result.created).toBe(0);
-            expect(inAppRepository.create).not.toHaveBeenCalled();
+            expect(
+                inAppRepository.findLeadIdsWithRecentAlert,
+            ).not.toHaveBeenCalled();
+            expect(inAppRepository.createMany).not.toHaveBeenCalled();
         });
     });
 });

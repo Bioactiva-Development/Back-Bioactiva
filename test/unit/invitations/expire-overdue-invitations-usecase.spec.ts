@@ -13,10 +13,10 @@ describe('Invitations module', () => {
         beforeEach(() => {
             mockRepository = {
                 findPendingExpired: jest.fn(),
-                save: jest.fn(),
+                expireAllPending: jest.fn(),
             };
             deactivateInvitedUser = {
-                execute: jest.fn(() => Promise.resolve()),
+                executeMany: jest.fn(() => Promise.resolve()),
             };
             useCase = new ExpireOverdueInvitationsUseCase(
                 mockRepository,
@@ -49,20 +49,21 @@ describe('Invitations module', () => {
             );
 
             mockRepository.findPendingExpired.mockResolvedValue([inv1, inv2]);
-            mockRepository.save.mockResolvedValue({});
+            mockRepository.expireAllPending.mockResolvedValue(2);
 
             const result = await useCase.execute(new Date());
 
             expect(result).toBe(2);
             expect(mockRepository.findPendingExpired).toHaveBeenCalled();
-            expect(mockRepository.save).toHaveBeenCalledTimes(2);
-            expect(deactivateInvitedUser.execute).toHaveBeenCalledTimes(2);
-            expect(deactivateInvitedUser.execute).toHaveBeenCalledWith(
+            // Un solo UPDATE masivo con los ids de las invitaciones vencidas.
+            expect(mockRepository.expireAllPending).toHaveBeenCalledTimes(1);
+            expect(mockRepository.expireAllPending).toHaveBeenCalledWith([1, 2]);
+            // Una sola desactivación en bloque con todos los correos.
+            expect(deactivateInvitedUser.executeMany).toHaveBeenCalledTimes(1);
+            expect(deactivateInvitedUser.executeMany).toHaveBeenCalledWith([
                 'user1@test.com',
-            );
-            expect(deactivateInvitedUser.execute).toHaveBeenCalledWith(
                 'user2@test.com',
-            );
+            ]);
         });
 
         it('should return 0 when no overdue invitations', async () => {
@@ -71,7 +72,8 @@ describe('Invitations module', () => {
             const result = await useCase.execute(new Date());
 
             expect(result).toBe(0);
-            expect(mockRepository.save).not.toHaveBeenCalled();
+            expect(mockRepository.expireAllPending).not.toHaveBeenCalled();
+            expect(deactivateInvitedUser.executeMany).not.toHaveBeenCalled();
         });
 
         it('should use current date when no date provided', async () => {

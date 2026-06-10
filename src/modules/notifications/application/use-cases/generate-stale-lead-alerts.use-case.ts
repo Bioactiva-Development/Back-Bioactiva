@@ -32,18 +32,25 @@ export class GenerateStaleLeadAlertsUseCase {
             STALE_LEAD_THRESHOLD_DAYS,
         );
 
-        let created = 0;
-        for (const lead of leads) {
-            const alreadyAlerted =
-                await this.inAppNotificationRepository.hasRecentLeadAlert(
-                    lead.idLead,
-                    STALE_LEAD_THRESHOLD_DAYS,
-                );
-            if (alreadyAlerted) {
-                continue;
-            }
+        if (leads.length === 0) {
+            this.logger.log(
+                'Alerta de leads estancados: 0 lead(s) detectado(s).',
+            );
+            return { created: 0 };
+        }
 
-            await this.inAppNotificationRepository.create(
+        // Una sola consulta para saber qué leads ya tienen alerta reciente,
+        // en vez de una por lead (N+1).
+        const alreadyAlerted = new Set(
+            await this.inAppNotificationRepository.findLeadIdsWithRecentAlert(
+                leads.map((lead) => lead.idLead),
+                STALE_LEAD_THRESHOLD_DAYS,
+            ),
+        );
+
+        const nuevasAlertas = leads
+            .filter((lead) => !alreadyAlerted.has(lead.idLead))
+            .map((lead) =>
                 InAppNotification.createLeadAlert({
                     idUsuario: lead.idEncargado,
                     idLead: lead.idLead,
@@ -51,8 +58,10 @@ export class GenerateStaleLeadAlertsUseCase {
                     mensaje: `El lead #${lead.idLead} lleva más de ${STALE_LEAD_THRESHOLD_DAYS} días sin cambio de estado y requiere revisión.`,
                 }),
             );
-            created += 1;
-        }
+
+        // Un solo INSERT masivo en vez de uno por notificación.
+        const created =
+            await this.inAppNotificationRepository.createMany(nuevasAlertas);
 
         this.logger.log(
             `Alerta de leads estancados: ${created} notificación(es) generada(s) de ${leads.length} lead(s) detectado(s).`,
