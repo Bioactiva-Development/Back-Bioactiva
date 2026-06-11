@@ -7,6 +7,7 @@ import { UpdateOrganizationUseCase } from '@/modules/organizations/application/u
 import { GetOrganizationByIdUseCase } from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
 import { GetAllOrganizationsUseCase } from '@/modules/organizations/application/use-cases/get-all-organizations.use-case';
 import { QuerySunatUseCase } from '@/modules/organizations/application/use-cases/query-sunat.use-case';
+import { DeleteOrganizationUseCase } from '@/modules/organizations/application/use-cases/delete-organization.use-case';
 
 describe('OrganizationController', () => {
     let controller: OrganizationController;
@@ -15,6 +16,7 @@ describe('OrganizationController', () => {
     let getOrganizationByIdUseCase: jest.Mocked<GetOrganizationByIdUseCase>;
     let getAllOrganizationsUseCase: jest.Mocked<GetAllOrganizationsUseCase>;
     let querySunatUseCase: jest.Mocked<QuerySunatUseCase>;
+    let deleteOrganizationUseCase: jest.Mocked<DeleteOrganizationUseCase>;
 
     beforeEach(async () => {
         createOrganizationUseCase = { execute: jest.fn() } as any;
@@ -22,6 +24,7 @@ describe('OrganizationController', () => {
         getOrganizationByIdUseCase = { execute: jest.fn() } as any;
         getAllOrganizationsUseCase = { execute: jest.fn() } as any;
         querySunatUseCase = { execute: jest.fn() } as any;
+        deleteOrganizationUseCase = { execute: jest.fn() } as any;
 
         const module = await Test.createTestingModule({
             controllers: [OrganizationController],
@@ -43,6 +46,10 @@ describe('OrganizationController', () => {
                     useValue: getAllOrganizationsUseCase,
                 },
                 { provide: QuerySunatUseCase, useValue: querySunatUseCase },
+                {
+                    provide: DeleteOrganizationUseCase,
+                    useValue: deleteOrganizationUseCase,
+                },
             ],
         }).compile();
 
@@ -108,6 +115,13 @@ describe('OrganizationController', () => {
             dto,
         );
         expect(result.nombre).toBe('Updated');
+    });
+
+    it('should deactivate (soft-delete) an organization', async () => {
+        deleteOrganizationUseCase.execute.mockResolvedValue({ ok: true });
+        const result = await controller.remove('org-1');
+        expect(deleteOrganizationUseCase.execute).toHaveBeenCalledWith('org-1');
+        expect(result).toEqual({ ok: true });
     });
 
     it('should query SUNAT and return results', async () => {

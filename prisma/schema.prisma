@@ -208,8 +208,9 @@ model Organizacion {
   contactos Contacto[]
   leads     Lead[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Contacto {

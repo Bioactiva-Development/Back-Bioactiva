@@ -82,6 +82,7 @@ export class CotizacionController {
             query.fechaHasta ? new Date(query.fechaHasta) : undefined,
             query.page,
             query.limit,
+            query.tipo,
         );
         const { data, total } = await this.listCotizacionesUseCase.execute(dto);
         return new PaginatedCotizacionResponseDto(

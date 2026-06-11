@@ -8,6 +8,7 @@ import {
 } from '@/modules/contacts/domain/ports/contact.repository';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { ContactMapper } from '@/modules/contacts/infrastructure/persistence/mappers/contact.mapper';
+import { OrganizationNotFoundException } from '@/modules/organizations/domain/exceptions/organization-not-found.exception';
 
 @Injectable()
 export class PrismaContactRepository implements IContactRepository {
@@ -141,5 +142,30 @@ export class PrismaContactRepository implements IContactRepository {
     ): Promise<number> {
         const where = this.buildWhere(params);
         return await this.prisma.contacto.count({ where });
+    }
+
+    async reassignOrganization(
+        contactId: number,
+        previousOrgId: string,
+        newOrgId: string,
+    ): Promise<void> {
+        // La organización destino debe existir y estar vigente: no se permite
+        // mudar un contacto a una organización desactivada (soft-deleted).
+        const target = await this.prisma.organizacion.findFirst({
+            where: { id: newOrgId, deletedAt: null },
+            select: { id: true },
+        });
+        if (!target) {
+            throw new OrganizationNotFoundException(
+                `Organización con id ${newOrgId} no encontrada o desactivada`,
+            );
+        }
+
+        // Si la organización anterior tenía a este contacto como su contacto
+        // activo, esa referencia deja de ser válida al mudarse.
+        await this.prisma.organizacion.updateMany({
+            where: { id: previousOrgId, idContactoActivo: contactId },
+            data: { idContactoActivo: null },
+        });
     }
 }

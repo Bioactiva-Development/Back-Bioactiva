@@ -15,6 +15,8 @@ export interface ListCotizacionesParams {
     idLead?: number;
     estado?: string;
     idRemitente?: number;
+    /** Filtra por moneda (PEN / USD). */
+    tipo?: string;
     fechaDesde?: Date;
     fechaHasta?: Date;
     page?: number;

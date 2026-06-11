@@ -123,12 +123,16 @@ export class OrganizationMapper {
             raw.idAuthor,
             raw.createdAt,
             raw.updatedAt,
+            raw.deletedAt,
         );
     }
 
     static toPersistence(
         domain: Organization,
-    ): Omit<PrismaOrganizationModel, 'id' | 'createdAt' | 'updatedAt'> {
+    ): Omit<
+        PrismaOrganizationModel,
+        'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+    > {
         return {
             codigoCliente: domain.codigoCliente,
             nombre: domain.nombre,

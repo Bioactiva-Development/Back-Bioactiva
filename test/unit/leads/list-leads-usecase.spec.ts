@@ -74,6 +74,37 @@ describe('Leads module', () => {
             });
         });
 
+        it('should pass the createdAt date range to the repository', async () => {
+            leadRepository.list.mockResolvedValue([]);
+            leadRepository.count.mockResolvedValue(0);
+
+            const fechaDesde = new Date('2022-01-01T00:00:00.000Z');
+            const fechaHasta = new Date('2026-06-11T00:00:00.000Z');
+            const dto = new ListLeadsDto(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                1,
+                10,
+                undefined,
+                fechaDesde,
+                fechaHasta,
+            );
+            await useCase.execute(dto);
+
+            expect(leadRepository.list).toHaveBeenCalledWith({
+                fechaDesde,
+                fechaHasta,
+                page: 1,
+                limit: 10,
+            });
+            expect(leadRepository.count).toHaveBeenCalledWith({
+                fechaDesde,
+                fechaHasta,
+            });
+        });
+
         it('should use default pagination when not provided', async () => {
             leadRepository.list.mockResolvedValue([]);
             leadRepository.count.mockResolvedValue(0);
