@@ -6,16 +6,36 @@ import {
     type ListLeadsParams,
 } from '@/modules/leads/domain/ports/lead-repository.port';
 import { Lead } from '@/modules/leads/domain/entities/lead';
-import { LeadState as PrismaLeadState, Prisma } from '@prisma/client';
+import {
+    EstadoActividad as PrismaEstadoActividad,
+    LeadState as PrismaLeadState,
+    Prisma,
+} from '@prisma/client';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadMapper } from '@/modules/leads/infrastructure/mappers/lead.mapper';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import {
+    computeActivityAlert,
+    ACTIVITY_ALERT_YELLOW_DAYS,
+} from '@/modules/leads/domain/services/activity-alert';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Solo las actividades pendientes y no eliminadas determinan el semáforo; se
+ * traen únicamente sus fechas de fin para minimizar el payload.
+ */
+const PENDING_ACTIVITIES_INCLUDE = {
+    where: { deletedAt: null, estado: PrismaEstadoActividad.PENDIENTE },
+    select: { fechaFin: true },
+} as const;
 
 type PrismaLeadWithRelations = Prisma.LeadGetPayload<{
     include: {
         organizacion: { select: { nombre: true } };
         encargado: { select: { nombres: true; apellidos: true } };
         contacto: { select: { nombres: true; apellidos: true } };
+        actividades: { select: { fechaFin: true } };
     };
 }>;
 
@@ -26,6 +46,10 @@ export class PrismaLeadRepository implements LeadRepository {
     private mapToLeadWithRelations(
         record: PrismaLeadWithRelations,
     ): LeadWithRelations {
+        const pendingDueDates = (record.actividades ?? []).map(
+            (actividad) => actividad.fechaFin,
+        );
+
         return {
             lead: LeadMapper.toDomain(record),
             organizationName: record.organizacion?.nombre ?? '',
@@ -34,6 +58,7 @@ export class PrismaLeadRepository implements LeadRepository {
             contactName: record.contacto
                 ? `${record.contacto.nombres} ${record.contacto.apellidos ?? ''}`.trim()
                 : null,
+            activityAlert: computeActivityAlert(pendingDueDates, new Date()),
         };
     }
 
@@ -105,6 +130,7 @@ export class PrismaLeadRepository implements LeadRepository {
                     organizacion: { select: { nombre: true } },
                     encargado: { select: { nombres: true, apellidos: true } },
                     contacto: { select: { nombres: true, apellidos: true } },
+                    actividades: PENDING_ACTIVITIES_INCLUDE,
                 },
             });
             return record ? this.mapToLeadWithRelations(record) : null;
@@ -144,6 +170,20 @@ export class PrismaLeadRepository implements LeadRepository {
             where.servicioInteres = {
                 contains: params.search,
                 mode: 'insensitive',
+            };
+        }
+        if (params?.conActividadesPorVencer) {
+            // Amarillo o rojo: existe al menos una actividad pendiente cuya
+            // fechaFin ya pasó o cae dentro del umbral de "próxima a vencer".
+            const yellowCutoff = new Date(
+                Date.now() + ACTIVITY_ALERT_YELLOW_DAYS * MS_PER_DAY,
+            );
+            where.actividades = {
+                some: {
+                    deletedAt: null,
+                    estado: PrismaEstadoActividad.PENDIENTE,
+                    fechaFin: { lte: yellowCutoff },
+                },
             };
         }
 
@@ -211,6 +251,7 @@ export class PrismaLeadRepository implements LeadRepository {
                     organizacion: { select: { nombre: true } },
                     encargado: { select: { nombres: true, apellidos: true } },
                     contacto: { select: { nombres: true, apellidos: true } },
+                    actividades: PENDING_ACTIVITIES_INCLUDE,
                 },
             });
 

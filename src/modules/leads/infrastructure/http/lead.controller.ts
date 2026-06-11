@@ -93,6 +93,7 @@ export class LeadController {
             query.search,
             query.page,
             query.limit,
+            query.conActividadesPorVencer,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));

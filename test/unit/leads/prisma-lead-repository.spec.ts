@@ -323,6 +323,27 @@ describe('Leads module', () => {
         });
 
         describe('list', () => {
+            const baseRecord = {
+                id: 1,
+                idOrg: 'org-1',
+                idContacto: null,
+                estado: 'EN_PROSPECTO',
+                servicioInteres: 'Consultoría',
+                comentarios: null,
+                desafioOportunidad: null,
+                notasContacto: null,
+                idEncargado: 1,
+                canalCaptacion: null,
+                idAuthor: 1,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                deletedAt: null,
+                ultimoCambioEstado: new Date(),
+                organizacion: { nombre: 'Bioactiva SAC' },
+                encargado: { nombres: 'Carlos', apellidos: 'López' },
+                contacto: null,
+            };
+
             it('should apply a case-insensitive search on servicioInteres', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
@@ -334,6 +355,47 @@ describe('Leads module', () => {
                             servicioInteres: {
                                 contains: 'consultoría',
                                 mode: 'insensitive',
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('should compute ROJO alert when the lead has an overdue pending activity', async () => {
+                const overdue = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                prismaService.lead.findMany.mockResolvedValue([
+                    { ...baseRecord, actividades: [{ fechaFin: overdue }] },
+                ]);
+
+                const result = await repository.list();
+
+                expect(result[0].activityAlert).toBe('ROJO');
+            });
+
+            it('should compute VERDE alert when the lead has no pending activities', async () => {
+                prismaService.lead.findMany.mockResolvedValue([
+                    { ...baseRecord, actividades: [] },
+                ]);
+
+                const result = await repository.list();
+
+                expect(result[0].activityAlert).toBe('VERDE');
+            });
+
+            it('should filter by leads with upcoming/overdue activities when requested', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({ conActividadesPorVencer: true });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            actividades: {
+                                some: {
+                                    deletedAt: null,
+                                    estado: 'PENDIENTE',
+                                    fechaFin: { lte: expect.any(Date) },
+                                },
                             },
                         }),
                     }),

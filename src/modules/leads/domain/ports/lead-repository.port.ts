@@ -1,4 +1,5 @@
 import { Lead } from '@/modules/leads/domain/entities/lead';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 export interface LeadWithRelations {
     lead: Lead;
@@ -6,6 +7,8 @@ export interface LeadWithRelations {
     encargadoNombre: string;
     encargadoApellidos: string;
     contactName: string | null;
+    /** Semáforo de actividades del lead (al día / por vencer / vencida). */
+    activityAlert: ActivityAlertLevel;
 }
 
 export interface ListLeadsParams {
@@ -13,6 +16,11 @@ export interface ListLeadsParams {
     idOrg?: string;
     idEncargado?: number;
     search?: string;
+    /**
+     * Si es true, solo devuelve leads con alerta de actividades (amarillo o
+     * rojo): con actividades pendientes próximas a vencer o ya vencidas.
+     */
+    conActividadesPorVencer?: boolean;
     page?: number;
     limit?: number;
 }

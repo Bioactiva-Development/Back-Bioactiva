@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsBoolean,
     IsEnum,
     IsInt,
     IsOptional,
@@ -7,7 +8,7 @@ import {
     Min,
     Length,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 export class ListLeadsQueryDto {
@@ -45,6 +46,16 @@ export class ListLeadsQueryDto {
     @IsString()
     @Length(1, 100)
     search?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Si es true, solo devuelve leads con actividades pendientes próximas a vencer o vencidas (alerta amarilla o roja).',
+        example: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    conActividadesPorVencer?: boolean;
 
     @ApiPropertyOptional({
         description: 'Número de página',
