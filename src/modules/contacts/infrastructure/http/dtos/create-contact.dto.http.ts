@@ -5,6 +5,7 @@ import {
     IsString,
     IsEnum,
     Length,
+    Matches,
     MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -65,6 +66,10 @@ export class HttpCreateContactDto {
     @IsOptional()
     @MaxLength(20, {
         message: 'El teléfono no debe superar los 20 caracteres.',
+    })
+    @Matches(/^\+\d[\d\s]*$/, {
+        message:
+            'El teléfono debe tener formato internacional: "+" seguido del código de país y el número, p. ej. +51987654321.',
     })
     telefono?: string | null;
 
