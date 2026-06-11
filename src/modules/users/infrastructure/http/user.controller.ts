@@ -1,4 +1,5 @@
 import {
+    Body,
     Controller,
     Get,
     HttpCode,
@@ -20,9 +21,12 @@ import { UserRole } from '@/shared/domain/enums/rol';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
 import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
 import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
+import { ChangeUserRoleUseCase } from '@/modules/users/application/use-cases/change-user-role.use-case';
 import { ListUsersQueryDto } from '@/modules/users/infrastructure/http/dtos/list-users-query.dto.http';
 import { RevokeUserParamsDto } from '@/modules/users/infrastructure/http/dtos/revoke-user-params.dto.http';
+import { ChangeRoleDto } from '@/modules/users/infrastructure/http/dtos/change-role.dto.http';
 import { UserResponseDto } from '@/modules/users/infrastructure/http/dtos/user-response.dto';
+import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { PaginatedUserResponseDto } from '@/modules/users/infrastructure/http/dtos/paginated-user-response.dto';
 import { ListUsersDto } from '@/modules/users/application/dto/list-users.dto';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
@@ -38,6 +42,7 @@ export class UserController {
         private readonly getAllUsersUseCase: GetAllUsersUseCase,
         private readonly disableUserUseCase: DisableUserUseCase,
         private readonly enableUserUseCase: EnableUserUseCase,
+        private readonly changeUserRoleUseCase: ChangeUserRoleUseCase,
     ) {}
 
     @Get()
@@ -125,5 +130,39 @@ export class UserController {
     @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
     async enable(@Param() params: RevokeUserParamsDto): Promise<void> {
         await this.enableUserUseCase.execute(params.id);
+    }
+
+    @Patch(':id/role')
+    @ApiOperation({
+        summary: 'Cambiar el rol de un usuario',
+        description:
+            'Asigna un nuevo rol a un usuario. Solo accesible para administradores. Un administrador no puede cambiar su propio rol. Al cambiar el rol se cierra la sesión vigente del usuario para que el nuevo rol surta efecto.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Rol actualizado exitosamente',
+        type: UserResponseDto,
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'Un administrador no puede cambiar su propio rol',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 403,
+        description: 'No autorizado — se requiere rol ADMINISTRADOR',
+    })
+    @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+    async changeRole(
+        @Param() params: RevokeUserParamsDto,
+        @Body() body: ChangeRoleDto,
+        @CurrentUser() currentUser: User,
+    ): Promise<UserResponseDto> {
+        const updated = await this.changeUserRoleUseCase.execute(
+            params.id,
+            UserMapper.mapRole(body.rol),
+            currentUser.id!,
+        );
+        return new UserResponseDto(updated);
     }
 }

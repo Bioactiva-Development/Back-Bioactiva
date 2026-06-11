@@ -67,6 +67,63 @@ describe('Contact DTOs', () => {
                 'El cargo no debe superar los 120 caracteres.',
             );
         });
+
+        // Mantis #269: el teléfono es opcional, pero al enviarse debe tener
+        // formato internacional (debe iniciar con "+")
+        it('should accept a contact without the telefono field', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+            });
+
+            const errors = await validate(dto);
+
+            expect(errors).toHaveLength(0);
+        });
+
+        it.each(['+51987654321', '+51 987654321', '+1 234 567 8900'])(
+            'should accept a valid international telefono: %s',
+            async (telefono) => {
+                const dto = plainToInstance(HttpCreateContactDto, {
+                    nombres: 'Juan',
+                    correo: 'juan@example.com',
+                    idOrganizacion: 'org-1',
+                    telefono,
+                });
+
+                const errors = await validate(dto);
+                const telefonoError = errors.find(
+                    (e) => e.property === 'telefono',
+                );
+
+                expect(telefonoError).toBeUndefined();
+            },
+        );
+
+        it.each(['987654321', 'abc123', '+', '51-987654321'])(
+            'should reject a telefono without international format: %s',
+            async (telefono) => {
+                const dto = plainToInstance(HttpCreateContactDto, {
+                    nombres: 'Juan',
+                    correo: 'juan@example.com',
+                    idOrganizacion: 'org-1',
+                    telefono,
+                });
+
+                const errors = await validate(dto);
+                const telefonoError = errors.find(
+                    (e) => e.property === 'telefono',
+                );
+
+                expect(telefonoError).toBeDefined();
+                expect(
+                    Object.values(telefonoError!.constraints ?? {}),
+                ).toContain(
+                    'El teléfono debe tener formato internacional: "+" seguido del código de país y el número, p. ej. +51987654321.',
+                );
+            },
+        );
     });
 
     describe('HttpUpdateContactDto', () => {

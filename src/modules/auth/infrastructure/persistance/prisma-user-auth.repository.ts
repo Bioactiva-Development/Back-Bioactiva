@@ -47,4 +47,14 @@ export class PrismaUserAuthRepository implements AuthUserRepositoryPort {
 
         return UserMapper.toDomain(record);
     }
+
+    async incrementTokenVersion(userId: number): Promise<number> {
+        const record = await this.prismaClient.usuario.update({
+            where: { id: userId },
+            data: { tokenVersion: { increment: 1 } },
+            select: { tokenVersion: true },
+        });
+
+        return record.tokenVersion;
+    }
 }

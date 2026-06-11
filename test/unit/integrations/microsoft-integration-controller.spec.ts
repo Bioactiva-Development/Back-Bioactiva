@@ -1,0 +1,75 @@
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { MicrosoftIntegrationController } from '@/modules/integrations/infrastructure/http/microsoft-integration.controller';
+
+describe('Integrations module', () => {
+    describe('MicrosoftIntegrationController', () => {
+        let controller: MicrosoftIntegrationController;
+        let connect: any;
+        let callback: any;
+        let status: any;
+        let disconnect: any;
+
+        beforeEach(() => {
+            connect = { execute: jest.fn() };
+            callback = { execute: jest.fn() };
+            status = { execute: jest.fn() };
+            disconnect = { execute: jest.fn() };
+            controller = new MicrosoftIntegrationController(
+                connect,
+                callback,
+                status,
+                disconnect,
+            );
+        });
+
+        it('connect delegates with the current user id', async () => {
+            connect.execute.mockResolvedValue({ url: 'https://login' });
+            const result = await controller.connect({ id: 5 } as any);
+            expect(connect.execute).toHaveBeenCalledWith(5);
+            expect(result).toEqual({ url: 'https://login' });
+        });
+
+        it('status delegates with the current user id', async () => {
+            status.execute.mockResolvedValue({ connected: true });
+            const result = await controller.status({ id: 5 } as any);
+            expect(status.execute).toHaveBeenCalledWith(5);
+            expect(result).toEqual({ connected: true });
+        });
+
+        it('disconnect delegates with the current user id', async () => {
+            disconnect.execute.mockResolvedValue({ ok: true });
+            const result = await controller.disconnect({ id: 5 } as any);
+            expect(disconnect.execute).toHaveBeenCalledWith(5);
+            expect(result).toEqual({ ok: true });
+        });
+
+        it('callback parses the user id from state and redirects on success', async () => {
+            callback.execute.mockResolvedValue(undefined);
+            const res: any = { redirect: jest.fn() };
+
+            await controller.callback(
+                { state: '42:nonce', code: 'auth-code' } as any,
+                res,
+            );
+
+            expect(callback.execute).toHaveBeenCalledWith('auth-code', 42);
+            expect(res.redirect).toHaveBeenCalledWith(
+                expect.stringContaining('microsoft=connected'),
+            );
+        });
+
+        it('callback redirects to error when the use case throws', async () => {
+            callback.execute.mockRejectedValue(new Error('oauth failed'));
+            const res: any = { redirect: jest.fn() };
+
+            await controller.callback(
+                { state: '42:nonce', code: 'bad' } as any,
+                res,
+            );
+
+            expect(res.redirect).toHaveBeenCalledWith(
+                expect.stringContaining('microsoft=error'),
+            );
+        });
+    });
+});

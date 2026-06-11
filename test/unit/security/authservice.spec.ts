@@ -52,8 +52,11 @@ describe('Security module', () => {
             const activeUser = buildActiveUser();
             const authUserRepository: any = {
                 findByCorreo: jest.fn() as any,
+                incrementTokenVersion: jest.fn() as any,
             };
             authUserRepository.findByCorreo.mockResolvedValue(activeUser);
+            // Mantis #271: el login avanza la versión de sesión y firma con ella.
+            authUserRepository.incrementTokenVersion.mockResolvedValue(1);
 
             const passwordHasher: any = {
                 compare: jest.fn() as any,
@@ -87,6 +90,9 @@ describe('Security module', () => {
                 'secret',
                 activeUser.password,
             );
+            expect(
+                authUserRepository.incrementTokenVersion,
+            ).toHaveBeenCalledWith(1);
             expect(tokenService.signAccessToken).toHaveBeenCalledWith(
                 expect.objectContaining({
                     sub: '1',
@@ -95,7 +101,11 @@ describe('Security module', () => {
                     apellidos: activeUser.apellidos,
                     role: activeUser.role,
                     estado: activeUser.estado,
+                    tokenVersion: 1,
                 }),
+            );
+            expect(tokenService.signRefreshToken).toHaveBeenCalledWith(
+                expect.objectContaining({ sub: '1', tokenVersion: 1 }),
             );
         });
 
@@ -161,6 +171,9 @@ describe('Security module', () => {
 
         it('should allow the refresh use case to issue new tokens for a valid session', async () => {
             const activeUser = buildActiveUser();
+            // Mantis #271: el refresh solo procede si la versión del token
+            // coincide con la versión de sesión vigente del usuario.
+            activeUser.tokenVersion = 2;
             const tokenPair = new TokenPair(
                 'new-access',
                 'new-refresh',
@@ -215,6 +228,34 @@ describe('Security module', () => {
             );
         });
 
+        // Mantis #104: un refresh token expirado/ inválido debe traducirse a
+        // 401 (NotAuthorizedException), no propagarse como error 500.
+        it('should reject refresh with 401 when the refresh token is invalid or expired', async () => {
+            const verifyRefreshToken = jest.fn() as any;
+            verifyRefreshToken.mockRejectedValue(new Error('jwt expired'));
+
+            const signAccessToken = jest.fn() as any;
+            const findById = jest.fn() as any;
+
+            const tokenService: any = {
+                verifyRefreshToken,
+                signAccessToken,
+                signRefreshToken: jest.fn() as any,
+            };
+            const authUserRepository: any = { findById };
+
+            const useCase = new RefreshSessionUseCase(
+                tokenService,
+                authUserRepository,
+            );
+
+            await expect(useCase.execute('expired-token')).rejects.toThrow(
+                'La sesión ha expirado',
+            );
+            expect(findById).not.toHaveBeenCalled();
+            expect(signAccessToken).not.toHaveBeenCalled();
+        });
+
         it('should reject refresh when the user does not exist', async () => {
             const verifyRefreshToken = jest.fn() as any;
             verifyRefreshToken.mockResolvedValue({
@@ -267,6 +308,36 @@ describe('Security module', () => {
 
             await expect(useCase.execute('refresh-token')).rejects.toThrow(
                 'El usuario no está activo',
+            );
+            expect(tokenService.signAccessToken).not.toHaveBeenCalled();
+        });
+
+        // Mantis #271: si el usuario se autenticó de nuevo en otro dispositivo,
+        // su tokenVersion avanzó y el refresh de la sesión previa debe fallar.
+        it('should reject refresh when the tokenVersion is stale', async () => {
+            const activeUser = buildActiveUser();
+            activeUser.tokenVersion = 3;
+
+            const verifyRefreshToken = jest.fn() as any;
+            verifyRefreshToken.mockResolvedValue({ sub: '1', tokenVersion: 2 });
+
+            const tokenService: any = {
+                verifyRefreshToken,
+                signAccessToken: jest.fn() as any,
+                signRefreshToken: jest.fn() as any,
+            };
+            const authUserRepository: any = {
+                findById: jest.fn() as any,
+            };
+            authUserRepository.findById.mockResolvedValue(activeUser);
+
+            const useCase = new RefreshSessionUseCase(
+                tokenService,
+                authUserRepository,
+            );
+
+            await expect(useCase.execute('refresh-token')).rejects.toThrow(
+                'La sesión ha expirado',
             );
             expect(tokenService.signAccessToken).not.toHaveBeenCalled();
         });
