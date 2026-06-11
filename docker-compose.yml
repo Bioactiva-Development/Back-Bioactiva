@@ -141,7 +141,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
-      PYTHON_SCRAPER_URL: ${http://bioactiva-sunat-development:8000} #PYTHON_SCRAPER_URL:- this should be mapped for now
+      PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL_DEV:-http://bioactiva-sunat-development:8000}
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"
