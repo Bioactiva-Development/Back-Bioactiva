@@ -48,6 +48,10 @@ describe('Contacts module', () => {
                     findMany: jest.fn(),
                     count: jest.fn(),
                 },
+                organizacion: {
+                    findFirst: jest.fn(),
+                    updateMany: jest.fn(),
+                },
             };
 
             repository = new PrismaContactRepository(mockPrisma as any);
@@ -432,6 +436,45 @@ describe('Contacts module', () => {
                     );
 
                 expect(result).toHaveLength(0);
+            });
+        });
+
+        describe('reassignOrganization', () => {
+            it('should validate the target org and detach the contact from its previous org', async () => {
+                (
+                    mockPrisma.organizacion!.findFirst as jest.Mock
+                ).mockResolvedValue({ id: 'org-2' });
+                (
+                    mockPrisma.organizacion!.updateMany as jest.Mock
+                ).mockResolvedValue({ count: 1 });
+
+                await repository.reassignOrganization(1, 'org-1', 'org-2');
+
+                // La organización destino debe existir y estar vigente.
+                expect(mockPrisma.organizacion!.findFirst).toHaveBeenCalledWith({
+                    where: { id: 'org-2', deletedAt: null },
+                    select: { id: true },
+                });
+                // Solo se limpia el contacto activo de la org anterior si era este.
+                expect(
+                    mockPrisma.organizacion!.updateMany,
+                ).toHaveBeenCalledWith({
+                    where: { id: 'org-1', idContactoActivo: 1 },
+                    data: { idContactoActivo: null },
+                });
+            });
+
+            it('should throw when the target organization does not exist or is deactivated', async () => {
+                (
+                    mockPrisma.organizacion!.findFirst as jest.Mock
+                ).mockResolvedValue(null);
+
+                await expect(
+                    repository.reassignOrganization(1, 'org-1', 'org-x'),
+                ).rejects.toThrow('no encontrada o desactivada');
+                expect(
+                    mockPrisma.organizacion!.updateMany,
+                ).not.toHaveBeenCalled();
             });
         });
     });

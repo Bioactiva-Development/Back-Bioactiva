@@ -21,7 +21,17 @@ export class Organization {
         public idAuthor: number,
         public readonly createdAt: Date,
         public updatedAt: Date,
+        /**
+         * Marca de desactivación (soft-delete). Se preserva el registro y su
+         * `codigoCliente` para el monitoreo anual; al desactivar, los contactos
+         * de la organización pasan a estado de correo VENCIDO.
+         */
+        public deletedAt: Date | null = null,
     ) {}
+
+    isDeleted(): boolean {
+        return this.deletedAt !== null;
+    }
 
     rename(nombre: string) {
         if (!nombre?.trim()) {

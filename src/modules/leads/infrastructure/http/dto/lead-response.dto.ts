@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { LeadWithRelations } from '@/modules/leads/domain/ports/lead-repository.port';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 export class LeadResponseDto {
     @ApiProperty({ example: 1 })
@@ -61,6 +62,14 @@ export class LeadResponseDto {
     @ApiProperty({ example: '2026-01-15T10:30:00.000Z' })
     ultimoCambioEstado: Date;
 
+    @ApiProperty({
+        enum: ActivityAlertLevel,
+        example: ActivityAlertLevel.VERDE,
+        description:
+            'Semáforo de actividades del lead: VERDE (al día), AMARILLO (pendientes por vencer) o ROJO (pendientes vencidas).',
+    })
+    activityAlert: ActivityAlertLevel;
+
     constructor(enriched: LeadWithRelations) {
         this.id = enriched.lead.id!;
         this.estado = enriched.lead.estado;
@@ -79,5 +88,6 @@ export class LeadResponseDto {
         this.createdAt = enriched.lead.created_at;
         this.updatedAt = enriched.lead.updated_at;
         this.ultimoCambioEstado = enriched.lead.ultimo_cambio;
+        this.activityAlert = enriched.activityAlert;
     }
 }

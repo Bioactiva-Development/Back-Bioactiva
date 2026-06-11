@@ -39,6 +39,7 @@ describe('Organizations module', () => {
             idAuthor: 1,
             createdAt: new Date('2024-01-01'),
             updatedAt: new Date('2024-01-01'),
+            deletedAt: null,
         };
 
         beforeEach(() => {
@@ -49,7 +50,12 @@ describe('Organizations module', () => {
                     findUnique: jest.fn(),
                     findFirst: jest.fn(),
                     findMany: jest.fn(),
+                    updateMany: jest.fn(),
                 },
+                contacto: {
+                    updateMany: jest.fn(),
+                },
+                $transaction: jest.fn(),
             };
 
             repository = new PrismaOrganizationRepository(mockPrisma as any);
@@ -125,17 +131,15 @@ describe('Organizations module', () => {
         });
 
         describe('findById', () => {
-            it('should return organization when found', async () => {
+            it('should return organization when found, excluding soft-deleted', async () => {
                 (
-                    mockPrisma.organizacion!.findUnique as jest.Mock
+                    mockPrisma.organizacion!.findFirst as jest.Mock
                 ).mockResolvedValue(mockOrgData);
 
                 const result = await repository.findById('org-1');
 
-                expect(
-                    mockPrisma.organizacion!.findUnique,
-                ).toHaveBeenCalledWith({
-                    where: { id: 'org-1' },
+                expect(mockPrisma.organizacion!.findFirst).toHaveBeenCalledWith({
+                    where: { id: 'org-1', deletedAt: null },
                 });
                 expect(result).not.toBeNull();
                 expect(result!.ruc).toBe('20123456789');
@@ -143,12 +147,48 @@ describe('Organizations module', () => {
 
             it('should return null when organization not found', async () => {
                 (
-                    mockPrisma.organizacion!.findUnique as jest.Mock
+                    mockPrisma.organizacion!.findFirst as jest.Mock
                 ).mockResolvedValue(null);
 
                 const result = await repository.findById('org-nonexistent');
 
                 expect(result).toBeNull();
+            });
+        });
+
+        describe('softDelete', () => {
+            it('should deactivate the organization and expire its contacts in one transaction', async () => {
+                const orgUpdateOp = { __op: 'org-update' };
+                const contactUpdateOp = { __op: 'contact-update' };
+                (
+                    mockPrisma.organizacion!.update as jest.Mock
+                ).mockReturnValue(orgUpdateOp);
+                (
+                    mockPrisma.contacto!.updateMany as jest.Mock
+                ).mockReturnValue(contactUpdateOp);
+                (mockPrisma.$transaction as jest.Mock).mockResolvedValue([]);
+
+                await repository.softDelete('org-1');
+
+                // La organización se marca como desactivada (soft-delete).
+                expect(mockPrisma.organizacion!.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { id: 'org-1' },
+                        data: expect.objectContaining({
+                            deletedAt: expect.any(Date),
+                        }),
+                    }),
+                );
+                // Sus contactos pasan a estado de correo VENCIDO en bloque (sin N+1).
+                expect(mockPrisma.contacto!.updateMany).toHaveBeenCalledWith({
+                    where: { idOrganizacion: 'org-1' },
+                    data: { estado_correo: 'VENCIDO' },
+                });
+                // Ambas operaciones viajan en la misma transacción atómica.
+                expect(mockPrisma.$transaction).toHaveBeenCalledWith([
+                    orgUpdateOp,
+                    contactUpdateOp,
+                ]);
             });
         });
 

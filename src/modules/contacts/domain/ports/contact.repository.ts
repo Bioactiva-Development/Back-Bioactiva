@@ -36,5 +36,18 @@ export interface IContactRepository {
     findByOrganizationIdWithOrganization(
         idOrganizacion: string,
     ): Promise<ContactWithOrgName[]>;
+
+    /**
+     * Prepara la mudanza de un contacto a otra organización: valida que la
+     * organización destino exista y esté vigente (no desactivada) y, si la
+     * organización anterior tenía a este contacto como su contacto activo, limpia
+     * esa referencia. No persiste el nuevo vínculo: el cambio de `idOrganizacion`
+     * se guarda al hacer `save` de la entidad.
+     */
+    reassignOrganization(
+        contactId: number,
+        previousOrgId: string,
+        newOrgId: string,
+    ): Promise<void>;
 }
 export const IContactRepository = Symbol('IContactRepository');
