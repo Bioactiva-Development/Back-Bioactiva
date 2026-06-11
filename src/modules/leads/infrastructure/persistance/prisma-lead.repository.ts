@@ -114,7 +114,11 @@ export class PrismaLeadRepository implements LeadRepository {
     async findById(id: number): Promise<Lead | null> {
         try {
             const record = await this.prisma.lead.findFirst({
-                where: { id, deletedAt: null },
+                where: {
+                    id,
+                    deletedAt: null,
+                    organizacion: { deletedAt: null },
+                },
             });
             return record ? LeadMapper.toDomain(record) : null;
         } catch (error) {
@@ -125,7 +129,11 @@ export class PrismaLeadRepository implements LeadRepository {
     async findByIdWithRelations(id: number): Promise<LeadWithRelations | null> {
         try {
             const record = await this.prisma.lead.findFirst({
-                where: { id, deletedAt: null },
+                where: {
+                    id,
+                    deletedAt: null,
+                    organizacion: { deletedAt: null },
+                },
                 include: {
                     organizacion: { select: { nombre: true } },
                     encargado: { select: { nombres: true, apellidos: true } },
@@ -154,6 +162,8 @@ export class PrismaLeadRepository implements LeadRepository {
     ): Prisma.LeadWhereInput {
         const where: Prisma.LeadWhereInput = {
             deletedAt: null,
+            // No mostrar leads cuya organización fue eliminada (soft delete).
+            organizacion: { deletedAt: null },
         };
 
         const estado = this.parseLeadState(params?.estado);
