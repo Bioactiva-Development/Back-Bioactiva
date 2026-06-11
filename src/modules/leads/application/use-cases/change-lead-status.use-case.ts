@@ -10,6 +10,7 @@ import {
 import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead-status.dto';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 
 export class ChangeLeadStatusUseCase {
     constructor(
@@ -23,6 +24,19 @@ export class ChangeLeadStatusUseCase {
         const lead = await this.leadRepository.findById(id);
         if (!lead) {
             throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
+        }
+
+        // Un cambio real de estado exige que el lead no tenga actividades
+        // pendientes: deben resolverse (completarse o cancelarse) primero.
+        if (dto.estado !== lead.estado) {
+            const hasPending = await this.leadRepository.hasPendingActivities(
+                id,
+            );
+            if (hasPending) {
+                throw new LeadHasPendingActivitiesException(
+                    `No se puede cambiar el estado del lead ${id} porque tiene actividades pendientes`,
+                );
+            }
         }
 
         const wasOffered = lead.estado === LeadState.OFERTADO;

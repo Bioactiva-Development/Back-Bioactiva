@@ -4,6 +4,7 @@ import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 
 describe('Leads module', () => {
     describe('ChangeLeadStatusUseCase', () => {
@@ -34,6 +35,7 @@ describe('Leads module', () => {
             leadRepository = {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
+                hasPendingActivities: jest.fn(() => Promise.resolve(false)),
             };
             offeredLeadHandler = { handle: jest.fn() };
 
@@ -110,6 +112,32 @@ describe('Leads module', () => {
                 new ChangeLeadStatusDto(LeadState.EN_PROSPECTO),
             );
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
+        });
+
+        it('should block any state change when the lead has pending activities', async () => {
+            const lead = buildLead(LeadState.EN_PROSPECTO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.hasPendingActivities.mockResolvedValue(true);
+
+            await expect(
+                useCase.execute(1, new ChangeLeadStatusDto(LeadState.OFERTADO)),
+            ).rejects.toThrow(LeadHasPendingActivitiesException);
+
+            expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
+            expect(leadRepository.saveWithRelations).not.toHaveBeenCalled();
+            expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
+        });
+
+        it('should NOT check pending activities when the state does not change', async () => {
+            const lead = buildLead(LeadState.OFERTADO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.saveWithRelations.mockResolvedValue(lead);
+            leadRepository.hasPendingActivities.mockResolvedValue(true);
+
+            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.OFERTADO));
+
+            expect(leadRepository.hasPendingActivities).not.toHaveBeenCalled();
+            expect(leadRepository.saveWithRelations).toHaveBeenCalledWith(lead);
         });
 
         it('should throw when lead is not found', async () => {

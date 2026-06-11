@@ -3,6 +3,7 @@ import { PrismaLeadRepository } from '@/modules/leads/infrastructure/persistance
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
 
 describe('Leads module', () => {
     describe('PrismaLeadRepository', () => {
@@ -398,10 +399,12 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter by leads with upcoming/overdue activities when requested', async () => {
+            it('should filter TODAS as leads with upcoming or overdue activities', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
-                await repository.list({ conActividadesPorVencer: true });
+                await repository.list({
+                    alertaActividad: ActivityAlertFilter.TODAS,
+                });
 
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
                     expect.objectContaining({
@@ -413,6 +416,66 @@ describe('Leads module', () => {
                                     fechaFin: { lte: expect.any(Date) },
                                 },
                             },
+                        }),
+                    }),
+                );
+            });
+
+            it('should filter VENCIDAS as leads with at least one overdue activity', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({
+                    alertaActividad: ActivityAlertFilter.VENCIDAS,
+                });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            actividades: {
+                                some: {
+                                    deletedAt: null,
+                                    estado: 'PENDIENTE',
+                                    fechaFin: { lt: expect.any(Date) },
+                                },
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('should filter POR_VENCER as leads with upcoming but no overdue activities', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({
+                    alertaActividad: ActivityAlertFilter.POR_VENCER,
+                });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            AND: [
+                                {
+                                    actividades: {
+                                        some: {
+                                            deletedAt: null,
+                                            estado: 'PENDIENTE',
+                                            fechaFin: {
+                                                gte: expect.any(Date),
+                                                lte: expect.any(Date),
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    actividades: {
+                                        none: {
+                                            deletedAt: null,
+                                            estado: 'PENDIENTE',
+                                            fechaFin: { lt: expect.any(Date) },
+                                        },
+                                    },
+                                },
+                            ],
                         }),
                     }),
                 );

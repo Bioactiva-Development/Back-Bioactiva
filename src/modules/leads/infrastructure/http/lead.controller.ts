@@ -93,7 +93,7 @@ export class LeadController {
             query.search,
             query.page,
             query.limit,
-            query.conActividadesPorVencer,
+            query.alertaActividad,
             query.fechaDesde ? new Date(query.fechaDesde) : undefined,
             query.fechaHasta ? new Date(query.fechaHasta) : undefined,
         );
@@ -156,6 +156,11 @@ export class LeadController {
         type: LeadResponseDto,
     })
     @ApiResponse({ status: 404, description: 'Lead no encontrado' })
+    @ApiResponse({
+        status: 409,
+        description:
+            'El lead tiene actividades pendientes; deben resolverse antes de cambiar de estado',
+    })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,
         @Body() httpDto: HttpChangeLeadStatusDto,

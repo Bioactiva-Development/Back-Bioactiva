@@ -12,6 +12,7 @@ import {
     Prisma,
 } from '@prisma/client';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
 import { LeadMapper } from '@/modules/leads/infrastructure/mappers/lead.mapper';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 import {
@@ -192,22 +193,53 @@ export class PrismaLeadRepository implements LeadRepository {
             }
             where.createdAt = createdAt;
         }
-        if (params?.conActividadesPorVencer) {
-            // Amarillo o rojo: existe al menos una actividad pendiente cuya
-            // fechaFin ya pasó o cae dentro del umbral de "próxima a vencer".
-            const yellowCutoff = new Date(
-                Date.now() + ACTIVITY_ALERT_YELLOW_DAYS * MS_PER_DAY,
-            );
-            where.actividades = {
-                some: {
-                    deletedAt: null,
-                    estado: PrismaEstadoActividad.PENDIENTE,
-                    fechaFin: { lte: yellowCutoff },
-                },
-            };
-        }
+        this.applyActivityAlertFilter(where, params?.alertaActividad);
 
         return where;
+    }
+
+    /**
+     * Traduce el filtro del semáforo a condiciones sobre las actividades
+     * PENDIENTES del lead, alineadas con computeActivityAlert:
+     * - rojo (vencida): fechaFin < ahora.
+     * - amarillo (por vencer): ahora <= fechaFin <= umbral amarillo.
+     */
+    private applyActivityAlertFilter(
+        where: Prisma.LeadWhereInput,
+        filter?: ActivityAlertFilter,
+    ): void {
+        if (!filter) {
+            return;
+        }
+
+        const now = new Date();
+        const yellowCutoff = new Date(
+            now.getTime() + ACTIVITY_ALERT_YELLOW_DAYS * MS_PER_DAY,
+        );
+        const pending = { deletedAt: null, estado: PrismaEstadoActividad.PENDIENTE };
+        const overdue = { ...pending, fechaFin: { lt: now } };
+        const upcoming = { ...pending, fechaFin: { gte: now, lte: yellowCutoff } };
+
+        switch (filter) {
+            case ActivityAlertFilter.VENCIDAS:
+                // Rojo: al menos una actividad pendiente ya vencida.
+                where.actividades = { some: overdue };
+                break;
+            case ActivityAlertFilter.POR_VENCER:
+                // Amarillo: alguna próxima a vencer y NINGUNA vencida (si
+                // hubiera una vencida el semáforo sería rojo).
+                where.AND = [
+                    { actividades: { some: upcoming } },
+                    { actividades: { none: overdue } },
+                ];
+                break;
+            case ActivityAlertFilter.TODAS:
+                // Amarillo o rojo: alguna pendiente vencida o por vencer.
+                where.actividades = {
+                    some: { ...pending, fechaFin: { lte: yellowCutoff } },
+                };
+                break;
+        }
     }
 
     async save(lead: Lead): Promise<Lead> {
@@ -287,6 +319,21 @@ export class PrismaLeadRepository implements LeadRepository {
         try {
             const where = this.buildWhere(params);
             return await this.prisma.lead.count({ where });
+        } catch (error) {
+            this.handlePrismaError(error);
+        }
+    }
+
+    async hasPendingActivities(leadId: number): Promise<boolean> {
+        try {
+            const pending = await this.prisma.actividad.count({
+                where: {
+                    idLead: leadId,
+                    deletedAt: null,
+                    estado: PrismaEstadoActividad.PENDIENTE,
+                },
+            });
+            return pending > 0;
         } catch (error) {
             this.handlePrismaError(error);
         }

@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-    IsBoolean,
     IsDateString,
     IsEnum,
     IsInt,
@@ -9,8 +8,9 @@ import {
     Min,
     Length,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
 import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListLeadsQueryDto {
@@ -65,14 +65,14 @@ export class ListLeadsQueryDto {
     fechaHasta?: string;
 
     @ApiPropertyOptional({
+        enum: ActivityAlertFilter,
         description:
-            'Si es true, solo devuelve leads con actividades pendientes próximas a vencer o vencidas (alerta amarilla o roja).',
-        example: true,
+            'Filtra leads por el semáforo de actividades: TODAS (por vencer o vencidas), POR_VENCER (solo amarillas) o VENCIDAS (solo rojas). Si se omite, no filtra.',
+        example: ActivityAlertFilter.TODAS,
     })
     @IsOptional()
-    @Transform(({ value }) => value === true || value === 'true')
-    @IsBoolean()
-    conActividadesPorVencer?: boolean;
+    @IsEnum(ActivityAlertFilter)
+    alertaActividad?: ActivityAlertFilter;
 
     @ApiPropertyOptional({
         description: 'Número de página',

@@ -1,5 +1,6 @@
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
+import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
 
 export interface LeadWithRelations {
     lead: Lead;
@@ -20,10 +21,12 @@ export interface ListLeadsParams {
     fechaDesde?: Date;
     fechaHasta?: Date;
     /**
-     * Si es true, solo devuelve leads con alerta de actividades (amarillo o
-     * rojo): con actividades pendientes próximas a vencer o ya vencidas.
+     * Filtra por el semáforo de actividades del lead. Si se omite, no filtra:
+     * - TODAS: alerta amarilla o roja (por vencer o vencidas).
+     * - POR_VENCER: solo amarilla (próximas a vencer, sin vencidas).
+     * - VENCIDAS: solo roja (al menos una pendiente ya vencida).
      */
-    conActividadesPorVencer?: boolean;
+    alertaActividad?: ActivityAlertFilter;
     page?: number;
     limit?: number;
 }
@@ -35,6 +38,8 @@ export interface LeadRepository {
     saveWithRelations(lead: Lead): Promise<LeadWithRelations>;
     list(params?: ListLeadsParams): Promise<LeadWithRelations[]>;
     count(params?: Omit<ListLeadsParams, 'page' | 'limit'>): Promise<number>;
+    /** True si el lead tiene al menos una actividad PENDIENTE no eliminada. */
+    hasPendingActivities(leadId: number): Promise<boolean>;
 }
 
 export const LEAD_REPOSITORY = Symbol('LEAD_REPOSITORY');
