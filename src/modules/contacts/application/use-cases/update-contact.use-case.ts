@@ -37,6 +37,21 @@ export class UpdateContactUseCase {
         if (dto.comentarios !== undefined)
             contact.comentarios = toNull(dto.comentarios);
 
+        if (
+            dto.idOrganizacion &&
+            dto.idOrganizacion !== contact.idOrganizacion
+        ) {
+            // Valida que la organización destino exista y esté vigente, y libera
+            // al contacto como "contacto activo" de su organización anterior. El
+            // estado_correo no se toca: es decisión manual del usuario.
+            await this.contactRepository.reassignOrganization(
+                contact.id,
+                contact.idOrganizacion,
+                dto.idOrganizacion,
+            );
+            contact.idOrganizacion = dto.idOrganizacion;
+        }
+
         contact.updatedAt = new Date();
 
         const saved = await this.contactRepository.save(contact);
