@@ -30,8 +30,10 @@ export class ResetService {
             'Usuario',
         ];
 
+        const quotedTables = tables.map((t) => `"${t}"`).join(', ');
+
         await this.prismaService.$executeRawUnsafe(
-            `TRUNCATE TABLE ${tables.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE;`,
+            `TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE;`,
         );
 
         await this.adminInitializer.initializeData();

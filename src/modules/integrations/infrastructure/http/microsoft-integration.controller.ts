@@ -44,7 +44,7 @@ export class MicrosoftIntegrationController {
     ): Promise<void> {
         try {
             const stateParts = query.state.split(':');
-            const userId = parseInt(stateParts[0], 10);
+            const userId = Number.parseInt(stateParts[0], 10);
             await this.callbackUseCase.execute(query.code, userId);
             return res.redirect(`${FRONTEND_URL}/ajustes?microsoft=connected`);
         } catch {

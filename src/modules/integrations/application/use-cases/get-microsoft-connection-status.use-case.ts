@@ -15,7 +15,7 @@ export class GetMicrosoftConnectionStatusUseCase {
         const integration =
             await this.integrationRepository.findByUserId(userId);
 
-        if (!integration || !integration.conectado) {
+        if (!integration?.conectado) {
             return new ConnectionStatusDto(false, null);
         }
 
