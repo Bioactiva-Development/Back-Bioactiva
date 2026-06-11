@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsBoolean,
+    IsDateString,
     IsEnum,
     IsInt,
     IsOptional,
@@ -10,6 +11,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListLeadsQueryDto {
     @ApiPropertyOptional({
@@ -46,6 +48,21 @@ export class ListLeadsQueryDto {
     @IsString()
     @Length(1, 100)
     search?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filtrar por fecha de creación desde (ISO 8601)',
+    })
+    @IsOptional()
+    @IsDateString()
+    fechaDesde?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filtrar por fecha de creación hasta (ISO 8601)',
+    })
+    @IsOptional()
+    @IsDateString()
+    @IsAfterOrEqualDate('fechaDesde')
+    fechaHasta?: string;
 
     @ApiPropertyOptional({
         description:

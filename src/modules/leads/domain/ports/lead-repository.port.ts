@@ -16,6 +16,9 @@ export interface ListLeadsParams {
     idOrg?: string;
     idEncargado?: number;
     search?: string;
+    /** Rango sobre la fecha de creación del lead (createdAt). */
+    fechaDesde?: Date;
+    fechaHasta?: Date;
     /**
      * Si es true, solo devuelve leads con alerta de actividades (amarillo o
      * rojo): con actividades pendientes próximas a vencer o ya vencidas.

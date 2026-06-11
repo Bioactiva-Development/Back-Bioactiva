@@ -382,6 +382,22 @@ describe('Leads module', () => {
                 expect(result[0].activityAlert).toBe('VERDE');
             });
 
+            it('should filter by the createdAt range when fechaDesde/fechaHasta are provided', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+                const fechaDesde = new Date('2022-01-01T00:00:00.000Z');
+                const fechaHasta = new Date('2026-06-11T00:00:00.000Z');
+
+                await repository.list({ fechaDesde, fechaHasta });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            createdAt: { gte: fechaDesde, lte: fechaHasta },
+                        }),
+                    }),
+                );
+            });
+
             it('should filter by leads with upcoming/overdue activities when requested', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 

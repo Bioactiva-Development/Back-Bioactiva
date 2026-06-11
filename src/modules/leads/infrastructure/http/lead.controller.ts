@@ -94,6 +94,8 @@ export class LeadController {
             query.page,
             query.limit,
             query.conActividadesPorVencer,
+            query.fechaDesde ? new Date(query.fechaDesde) : undefined,
+            query.fechaHasta ? new Date(query.fechaHasta) : undefined,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));

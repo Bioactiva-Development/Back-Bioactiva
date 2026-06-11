@@ -172,6 +172,16 @@ export class PrismaLeadRepository implements LeadRepository {
                 mode: 'insensitive',
             };
         }
+        if (params?.fechaDesde || params?.fechaHasta) {
+            const createdAt: Prisma.DateTimeFilter = {};
+            if (params.fechaDesde) {
+                createdAt.gte = params.fechaDesde;
+            }
+            if (params.fechaHasta) {
+                createdAt.lte = params.fechaHasta;
+            }
+            where.createdAt = createdAt;
+        }
         if (params?.conActividadesPorVencer) {
             // Amarillo o rojo: existe al menos una actividad pendiente cuya
             // fechaFin ya pasó o cae dentro del umbral de "próxima a vencer".
