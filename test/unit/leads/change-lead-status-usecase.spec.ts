@@ -9,13 +9,14 @@ describe('Leads module', () => {
     describe('ChangeLeadStatusUseCase', () => {
         let useCase: ChangeLeadStatusUseCase;
         let leadRepository: any;
+        let offeredLeadHandler: any;
 
-        const buildLead = () =>
+        const buildLead = (estado: LeadState = LeadState.EN_PROSPECTO) =>
             new Lead(
                 1,
                 'org-1',
                 null,
-                LeadState.EN_PROSPECTO,
+                estado,
                 'Consultoría',
                 null,
                 null,
@@ -34,8 +35,12 @@ describe('Leads module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
+            offeredLeadHandler = { handle: jest.fn() };
 
-            useCase = new ChangeLeadStatusUseCase(leadRepository);
+            useCase = new ChangeLeadStatusUseCase(
+                leadRepository,
+                offeredLeadHandler,
+            );
         });
 
         it('should change lead status', async () => {
@@ -48,6 +53,39 @@ describe('Leads module', () => {
 
             expect(lead.estado).toBe(LeadState.OFERTADO);
             expect(leadRepository.saveWithRelations).toHaveBeenCalledWith(lead);
+        });
+
+        it('should notify the offered-lead handler when entering OFERTADO', async () => {
+            const lead = buildLead(LeadState.EN_PROSPECTO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.saveWithRelations.mockResolvedValue(lead);
+
+            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.OFERTADO));
+
+            expect(offeredLeadHandler.handle).toHaveBeenCalledWith(lead);
+        });
+
+        it('should NOT notify the handler when the lead was already OFERTADO', async () => {
+            const lead = buildLead(LeadState.OFERTADO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.saveWithRelations.mockResolvedValue(lead);
+
+            await useCase.execute(1, new ChangeLeadStatusDto(LeadState.OFERTADO));
+
+            expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
+        });
+
+        it('should NOT notify the handler for non-OFERTADO transitions', async () => {
+            const lead = buildLead(LeadState.EN_PROSPECTO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.saveWithRelations.mockResolvedValue(lead);
+
+            await useCase.execute(
+                1,
+                new ChangeLeadStatusDto(LeadState.CIERRE_CON_VENTA),
+            );
+
+            expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
         });
 
         it('should change to any valid state', async () => {
