@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, Min, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
+import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListCotizacionesQueryDto {
@@ -23,6 +24,11 @@ export class ListCotizacionesQueryDto {
     @IsInt()
     @Min(1)
     idRemitente?: number;
+
+    @ApiPropertyOptional({ enum: TipoMoneda, description: 'Filtrar por moneda' })
+    @IsOptional()
+    @IsEnum(TipoMoneda)
+    tipo?: TipoMoneda;
 
     @ApiPropertyOptional({ description: 'Fecha desde (ISO 8601)' })
     @IsOptional()
