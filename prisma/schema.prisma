@@ -4,9 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  moduleFormat    = "cjs"
+  provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -20,6 +19,11 @@ enum Tamano {
   MEDIANO
   PEQUENO
   MICRO
+}
+
+enum EstadoCorreo {
+    VIGENTE
+    VENCIDO
 }
 
 enum Sector {
@@ -86,7 +90,6 @@ enum EstadoActividad {
   PENDIENTE
   REALIZADA
   CANCELADA
-  REPROGRAMADA
 }
 
 enum EstadoSecuencia {
@@ -142,6 +145,17 @@ enum EstadoNotificacion {
   LEIDA
 }
 
+enum TipoNotificacion {
+  RECORDATORIO
+  SEGUIMIENTO
+}
+
+enum EstadoNotificacionProgramada {
+  PROGRAMADA
+  VENCIDA
+  CANCELADA
+}
+
 model Usuario {
   id            Int       @id @default(autoincrement())
   nombres       String    @db.VarChar(90)
@@ -150,6 +164,7 @@ model Usuario {
   estado        UserStatus @default(PENDIENTE)
   correo        String    @unique @db.VarChar(254)
   password      String    @db.VarChar(255)
+  tokenVersion  Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -157,10 +172,12 @@ model Usuario {
   contactosCreados      Contacto[]
   leadsCreados          Lead[]
   actividadesAsignadas  Actividad[] @relation("ResponsableActividad")
-  cotizacionesEmitidas  Cotizacion[]
+  cotizacionesEmitidas  Cotizacion[] @relation("CotizacionRemitente")
+  cotizacionesCreadas   Cotizacion[]
   tokensInvitados       UserToken[] @relation("Invitador")
   integracionMicrosoft  IntegracionMicrosoft?
   notificaciones        Notificacion[]
+  notificacionesProgramadas NotificacionProgramada[]
 
   leads Lead[] @relation("LeadEncargado")
 
@@ -191,8 +208,9 @@ model Organizacion {
   contactos Contacto[]
   leads     Lead[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Contacto {
@@ -203,7 +221,7 @@ model Contacto {
   cargo       String?  @db.VarChar(120)
   correo      String   @unique @db.VarChar(254)
   telefono    String?  @db.VarChar(20)
-  correo2     String?  @db.VarChar(254)
+  correo2     String?  @db.VarChar(254) @unique
   comentarios String?  @db.VarChar(500)
 
   idOrganizacion String @db.Uuid
@@ -218,6 +236,7 @@ model Contacto {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  estado_correo EstadoCorreo @default(VIGENTE)
 }
 
 model Lead {
@@ -243,9 +262,17 @@ model Lead {
 
   actividades  Actividad[]
   cotizaciones Cotizacion[]
+  notificacionesProgramadas NotificacionProgramada[]
+  notificaciones Notificacion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  ultimoCambioEstado DateTime @default(now())
+  // Momento en que el lead pasa a CIERRE_CON_VENTA. Se registra una sola vez al
+  // cerrar la venta; permite medir el tiempo de cierre real sin depender de
+  // updatedAt (que se mueve con cualquier edición posterior del lead).
+  fechaCierre DateTime?
 }
 
 model Actividad {
@@ -271,9 +298,11 @@ model Actividad {
   secuencia    SecuenciaSeguimiento?
   recordatorios RecordatorioActividad[]
   notificaciones Notificacion[]
+  notificacionesProgramadas NotificacionProgramada[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 model SecuenciaSeguimiento {
@@ -298,7 +327,6 @@ model PasoSeguimiento {
 
   orden Int
   esperarDias Int
-  jobId String? @db.VarChar(120)
 
   fechaProgramada DateTime?
   fechaEnviado DateTime?
@@ -316,7 +344,7 @@ model PasoSeguimiento {
 
 model TemplateEmail {
   id Int @id @default(autoincrement())
-  nombre String @db.VarChar(100)
+  nombre String @db.VarChar(100) @unique
   asunto String @db.VarChar(255)
   cuerpo String
   activo Boolean @default(true)
@@ -359,10 +387,14 @@ model Cotizacion {
   lead Lead @relation(fields: [idLead], references: [id])
 
   idRemitente Int
-  remitente Usuario @relation(fields: [idRemitente], references: [id])
+  remitente Usuario @relation("CotizacionRemitente", fields: [idRemitente], references: [id])
+
+  idAuthor Int
+  author Usuario @relation(fields: [idAuthor], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 model IntegracionMicrosoft {
@@ -406,6 +438,8 @@ model UserToken {
   createdAt DateTime @default(now())
 }
 
+// Notificación in-app (la "campana"). Puede referir a una actividad o a un lead
+// (p. ej. la alerta automática de leads >30d sin cambio de estado, CU007).
 model Notificacion {
   id Int @id @default(autoincrement())
 
@@ -416,8 +450,50 @@ model Notificacion {
   idUsuario Int
   usuario Usuario @relation(fields: [idUsuario], references: [id])
 
-  idActividad Int
-  actividad Actividad @relation(fields: [idActividad], references: [id])
+  idActividad Int?
+  actividad Actividad? @relation(fields: [idActividad], references: [id])
+
+  idLead Int?
+  lead Lead? @relation(fields: [idLead], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+// Notificación programada (CU007): recordatorio interno al responsable, o
+// seguimiento (correo interno al responsable + correo externo al cliente).
+// Cada envío guarda una copia editable del asunto/cuerpo de la plantilla, sin
+// mutar la plantilla original. El scheduling se gestiona con BullMQ (jobId*).
+model NotificacionProgramada {
+  id     Int                          @id @default(autoincrement())
+  tipo   TipoNotificacion
+  estado EstadoNotificacionProgramada @default(PROGRAMADA)
+
+  idActividad Int
+  actividad   Actividad @relation(fields: [idActividad], references: [id])
+
+  idLead Int
+  lead   Lead @relation(fields: [idLead], references: [id])
+
+  idResponsable Int
+  responsable   Usuario @relation(fields: [idResponsable], references: [id])
+
+  // Correo interno (ambos tipos): copia editable de la plantilla
+  asuntoInterno     String   @db.VarChar(255)
+  cuerpoInterno     String
+  fechaEnvioInterno DateTime
+  idTemplateInterno Int?
+  jobIdInterno      String?  @db.VarChar(150)
+  enviadoInterno    Boolean  @default(false)
+
+  // Correo externo (solo SEGUIMIENTO)
+  correoCliente     String?   @db.VarChar(254)
+  asuntoExterno     String?   @db.VarChar(255)
+  cuerpoExterno     String?
+  fechaEnvioExterno DateTime?
+  idTemplateExterno Int?
+  jobIdExterno      String?   @db.VarChar(150)
+  enviadoExterno    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

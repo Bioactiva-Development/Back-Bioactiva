@@ -1,7 +1,9 @@
 # compiled output
+/docker-data
 /dist
 /node_modules
 /build
+*.tsbuildinfo
 
 # Logs
 logs
@@ -21,6 +23,7 @@ lerna-debug.log*
 
 # IDEs and editors
 /.idea
+.context
 .project
 .classpath
 .c9/
@@ -41,6 +44,9 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.off*
+.env.deploy
+.env.docker
 
 # temp directory
 .temp
@@ -59,3 +65,31 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 ##For nixos
 .direnv/
+
+##For personal reasons
+/.context
+docs/
+ctx_files/
+
+cookies.txt
+coverage/
+scripts/
+skills/
+documentacion/
+
+.venv/
+__pycache__/
+## AI context files
+GEMINI.md
+SKILL.md
+
+
+# Project documentation (local only)
+\# 6 crm_bioactiva_especificacion.md
+\# 7. ANÁLISIS DE REQUERIMIENTOS FUN.md
+\# 8. MODELO DE DATOS y Diccionario.md
+\# 9. ARQUITECTURA DE LA SOLUCIONmd.md
+
+# symlink para importar sunat-app como módulo Python
+sunat_app
+*.deploy
