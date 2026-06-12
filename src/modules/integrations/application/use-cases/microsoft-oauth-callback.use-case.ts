@@ -32,19 +32,17 @@ export class MicrosoftOAuthCallbackUseCase {
 
         let integration = await this.integrationRepository.findByUserId(userId);
 
-        if (!integration) {
-            integration = new MicrosoftIntegration(
-                null,
-                userId,
-                profile.email,
-                profile.oid,
-                refreshToken,
-                expiresAt,
-                false,
-                new Date(),
-                new Date(),
-            );
-        }
+        integration ??= new MicrosoftIntegration(
+            null,
+            userId,
+            profile.email,
+            profile.oid,
+            refreshToken,
+            expiresAt,
+            false,
+            new Date(),
+            new Date(),
+        );
 
         integration.markAsConnected(
             profile.email,

@@ -46,6 +46,11 @@ describe('Contacts module', () => {
                     findUnique: jest.fn(),
                     findFirst: jest.fn(),
                     findMany: jest.fn(),
+                    count: jest.fn(),
+                },
+                organizacion: {
+                    findFirst: jest.fn(),
+                    updateMany: jest.fn(),
                 },
             };
 
@@ -323,6 +328,81 @@ describe('Contacts module', () => {
             });
         });
 
+        describe('list', () => {
+            it('should filter by organization and paginate', async () => {
+                const records = [
+                    { ...mockContactData, organizacion: { nombre: 'Org A' } },
+                ];
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    records,
+                );
+
+                const result = await repository.list({
+                    idOrganization: 'org-1',
+                    page: 2,
+                    limit: 5,
+                });
+
+                expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { idOrganizacion: 'org-1' },
+                        skip: 5,
+                        take: 5,
+                    }),
+                );
+                expect(result).toHaveLength(1);
+                expect(result[0].organizationName).toBe('Org A');
+            });
+
+            it('should apply a textual search across multiple fields', async () => {
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    [],
+                );
+
+                await repository.list({ search: 'ana' });
+
+                const callArg = (mockPrisma.contacto!.findMany as jest.Mock)
+                    .mock.calls[0][0] as any;
+                expect(callArg.where.OR).toEqual(
+                    expect.arrayContaining([
+                        {
+                            nombres: { contains: 'ana', mode: 'insensitive' },
+                        },
+                        {
+                            correo: { contains: 'ana', mode: 'insensitive' },
+                        },
+                    ]),
+                );
+            });
+
+            it('should default to page 1 and limit 10 with no params', async () => {
+                (mockPrisma.contacto!.findMany as jest.Mock).mockResolvedValue(
+                    [],
+                );
+
+                await repository.list();
+
+                expect(mockPrisma.contacto!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({ skip: 0, take: 10, where: {} }),
+                );
+            });
+        });
+
+        describe('count', () => {
+            it('should count contacts matching the filters', async () => {
+                (mockPrisma.contacto!.count as jest.Mock).mockResolvedValue(7);
+
+                const result = await repository.count({
+                    idOrganization: 'org-1',
+                });
+
+                expect(mockPrisma.contacto!.count).toHaveBeenCalledWith({
+                    where: { idOrganizacion: 'org-1' },
+                });
+                expect(result).toBe(7);
+            });
+        });
+
         describe('findByOrganizationIdWithOrganization', () => {
             it('should return contacts with organization names', async () => {
                 const records = [
@@ -356,6 +436,45 @@ describe('Contacts module', () => {
                     );
 
                 expect(result).toHaveLength(0);
+            });
+        });
+
+        describe('reassignOrganization', () => {
+            it('should validate the target org and detach the contact from its previous org', async () => {
+                (
+                    mockPrisma.organizacion!.findFirst as jest.Mock
+                ).mockResolvedValue({ id: 'org-2' });
+                (
+                    mockPrisma.organizacion!.updateMany as jest.Mock
+                ).mockResolvedValue({ count: 1 });
+
+                await repository.reassignOrganization(1, 'org-1', 'org-2');
+
+                // La organización destino debe existir y estar vigente.
+                expect(mockPrisma.organizacion!.findFirst).toHaveBeenCalledWith({
+                    where: { id: 'org-2', deletedAt: null },
+                    select: { id: true },
+                });
+                // Solo se limpia el contacto activo de la org anterior si era este.
+                expect(
+                    mockPrisma.organizacion!.updateMany,
+                ).toHaveBeenCalledWith({
+                    where: { id: 'org-1', idContactoActivo: 1 },
+                    data: { idContactoActivo: null },
+                });
+            });
+
+            it('should throw when the target organization does not exist or is deactivated', async () => {
+                (
+                    mockPrisma.organizacion!.findFirst as jest.Mock
+                ).mockResolvedValue(null);
+
+                await expect(
+                    repository.reassignOrganization(1, 'org-1', 'org-x'),
+                ).rejects.toThrow('no encontrada o desactivada');
+                expect(
+                    mockPrisma.organizacion!.updateMany,
+                ).not.toHaveBeenCalled();
             });
         });
     });

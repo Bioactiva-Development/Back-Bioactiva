@@ -140,7 +140,7 @@ describe('Security module', () => {
         describe('save', () => {
             it('should throw when user id is null', async () => {
                 const nullIdUser = new User(
-                    null as any,
+                    null,
                     'Test',
                     'User',
                     'test@bioactiva.com',

@@ -33,7 +33,11 @@ describe('Auth DTOs', () => {
 
     describe('ResetPasswordDto', () => {
         it('should create instance with token, password and confirmPassword', () => {
-            const dto = new ResetPasswordDto('token123', 'newPass123', 'newPass123');
+            const dto = new ResetPasswordDto(
+                'token123',
+                'newPass123',
+                'newPass123',
+            );
             expect(dto.token).toBe('token123');
             expect(dto.password).toBe('newPass123');
             expect(dto.confirmPassword).toBe('newPass123');
@@ -49,7 +53,13 @@ describe('Auth DTOs', () => {
 
     describe('AcceptInvitationDto', () => {
         it('should create instance with all fields', () => {
-            const dto = new AcceptInvitationDto('token', 'pass', 'Juan', 'Perez', 'pass');
+            const dto = new AcceptInvitationDto(
+                'token',
+                'pass',
+                'Juan',
+                'Perez',
+                'pass',
+            );
             expect(dto.token).toBe('token');
             expect(dto.password).toBe('pass');
             expect(dto.nombres).toBe('Juan');
@@ -60,13 +70,19 @@ describe('Auth DTOs', () => {
 
     describe('CreateInvitationDto', () => {
         it('should create instance with correo and rol', () => {
-            const dto = new CreateInvitationDto('user@example.com', UserRole.TRABAJADOR);
+            const dto = new CreateInvitationDto(
+                'user@example.com',
+                UserRole.TRABAJADOR,
+            );
             expect(dto.correo).toBe('user@example.com');
             expect(dto.rol).toBe(UserRole.TRABAJADOR);
         });
 
         it('should accept ADMINISTRADOR role', () => {
-            const dto = new CreateInvitationDto('admin@example.com', UserRole.ADMINISTRADOR);
+            const dto = new CreateInvitationDto(
+                'admin@example.com',
+                UserRole.ADMINISTRADOR,
+            );
             expect(dto.rol).toBe(UserRole.ADMINISTRADOR);
         });
     });

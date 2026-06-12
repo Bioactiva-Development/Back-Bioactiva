@@ -27,6 +27,16 @@ export class PrismaUserRepository implements UserRepositoryPort {
         return UserMapper.toDomain(record);
     }
 
+    async findByCorreos(correos: string[]): Promise<User[]> {
+        if (correos.length === 0) {
+            return [];
+        }
+        const records = await this.prismaClient.usuario.findMany({
+            where: { correo: { in: correos } },
+        });
+        return records.map((record) => UserMapper.toDomain(record));
+    }
+
     async findById(id: number): Promise<User | null> {
         const record = await this.prismaClient.usuario.findUnique({
             where: { id },

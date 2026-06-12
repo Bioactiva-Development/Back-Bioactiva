@@ -97,7 +97,7 @@ describe('Notifications module', () => {
                 3,
                 'Default',
                 'Mensaje default',
-                undefined as any,
+                undefined,
                 3,
                 44,
                 createdAt,

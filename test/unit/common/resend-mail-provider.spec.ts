@@ -8,7 +8,11 @@ jest.mock('resend', () => ({
 }));
 
 jest.mock('node:fs', () => ({
-    readFileSync: jest.fn().mockReturnValue('<html>{{recipientEmail}} - {{roleLabel}} - {{invitationLink}}</html>'),
+    readFileSync: jest
+        .fn()
+        .mockReturnValue(
+            '<html>{{recipientEmail}} - {{roleLabel}} - {{invitationLink}}</html>',
+        ),
 }));
 
 const mockJoin = jest.fn().mockReturnValue('/fake/path/template.html');
@@ -38,12 +42,15 @@ describe('ResendMailProvider', () => {
         else delete process.env.FRONTEND_URL;
         if (originalMailFrom) process.env.MAIL_FROM = originalMailFrom;
         else delete process.env.MAIL_FROM;
-        if (originalMailFromName) process.env.MAIL_FROM_NAME = originalMailFromName;
+        if (originalMailFromName)
+            process.env.MAIL_FROM_NAME = originalMailFromName;
         else delete process.env.MAIL_FROM_NAME;
     });
 
     it('should send invitation email via Resend', async () => {
-        const { ResendMailProvider } = require('@/modules/common/mail/resend.instance');
+        const {
+            ResendMailProvider,
+        } = require('@/modules/common/mail/resend.instance');
         const provider = new ResendMailProvider();
         mockEmailsSend.mockResolvedValue({ id: 'email-id' });
 
@@ -64,7 +71,9 @@ describe('ResendMailProvider', () => {
     });
 
     it('should send reset password email via Resend', async () => {
-        const { ResendMailProvider } = require('@/modules/common/mail/resend.instance');
+        const {
+            ResendMailProvider,
+        } = require('@/modules/common/mail/resend.instance');
         const provider = new ResendMailProvider();
         mockEmailsSend.mockResolvedValue({ id: 'email-id' });
 
@@ -85,14 +94,18 @@ describe('ResendMailProvider', () => {
     it('should throw when RESEND_TOKEN is not set', async () => {
         delete process.env.RESEND_TOKEN;
 
-        const { ResendMailProvider } = require('@/modules/common/mail/resend.instance');
+        const {
+            ResendMailProvider,
+        } = require('@/modules/common/mail/resend.instance');
         const provider = new ResendMailProvider();
 
-        await expect(provider.sendInvitationEmail({
-            correo: 'user@example.com',
-            token: 'token',
-            rol: 1 as any,
-            invitedBy: 1,
-        })).rejects.toThrow('RESEND_TOKEN is required');
+        await expect(
+            provider.sendInvitationEmail({
+                correo: 'user@example.com',
+                token: 'token',
+                rol: 1 as any,
+                invitedBy: 1,
+            }),
+        ).rejects.toThrow('RESEND_TOKEN is required');
     });
 });

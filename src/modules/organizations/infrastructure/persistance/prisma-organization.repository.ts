@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EstadoCorreo as PrismaEstadoCorreo } from '@prisma/client';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
@@ -26,8 +27,8 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     }
 
     async findById(id: string): Promise<Organization | null> {
-        const record = await this.prisma.organizacion.findUnique({
-            where: { id },
+        const record = await this.prisma.organizacion.findFirst({
+            where: { id, deletedAt: null },
         });
         return record ? OrganizationMapper.toDomain(record) : null;
     }
@@ -39,8 +40,36 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         return record ? OrganizationMapper.toDomain(record) : null;
     }
 
+    async findByCodigoCliente(
+        codigoCliente: string,
+    ): Promise<Organization | null> {
+        const record = await this.prisma.organizacion.findUnique({
+            where: { codigoCliente },
+        });
+        return record ? OrganizationMapper.toDomain(record) : null;
+    }
+
     async findAll(): Promise<Organization[]> {
-        const records = await this.prisma.organizacion.findMany();
+        const records = await this.prisma.organizacion.findMany({
+            where: { deletedAt: null },
+        });
         return records.map((record) => OrganizationMapper.toDomain(record));
+    }
+
+    async softDelete(id: string): Promise<void> {
+        // Desactivar la organización y vencer sus contactos debe ser atómico:
+        // si una de las dos operaciones falla, ninguna se aplica. Se usa una
+        // sola transacción (sin N+1) para marcar todos los contactos de la
+        // organización con estado de correo VENCIDO.
+        await this.prisma.$transaction([
+            this.prisma.organizacion.update({
+                where: { id },
+                data: { deletedAt: new Date() },
+            }),
+            this.prisma.contacto.updateMany({
+                where: { idOrganizacion: id },
+                data: { estado_correo: PrismaEstadoCorreo.VENCIDO },
+            }),
+        ]);
     }
 }

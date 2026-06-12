@@ -5,6 +5,7 @@ import { UsersModule } from '@/modules/users/user.module';
 import { RequestPasswordResetUseCase } from '@/modules/reset_password/application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
+import { ObtainResetInfoUseCase } from '@/modules/reset_password/application/use-cases/obtain-reset-info.use-case';
 import { ExpirePasswordResetTokenUseCase } from '@/modules/reset_password/application/use-cases/expire-password-reset-token.use-case';
 import { PASSWORD_RESET_REPOSITORY } from '@/modules/reset_password/domain/ports/password-reset-repository.port';
 import { PASSWORD_RESET_NOTIFICATION } from '@/modules/reset_password/domain/ports/password-reset-notification.port';
@@ -31,6 +32,7 @@ import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowe
         RequestPasswordResetUseCase,
         ResetPasswordUseCase,
         ValidateResetTokenUseCase,
+        ObtainResetInfoUseCase,
         ExpirePasswordResetTokenUseCase,
         ResetTokenValidatorService,
         PrismaPasswordResetRepository,

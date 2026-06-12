@@ -21,15 +21,20 @@ describe('PasswordResetMapper', () => {
     });
 
     it('should throw when proposito is not RESET_PASSWORD', () => {
-        const invalidRecord = { ...validRecord, proposito: 'INVITATION' as any };
-        expect(() => PasswordResetMapper.toDomain(invalidRecord as any)).toThrow(
-            'El token no es de restablecimiento de contraseña',
-        );
+        const invalidRecord = {
+            ...validRecord,
+            proposito: 'INVITATION' as any,
+        };
+        expect(() =>
+            PasswordResetMapper.toDomain(invalidRecord as any),
+        ).toThrow('El token no es de restablecimiento de contraseña');
     });
 
     it('should throw when idUsuario is null', () => {
         const invalidRecord = { ...validRecord, idUsuario: null };
-        expect(() => PasswordResetMapper.toDomain(invalidRecord as any)).toThrow(
+        expect(() =>
+            PasswordResetMapper.toDomain(invalidRecord as any),
+        ).toThrow(
             'El token de restablecimiento debe tener un ID de usuario asociado',
         );
     });

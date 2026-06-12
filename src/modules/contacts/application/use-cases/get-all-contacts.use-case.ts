@@ -3,6 +3,7 @@ import {
     IContactRepository,
     ContactWithOrgName,
 } from '@/modules/contacts/domain/ports/contact.repository';
+import { ListContactsDto } from '@/modules/contacts/application/dtos/list-contacts.dto';
 
 export class GetAllContactsUseCase {
     constructor(
@@ -10,7 +11,14 @@ export class GetAllContactsUseCase {
         private readonly contactRepository: IContactRepository,
     ) {}
 
-    async execute(): Promise<ContactWithOrgName[]> {
-        return await this.contactRepository.findAllWithOrganization();
+    async execute(
+        dto: ListContactsDto = new ListContactsDto(),
+    ): Promise<{ data: ContactWithOrgName[]; total: number }> {
+        const { page, limit, ...filters } = dto;
+        const [data, total] = await Promise.all([
+            this.contactRepository.list({ ...filters, page, limit }),
+            this.contactRepository.count(filters),
+        ]);
+        return { data, total };
     }
 }

@@ -37,6 +37,21 @@ export class UpdateContactUseCase {
         if (dto.comentarios !== undefined)
             contact.comentarios = toNull(dto.comentarios);
 
+        if (
+            dto.idOrganizacion &&
+            dto.idOrganizacion !== contact.idOrganizacion
+        ) {
+            // Valida que la organización destino exista y esté vigente, y libera
+            // al contacto como "contacto activo" de su organización anterior. El
+            // estado_correo no se toca: es decisión manual del usuario.
+            await this.contactRepository.reassignOrganization(
+                contact.id,
+                contact.idOrganizacion,
+                dto.idOrganizacion,
+            );
+            contact.idOrganizacion = dto.idOrganizacion;
+        }
+
         contact.updatedAt = new Date();
 
         const saved = await this.contactRepository.save(contact);
@@ -46,16 +61,23 @@ export class UpdateContactUseCase {
         return enriched!;
     }
 
-    private async updateEmail(contact: Contact, newCorreo: string): Promise<void> {
+    private async updateEmail(
+        contact: Contact,
+        newCorreo: string,
+    ): Promise<void> {
         if (newCorreo === contact.correo) return;
         const emailExists = await this.contactRepository.findByEmail(newCorreo);
         if (emailExists) throw new EmailAlreadyExistsException(newCorreo);
         contact.correo = newCorreo;
     }
 
-    private async updateSecondaryEmail(contact: Contact, newCorreo2: string): Promise<void> {
+    private async updateSecondaryEmail(
+        contact: Contact,
+        newCorreo2: string,
+    ): Promise<void> {
         if (newCorreo2 === contact.correo2) return;
-        const email2Exists = await this.contactRepository.findBySecondaryEmail(newCorreo2);
+        const email2Exists =
+            await this.contactRepository.findBySecondaryEmail(newCorreo2);
         if (email2Exists) throw new EmailAlreadyExistsException(newCorreo2);
         contact.correo2 = newCorreo2;
     }

@@ -47,6 +47,12 @@ export class AuthenticateUserUseCase {
             throw new NotAuthorizedException('Credenciales inválidas');
         }
 
+        // Cada autenticación nueva incrementa la versión de sesión, lo que
+        // invalida los tokens emitidos para sesiones previas del usuario
+        // (sesión única por cuenta — Mantis #271).
+        const tokenVersion =
+            await this.authUserRepository.incrementTokenVersion(user.id!);
+
         const accessToken = await this.tokenService.signAccessToken({
             sub: String(user.id),
             correo: user.correo,
@@ -54,10 +60,12 @@ export class AuthenticateUserUseCase {
             apellidos: user.apellidos,
             role: user.role,
             estado: user.estado,
+            tokenVersion,
         });
 
         const refreshToken = await this.tokenService.signRefreshToken({
             sub: String(user.id),
+            tokenVersion,
         });
 
         return new TokenPair(accessToken, refreshToken, 900, 604800);

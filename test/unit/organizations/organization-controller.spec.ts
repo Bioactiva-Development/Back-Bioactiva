@@ -7,6 +7,7 @@ import { UpdateOrganizationUseCase } from '@/modules/organizations/application/u
 import { GetOrganizationByIdUseCase } from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
 import { GetAllOrganizationsUseCase } from '@/modules/organizations/application/use-cases/get-all-organizations.use-case';
 import { QuerySunatUseCase } from '@/modules/organizations/application/use-cases/query-sunat.use-case';
+import { DeleteOrganizationUseCase } from '@/modules/organizations/application/use-cases/delete-organization.use-case';
 
 describe('OrganizationController', () => {
     let controller: OrganizationController;
@@ -15,6 +16,7 @@ describe('OrganizationController', () => {
     let getOrganizationByIdUseCase: jest.Mocked<GetOrganizationByIdUseCase>;
     let getAllOrganizationsUseCase: jest.Mocked<GetAllOrganizationsUseCase>;
     let querySunatUseCase: jest.Mocked<QuerySunatUseCase>;
+    let deleteOrganizationUseCase: jest.Mocked<DeleteOrganizationUseCase>;
 
     beforeEach(async () => {
         createOrganizationUseCase = { execute: jest.fn() } as any;
@@ -22,15 +24,32 @@ describe('OrganizationController', () => {
         getOrganizationByIdUseCase = { execute: jest.fn() } as any;
         getAllOrganizationsUseCase = { execute: jest.fn() } as any;
         querySunatUseCase = { execute: jest.fn() } as any;
+        deleteOrganizationUseCase = { execute: jest.fn() } as any;
 
         const module = await Test.createTestingModule({
             controllers: [OrganizationController],
             providers: [
-                { provide: CreateOrganizationUseCase, useValue: createOrganizationUseCase },
-                { provide: UpdateOrganizationUseCase, useValue: updateOrganizationUseCase },
-                { provide: GetOrganizationByIdUseCase, useValue: getOrganizationByIdUseCase },
-                { provide: GetAllOrganizationsUseCase, useValue: getAllOrganizationsUseCase },
+                {
+                    provide: CreateOrganizationUseCase,
+                    useValue: createOrganizationUseCase,
+                },
+                {
+                    provide: UpdateOrganizationUseCase,
+                    useValue: updateOrganizationUseCase,
+                },
+                {
+                    provide: GetOrganizationByIdUseCase,
+                    useValue: getOrganizationByIdUseCase,
+                },
+                {
+                    provide: GetAllOrganizationsUseCase,
+                    useValue: getAllOrganizationsUseCase,
+                },
                 { provide: QuerySunatUseCase, useValue: querySunatUseCase },
+                {
+                    provide: DeleteOrganizationUseCase,
+                    useValue: deleteOrganizationUseCase,
+                },
             ],
         }).compile();
 
@@ -38,7 +57,10 @@ describe('OrganizationController', () => {
     });
 
     it('should create organization', async () => {
-        createOrganizationUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Empresa SAC' });
+        createOrganizationUseCase.execute.mockResolvedValue({
+            id: 'org-1',
+            nombre: 'Empresa SAC',
+        });
         const dto = { nombre: 'Empresa SAC', ruc: '12345678901' } as any;
         const result = await controller.create(dto);
         expect(createOrganizationUseCase.execute).toHaveBeenCalledWith(dto);
@@ -46,28 +68,66 @@ describe('OrganizationController', () => {
     });
 
     it('should find all organizations', async () => {
-        getAllOrganizationsUseCase.execute.mockResolvedValue([{ id: 'org-1', nombre: 'Empresa SAC' }]);
+        getAllOrganizationsUseCase.execute.mockResolvedValue([
+            { id: 'org-1', nombre: 'Empresa SAC' },
+        ]);
         const result = await controller.findAll();
         expect(result).toHaveLength(1);
     });
 
-    it('should find organization by id', async () => {
-        getOrganizationByIdUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Empresa SAC' });
+    it('should find organization by id with embedded contacts', async () => {
+        getOrganizationByIdUseCase.execute.mockResolvedValue({
+            organization: { id: 'org-1', nombre: 'Empresa SAC' },
+            contactos: [
+                {
+                    contact: { id: 1, nombres: 'Juan' },
+                    organizationName: 'Empresa SAC',
+                },
+            ],
+            totalContactos: 14,
+        });
         const result = await controller.findOne('org-1');
-        expect(getOrganizationByIdUseCase.execute).toHaveBeenCalledWith('org-1');
+        expect(getOrganizationByIdUseCase.execute).toHaveBeenCalledWith(
+            'org-1',
+        );
         expect(result.nombre).toBe('Empresa SAC');
+        expect(result.contactos).toHaveLength(1);
+        expect(result.contactos[0].nombres).toBe('Juan');
+        expect(result.totalContactos).toBe(14);
+    });
+
+    it('should throw NotFoundException when organization not found', async () => {
+        getOrganizationByIdUseCase.execute.mockResolvedValue(null);
+        await expect(controller.findOne('missing')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 
     it('should update organization', async () => {
-        updateOrganizationUseCase.execute.mockResolvedValue({ id: 'org-1', nombre: 'Updated' });
+        updateOrganizationUseCase.execute.mockResolvedValue({
+            id: 'org-1',
+            nombre: 'Updated',
+        });
         const dto = { nombre: 'Updated' } as any;
         const result = await controller.update('org-1', dto);
-        expect(updateOrganizationUseCase.execute).toHaveBeenCalledWith('org-1', dto);
+        expect(updateOrganizationUseCase.execute).toHaveBeenCalledWith(
+            'org-1',
+            dto,
+        );
         expect(result.nombre).toBe('Updated');
     });
 
+    it('should deactivate (soft-delete) an organization', async () => {
+        deleteOrganizationUseCase.execute.mockResolvedValue({ ok: true });
+        const result = await controller.remove('org-1');
+        expect(deleteOrganizationUseCase.execute).toHaveBeenCalledWith('org-1');
+        expect(result).toEqual({ ok: true });
+    });
+
     it('should query SUNAT and return results', async () => {
-        querySunatUseCase.execute.mockResolvedValue([{ ruc: '12345678901', nombre: 'EMPRESA SAC' }]);
+        querySunatUseCase.execute.mockResolvedValue([
+            { ruc: '12345678901', nombre: 'EMPRESA SAC' },
+        ]);
         const result = await controller.querySunat('12345678901');
         expect(querySunatUseCase.execute).toHaveBeenCalledWith('12345678901');
         expect(result).toHaveLength(1);
@@ -75,11 +135,15 @@ describe('OrganizationController', () => {
 
     it('should throw NotFoundException when SUNAT query returns empty array', async () => {
         querySunatUseCase.execute.mockResolvedValue([]);
-        await expect(controller.querySunat('00000000000')).rejects.toThrow(NotFoundException);
+        await expect(controller.querySunat('00000000000')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 
     it('should throw NotFoundException when SUNAT query returns null', async () => {
         querySunatUseCase.execute.mockResolvedValue(null);
-        await expect(controller.querySunat('00000000000')).rejects.toThrow(NotFoundException);
+        await expect(controller.querySunat('00000000000')).rejects.toThrow(
+            NotFoundException,
+        );
     });
 });

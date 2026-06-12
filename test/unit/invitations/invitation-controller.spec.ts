@@ -19,7 +19,17 @@ describe('InvitationController', () => {
     let obtainInfoUseCase: jest.Mocked<ObtainInfoUseCase>;
     let listInvitationsUseCase: jest.Mocked<ListInvitationsUseCase>;
 
-    const mockUser = new User(1, 'Admin', 'User', 'admin@test.com', 'hash', new Date(), UserRole.ADMINISTRADOR, UserState.ACTIVO, new Date());
+    const mockUser = new User(
+        1,
+        'Admin',
+        'User',
+        'admin@test.com',
+        'hash',
+        new Date(),
+        UserRole.ADMINISTRADOR,
+        UserState.ACTIVO,
+        new Date(),
+    );
 
     beforeEach(async () => {
         createInvitationUseCase = { execute: jest.fn() } as any;
@@ -31,11 +41,23 @@ describe('InvitationController', () => {
         const module = await Test.createTestingModule({
             controllers: [InvitationController],
             providers: [
-                { provide: CreateInvitationUseCase, useValue: createInvitationUseCase },
-                { provide: AcceptInvitationUseCase, useValue: acceptInvitationUseCase },
-                { provide: RevokeInvitationUseCase, useValue: revokeInvitationUseCase },
+                {
+                    provide: CreateInvitationUseCase,
+                    useValue: createInvitationUseCase,
+                },
+                {
+                    provide: AcceptInvitationUseCase,
+                    useValue: acceptInvitationUseCase,
+                },
+                {
+                    provide: RevokeInvitationUseCase,
+                    useValue: revokeInvitationUseCase,
+                },
                 { provide: ObtainInfoUseCase, useValue: obtainInfoUseCase },
-                { provide: ListInvitationsUseCase, useValue: listInvitationsUseCase },
+                {
+                    provide: ListInvitationsUseCase,
+                    useValue: listInvitationsUseCase,
+                },
             ],
         }).compile();
 
@@ -45,22 +67,42 @@ describe('InvitationController', () => {
     it('should create invitation', async () => {
         createInvitationUseCase.execute.mockResolvedValue({ id: 1 });
 
-        const result = await controller.createInvitation(mockUser, { correo: 'user@test.com', rol: UserRole.TRABAJADOR });
+        const result = await controller.createInvitation(mockUser, {
+            correo: 'user@test.com',
+            rol: UserRole.TRABAJADOR,
+        });
 
-        expect(createInvitationUseCase.execute).toHaveBeenCalledWith(mockUser, 'user@test.com', UserRole.TRABAJADOR);
+        expect(createInvitationUseCase.execute).toHaveBeenCalledWith(
+            mockUser,
+            'user@test.com',
+            UserRole.TRABAJADOR,
+        );
         expect(result).toEqual({ id: 1 });
     });
 
     it('should list invitations', async () => {
         listInvitationsUseCase.execute.mockResolvedValue([]);
 
-        const result = await controller.listInvitations(mockUser, 1, 10, 'test', undefined);
+        const result = await controller.listInvitations(
+            mockUser,
+            1,
+            10,
+            'test',
+            undefined,
+        );
 
-        expect(listInvitationsUseCase.execute).toHaveBeenCalledWith(1, 10, 'test', undefined);
+        expect(listInvitationsUseCase.execute).toHaveBeenCalledWith(
+            1,
+            10,
+            'test',
+            undefined,
+        );
     });
 
     it('should obtain invitation info', async () => {
-        obtainInfoUseCase.execute.mockResolvedValue({ correo: 'user@test.com' });
+        obtainInfoUseCase.execute.mockResolvedValue({
+            correo: 'user@test.com',
+        });
 
         const result = await controller.obtainInfo('token-abc');
 
@@ -74,20 +116,44 @@ describe('InvitationController', () => {
             refreshToken: 'refresh-token',
             accessTokenExpiresIn: 900,
             refreshTokenExpiresIn: 604800,
-        } as any);
+        });
         const response = { cookie: jest.fn() } as any;
 
-        const result = await controller.acceptInvitation({ token: 'token', password: 'pass123', confirmPassword: 'pass123', nombres: 'Juan', apellidos: 'Perez' }, response);
+        const result = await controller.acceptInvitation(
+            {
+                token: 'token',
+                password: 'pass123',
+                confirmPassword: 'pass123',
+                nombres: 'Juan',
+                apellidos: 'Perez',
+            },
+            response,
+        );
 
-        expect(acceptInvitationUseCase.execute).toHaveBeenCalledWith('token', 'pass123', 'Juan', 'Perez');
+        expect(acceptInvitationUseCase.execute).toHaveBeenCalledWith(
+            'token',
+            'pass123',
+            'Juan',
+            'Perez',
+        );
         expect(response.cookie).toHaveBeenCalled();
         expect(result).toMatchObject({ accessToken: 'access-token' });
     });
 
     it('should throw when passwords do not match on accept', async () => {
         const response = { cookie: jest.fn() } as any;
-        await expect(controller.acceptInvitation({ token: 'token', password: 'pass1', confirmPassword: 'pass2', nombres: 'Juan', apellidos: 'Perez' }, response))
-            .rejects.toThrow(BadRequestException);
+        await expect(
+            controller.acceptInvitation(
+                {
+                    token: 'token',
+                    password: 'pass1',
+                    confirmPassword: 'pass2',
+                    nombres: 'Juan',
+                    apellidos: 'Perez',
+                },
+                response,
+            ),
+        ).rejects.toThrow(BadRequestException);
     });
 
     it('should revoke invitation', async () => {

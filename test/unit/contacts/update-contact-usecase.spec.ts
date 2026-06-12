@@ -34,6 +34,7 @@ describe('Contacts module', () => {
                 findByIdWithOrganization: jest.fn(),
                 findByOrganizationId: jest.fn(),
                 findAll: jest.fn(),
+                reassignOrganization: jest.fn(),
             };
 
             useCase = new UpdateContactUseCase(contactRepository);
@@ -201,6 +202,74 @@ describe('Contacts module', () => {
             expect(contactRepository.findBySecondaryEmail).toHaveBeenCalledWith(
                 'new.secondary@example.com',
             );
+        });
+
+        // El use-case muta la entidad in-place, así que cada test de mudanza
+        // construye su propio contacto para no contaminar al compartido.
+        const buildContact = () =>
+            new Contact(
+                1,
+                'John',
+                'Doe',
+                Vocative.SR,
+                'Developer',
+                'john@example.com',
+                '987654321',
+                'john.secondary@example.com',
+                'Test contact',
+                'org-123',
+                1,
+                new Date(),
+                new Date(),
+            );
+
+        it('should move the contact to another organization', async () => {
+            contactRepository.findById.mockResolvedValue(buildContact());
+            contactRepository.reassignOrganization.mockResolvedValue(undefined);
+            contactRepository.save.mockImplementation(async (c: any) => c);
+            contactRepository.findByIdWithOrganization.mockResolvedValue({
+                contact: buildContact(),
+                organizationName: 'Nueva Org',
+            });
+
+            await useCase.execute(1, { idOrganizacion: 'org-999' } as any);
+
+            // Valida la org destino y libera la org anterior antes de persistir.
+            expect(
+                contactRepository.reassignOrganization,
+            ).toHaveBeenCalledWith(1, 'org-123', 'org-999');
+            expect(contactRepository.save).toHaveBeenCalledWith(
+                expect.objectContaining({ idOrganizacion: 'org-999' }),
+            );
+        });
+
+        it('should not reassign when the organization does not change', async () => {
+            contactRepository.findById.mockResolvedValue(buildContact());
+            contactRepository.save.mockImplementation(async (c: any) => c);
+            contactRepository.findByIdWithOrganization.mockResolvedValue({
+                contact: buildContact(),
+                organizationName: 'Org',
+            });
+
+            await useCase.execute(1, { idOrganizacion: 'org-123' } as any);
+
+            expect(
+                contactRepository.reassignOrganization,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('should propagate the error when the target organization is invalid', async () => {
+            contactRepository.findById.mockResolvedValue(buildContact());
+            contactRepository.reassignOrganization.mockRejectedValue(
+                new Error(
+                    'Organización con id org-x no encontrada o desactivada',
+                ),
+            );
+
+            await expect(
+                useCase.execute(1, { idOrganizacion: 'org-x' } as any),
+            ).rejects.toThrow('no encontrada o desactivada');
+            expect(contactRepository.save).not.toHaveBeenCalled();
         });
 
         it('should reject duplicate secondary email', async () => {

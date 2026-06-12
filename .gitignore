@@ -46,6 +46,7 @@ lerna-debug.log*
 .env.local
 .env.off*
 .env.deploy
+.env.docker
 
 # temp directory
 .temp
@@ -74,12 +75,14 @@ cookies.txt
 coverage/
 scripts/
 skills/
+documentacion/
 
 .venv/
 __pycache__/
 ## AI context files
 GEMINI.md
 SKILL.md
+
 
 # Project documentation (local only)
 \# 6 crm_bioactiva_especificacion.md

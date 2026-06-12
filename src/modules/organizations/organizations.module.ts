@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ContactsModule } from '@/modules/contacts/contacts.module';
 import { OrganizationController } from './infrastructure/http/organization.controller';
 import { PrismaOrganizationRepository } from './infrastructure/persistance/prisma-organization.repository';
 import { SunatWebScraperAdapter } from './infrastructure/service/sunat-web-scraper.adapter';
@@ -9,8 +10,10 @@ import { UpdateOrganizationUseCase } from './application/use-cases/update-organi
 import { GetOrganizationByIdUseCase } from './application/use-cases/get-organization-by-id.use-case';
 import { GetAllOrganizationsUseCase } from './application/use-cases/get-all-organizations.use-case';
 import { QuerySunatUseCase } from './application/use-cases/query-sunat.use-case';
+import { DeleteOrganizationUseCase } from './application/use-cases/delete-organization.use-case';
 
 @Module({
+    imports: [ContactsModule],
     controllers: [OrganizationController],
     providers: [
         PrismaOrganizationRepository,
@@ -28,6 +31,7 @@ import { QuerySunatUseCase } from './application/use-cases/query-sunat.use-case'
         GetOrganizationByIdUseCase,
         GetAllOrganizationsUseCase,
         QuerySunatUseCase,
+        DeleteOrganizationUseCase,
     ],
     exports: [
         ORGANIZATION_REPOSITORY,
@@ -37,6 +41,7 @@ import { QuerySunatUseCase } from './application/use-cases/query-sunat.use-case'
         GetOrganizationByIdUseCase,
         GetAllOrganizationsUseCase,
         QuerySunatUseCase,
+        DeleteOrganizationUseCase,
     ],
 })
 export class OrganizationsModule {}

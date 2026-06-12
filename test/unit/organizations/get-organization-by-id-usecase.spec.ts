@@ -1,44 +1,106 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { GetOrganizationByIdUseCase } from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
+import {
+    GetOrganizationByIdUseCase,
+    DASHBOARD_CONTACTS_LIMIT,
+} from '@/modules/organizations/application/use-cases/get-organization-by-id.use-case';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 
 describe('Organizations module', () => {
-	describe('GetOrganizationByIdUseCase', () => {
-		let useCase: GetOrganizationByIdUseCase;
-		let mockRepository: any;
+    describe('GetOrganizationByIdUseCase', () => {
+        let useCase: GetOrganizationByIdUseCase;
+        let mockOrgRepository: any;
+        let mockContactRepository: any;
 
-		beforeEach(() => {
-			mockRepository = {
-				findById: jest.fn(),
-			};
-			useCase = new GetOrganizationByIdUseCase(mockRepository);
-		});
+        const org = new Organization(
+            'org-1',
+            'CLI-001',
+            'Tech Corp',
+            'Tech',
+            'Area',
+            '20123456789',
+            EnterpriseType.EMPRESA_NACIONAL,
+            '',
+            '',
+            Sector.TECNOLOGIA,
+            Size.GRANDE,
+            '',
+            '',
+            null,
+            1,
+            new Date(),
+            new Date(),
+        );
 
-		it('should return organization when found', async () => {
-			const org = new Organization('org-1', 'CLI-001', 'Tech Corp', 'Tech', 'Area', '20123456789', EnterpriseType.EMPRESA_NACIONAL, '', '', Sector.TECNOLOGIA, Size.GRANDE, '', '', null, 1, new Date(), new Date());
-			mockRepository.findById.mockResolvedValue(org);
+        beforeEach(() => {
+            mockOrgRepository = {
+                findById: jest.fn(),
+            };
+            mockContactRepository = {
+                list: jest.fn(),
+                count: jest.fn(),
+            };
+            useCase = new GetOrganizationByIdUseCase(
+                mockOrgRepository,
+                mockContactRepository,
+            );
+        });
 
-			const result = await useCase.execute('org-1');
+        it('should return organization with its first contacts and total', async () => {
+            const contactos = [
+                { contact: { id: 1 }, organizationName: 'Tech Corp' },
+            ];
+            mockOrgRepository.findById.mockResolvedValue(org);
+            mockContactRepository.list.mockResolvedValue(contactos);
+            mockContactRepository.count.mockResolvedValue(14);
 
-			expect(result).toEqual(org);
-			expect(mockRepository.findById).toHaveBeenCalledWith('org-1');
-		});
+            const result = await useCase.execute('org-1');
 
-		it('should return null when organization not found', async () => {
-			mockRepository.findById.mockResolvedValue(null);
+            expect(result).toEqual({
+                organization: org,
+                contactos,
+                totalContactos: 14,
+            });
+            expect(mockOrgRepository.findById).toHaveBeenCalledWith('org-1');
+            expect(mockContactRepository.list).toHaveBeenCalledWith({
+                idOrganization: 'org-1',
+                page: 1,
+                limit: DASHBOARD_CONTACTS_LIMIT,
+            });
+            expect(mockContactRepository.count).toHaveBeenCalledWith({
+                idOrganization: 'org-1',
+            });
+        });
 
-			const result = await useCase.execute('non-existent');
+        it('should cap the embedded contacts at 6', async () => {
+            mockOrgRepository.findById.mockResolvedValue(org);
+            mockContactRepository.list.mockResolvedValue([]);
+            mockContactRepository.count.mockResolvedValue(0);
 
-			expect(result).toBeNull();
-		});
+            await useCase.execute('org-1');
 
-		it('should propagate repository errors', async () => {
-			mockRepository.findById.mockRejectedValue(new Error('DB error'));
+            expect(DASHBOARD_CONTACTS_LIMIT).toBe(6);
+            expect(mockContactRepository.list).toHaveBeenCalledWith(
+                expect.objectContaining({ limit: 6 }),
+            );
+        });
 
-			await expect(useCase.execute('org-1')).rejects.toThrow('DB error');
-		});
-	});
+        it('should return null and not query contacts when organization not found', async () => {
+            mockOrgRepository.findById.mockResolvedValue(null);
+
+            const result = await useCase.execute('non-existent');
+
+            expect(result).toBeNull();
+            expect(mockContactRepository.list).not.toHaveBeenCalled();
+            expect(mockContactRepository.count).not.toHaveBeenCalled();
+        });
+
+        it('should propagate repository errors', async () => {
+            mockOrgRepository.findById.mockRejectedValue(new Error('DB error'));
+
+            await expect(useCase.execute('org-1')).rejects.toThrow('DB error');
+        });
+    });
 });

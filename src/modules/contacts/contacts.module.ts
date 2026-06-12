@@ -4,6 +4,7 @@ import { PrismaContactRepository } from '@/modules/contacts/infrastructure/persi
 import { IContactRepository } from '@/modules/contacts/domain/ports/contact.repository';
 import { CreateContactUseCase } from '@/modules/contacts/application/use-cases/create-contact.use-case';
 import { UpdateContactUseCase } from '@/modules/contacts/application/use-cases/update-contact.use-case';
+import { ChangeContactStatusUseCase } from '@/modules/contacts/application/use-cases/change-contact-status.use-case';
 import { GetContactByIdUseCase } from '@/modules/contacts/application/use-cases/get-contact-by-id.use-case';
 import { GetAllContactsUseCase } from '@/modules/contacts/application/use-cases/get-all-contacts.use-case';
 import { GetContactsByOrganizationUseCase } from '@/modules/contacts/application/use-cases/get-contacts-by-organization.use-case';
@@ -18,6 +19,7 @@ import { GetContactsByOrganizationUseCase } from '@/modules/contacts/application
         },
         CreateContactUseCase,
         UpdateContactUseCase,
+        ChangeContactStatusUseCase,
         GetContactByIdUseCase,
         GetAllContactsUseCase,
         GetContactsByOrganizationUseCase,
@@ -26,6 +28,7 @@ import { GetContactsByOrganizationUseCase } from '@/modules/contacts/application
         IContactRepository,
         CreateContactUseCase,
         UpdateContactUseCase,
+        ChangeContactStatusUseCase,
         GetContactByIdUseCase,
         GetAllContactsUseCase,
         GetContactsByOrganizationUseCase,

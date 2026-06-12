@@ -12,4 +12,10 @@ export interface MailProviderPort {
         correo: string;
         token: string;
     }): Promise<void>;
+
+    sendGenericEmail(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void>;
 }

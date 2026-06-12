@@ -108,7 +108,7 @@ pipeline {
                     sh '''
                         mkdir -p credentials
                         cp "$RECAPTCHA_FILE" credentials/recaptcha-account.json
-
+                        cat "$ENV_FILE"
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \

@@ -12,6 +12,8 @@ export interface FindAllParams {
 
 export interface UserRepositoryPort {
     findByCorreo(correo: string): Promise<User | null>;
+    /** Busca varios usuarios por correo en una sola consulta (sin orden garantizado). */
+    findByCorreos(correos: string[]): Promise<User[]>;
     findById(id: number): Promise<User | null>;
     save(user: User): Promise<User>;
     count(options: { where: { role: UserRole } }): Promise<number>;

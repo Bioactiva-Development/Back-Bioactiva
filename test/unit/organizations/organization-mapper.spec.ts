@@ -36,6 +36,7 @@ describe('Organizations module', () => {
             idAuthor: 1,
             createdAt: new Date('2024-01-01'),
             updatedAt: new Date('2024-01-01'),
+            deletedAt: null,
         };
 
         describe('toDomain - Enterprise Type', () => {
@@ -254,6 +255,7 @@ describe('Organizations module', () => {
                     id: original.id,
                     createdAt: original.createdAt,
                     updatedAt: original.updatedAt,
+                    deletedAt: original.deletedAt,
                 });
 
                 expect(reconstructed.tipo).toBe(original.tipo);

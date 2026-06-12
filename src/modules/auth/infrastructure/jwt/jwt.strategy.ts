@@ -28,12 +28,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: { sub: string }) {
+    async validate(payload: { sub: string; tokenVersion?: number }) {
         const user = await this.authUserRepository.findById(
             Number(payload.sub),
         );
 
         if (user?.estado !== UserState.ACTIVO) {
+            throw new UnauthorizedException('No autorizado');
+        }
+
+        // Solo la sesión más reciente sigue activa: cualquier token emitido
+        // antes de la última autenticación trae una tokenVersion desfasada
+        // (sesión única por cuenta — Mantis #271).
+        if (payload.tokenVersion !== user.tokenVersion) {
             throw new UnauthorizedException('No autorizado');
         }
 

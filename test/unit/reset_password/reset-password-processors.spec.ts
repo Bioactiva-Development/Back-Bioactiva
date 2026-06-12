@@ -8,13 +8,17 @@ describe('Reset Password Processors', () => {
     let mockMailService: jest.Mocked<MailService>;
     let mockExpirePasswordResetTokenUseCase: jest.Mocked<ExpirePasswordResetTokenUseCase>;
 
-    const makeJob = (name: string, data: any) => ({
-        name,
-        data,
-    }) as any;
+    const makeJob = (name: string, data: any) =>
+        ({
+            name,
+            data,
+        }) as any;
 
     beforeEach(() => {
-        mockMailService = { sendResetPasswordEmail: jest.fn(), sendInvitationEmail: jest.fn() } as any;
+        mockMailService = {
+            sendResetPasswordEmail: jest.fn(),
+            sendInvitationEmail: jest.fn(),
+        } as any;
         mockExpirePasswordResetTokenUseCase = { execute: jest.fn() } as any;
     });
 
@@ -28,7 +32,9 @@ describe('Reset Password Processors', () => {
 
             await processor.process(job);
 
-            expect(mockMailService.sendResetPasswordEmail).toHaveBeenCalledWith(job.data);
+            expect(mockMailService.sendResetPasswordEmail).toHaveBeenCalledWith(
+                job.data,
+            );
         });
 
         it('should skip processing for non-matching job name', async () => {
@@ -37,27 +43,39 @@ describe('Reset Password Processors', () => {
 
             await processor.process(job);
 
-            expect(mockMailService.sendResetPasswordEmail).not.toHaveBeenCalled();
+            expect(
+                mockMailService.sendResetPasswordEmail,
+            ).not.toHaveBeenCalled();
         });
     });
 
     describe('PasswordResetExpirationProcessor', () => {
         it('should expire token for matching job name', async () => {
-            const processor = new PasswordResetExpirationProcessor(mockExpirePasswordResetTokenUseCase);
+            const processor = new PasswordResetExpirationProcessor(
+                mockExpirePasswordResetTokenUseCase,
+            );
             mockExpirePasswordResetTokenUseCase.execute.mockResolvedValue(true);
 
-            await processor.process(makeJob('expire-password-reset-token', { resetTokenId: 1 }));
+            await processor.process(
+                makeJob('expire-password-reset-token', { resetTokenId: 1 }),
+            );
 
-            expect(mockExpirePasswordResetTokenUseCase.execute).toHaveBeenCalledWith(1);
+            expect(
+                mockExpirePasswordResetTokenUseCase.execute,
+            ).toHaveBeenCalledWith(1);
         });
 
         it('should skip processing for non-matching job name', async () => {
-            const processor = new PasswordResetExpirationProcessor(mockExpirePasswordResetTokenUseCase);
+            const processor = new PasswordResetExpirationProcessor(
+                mockExpirePasswordResetTokenUseCase,
+            );
             const job = makeJob('other-job', { resetTokenId: 1 });
 
             await processor.process(job);
 
-            expect(mockExpirePasswordResetTokenUseCase.execute).not.toHaveBeenCalled();
+            expect(
+                mockExpirePasswordResetTokenUseCase.execute,
+            ).not.toHaveBeenCalled();
         });
     });
 });

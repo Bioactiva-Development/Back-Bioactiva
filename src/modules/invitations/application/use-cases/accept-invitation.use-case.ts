@@ -96,6 +96,8 @@ export class AcceptInvitationUseCase {
         );
         const savedUser = await this.userRepository.save(activatedUser);
 
+        // Los tokens deben llevar la versión de sesión vigente del usuario; de
+        // lo contrario el guard los rechazaría por desfase (Mantis #271).
         const accessToken = await this.tokenService.signAccessToken({
             sub: String(savedUser.id),
             correo: savedUser.correo,
@@ -103,10 +105,12 @@ export class AcceptInvitationUseCase {
             apellidos: savedUser.apellidos,
             role: savedUser.role,
             estado: savedUser.estado,
+            tokenVersion: savedUser.tokenVersion,
         });
 
         const refreshToken = await this.tokenService.signRefreshToken({
             sub: String(savedUser.id),
+            tokenVersion: savedUser.tokenVersion,
         });
 
         return new TokenPair(accessToken, refreshToken, 900, 604800);

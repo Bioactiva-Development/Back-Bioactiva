@@ -6,8 +6,13 @@ import {
     type ListCotizacionesParams,
 } from '@/modules/quotations/domain/ports/cotizacion-repository.port';
 import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
-import { EstadoCot as PrismaEstadoCot, Prisma } from '@prisma/client';
+import {
+    EstadoCot as PrismaEstadoCot,
+    TipoMoneda as PrismaTipoMoneda,
+    Prisma,
+} from '@prisma/client';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
+import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 import { CotizacionMapper } from '@/modules/quotations/infrastructure/mappers/cotizacion.mapper';
 import { CotizacionNotFoundException } from '@/modules/quotations/domain/exceptions/cotizacion-not-found.exception';
 import { CotizacionConflictException } from '@/modules/quotations/domain/exceptions/cotizacion-conflict.exception';
@@ -133,6 +138,14 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             : undefined;
     }
 
+    private parseTipo(tipo?: string): PrismaTipoMoneda | undefined {
+        if (!tipo) return undefined;
+
+        return Object.values(TipoMoneda).includes(tipo as TipoMoneda)
+            ? CotizacionMapper.mapTypeToPrisma(tipo as TipoMoneda)
+            : undefined;
+    }
+
     private buildWhere(
         params?: Omit<ListCotizacionesParams, 'page' | 'limit'>,
     ): Prisma.CotizacionWhereInput {
@@ -151,6 +164,11 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
 
         if (params?.idRemitente) {
             where.idRemitente = params.idRemitente;
+        }
+
+        const tipo = this.parseTipo(params?.tipo);
+        if (tipo) {
+            where.tipo = tipo;
         }
 
         if (params?.fechaDesde || params?.fechaHasta) {
@@ -289,6 +307,12 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
                         estado: LeadMapper.mapStateToPrisma(leadState),
                         updatedAt: new Date(),
                         ultimoCambioEstado: new Date(),
+                        // Solo se sella la fecha de cierre cuando la venta se
+                        // concreta; otras transiciones la dejan intacta.
+                        fechaCierre:
+                            leadState === LeadState.CIERRE_CON_VENTA
+                                ? new Date()
+                                : undefined,
                     },
                 }),
             ]);

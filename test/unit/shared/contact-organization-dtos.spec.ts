@@ -1,4 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 import { HttpCreateContactDto } from '@/modules/contacts/infrastructure/http/dtos/create-contact.dto.http';
 import { HttpUpdateContactDto } from '@/modules/contacts/infrastructure/http/dtos/update-contact.dto.http';
 import { ContactResponseDto } from '@/modules/contacts/infrastructure/http/dtos/contact-response.dto';
@@ -6,7 +8,6 @@ import { HttpCreateOrganizationDto } from '@/modules/organizations/infrastructur
 import { HttpUpdateOrganizationDto } from '@/modules/organizations/infrastructure/http/dtos/update-organization.dto.http';
 import { Contact } from '@/modules/contacts/domain/entities/contact';
 import { Vocative } from '@/modules/contacts/domain/enums/vocative';
-import { EstadoCorreo } from '@/modules/contacts/domain/enums/estado-correo';
 import type { ContactWithOrgName } from '@/modules/contacts/domain/ports/contact.repository';
 
 describe('Contact DTOs', () => {
@@ -22,6 +23,107 @@ describe('Contact DTOs', () => {
             expect(dto.correo).toBe('juan@example.com');
             expect(dto.idOrganizacion).toBe('org-1');
         });
+
+        // Mantis #219: "cargo" es opcional y debe tolerar cadena vacía
+        it('should accept an empty cargo without error', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+                cargo: '',
+            });
+
+            const errors = await validate(dto);
+            const cargoError = errors.find((e) => e.property === 'cargo');
+
+            expect(cargoError).toBeUndefined();
+        });
+
+        it('should accept a contact without the cargo field', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+            });
+
+            const errors = await validate(dto);
+
+            expect(errors).toHaveLength(0);
+        });
+
+        it('should return a Spanish error when cargo exceeds 120 chars', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+                cargo: 'a'.repeat(121),
+            });
+
+            const errors = await validate(dto);
+            const cargoError = errors.find((e) => e.property === 'cargo');
+
+            expect(cargoError).toBeDefined();
+            expect(Object.values(cargoError!.constraints ?? {})).toContain(
+                'El cargo no debe superar los 120 caracteres.',
+            );
+        });
+
+        // Mantis #269: el teléfono es opcional, pero al enviarse debe tener
+        // formato internacional (debe iniciar con "+")
+        it('should accept a contact without the telefono field', async () => {
+            const dto = plainToInstance(HttpCreateContactDto, {
+                nombres: 'Juan',
+                correo: 'juan@example.com',
+                idOrganizacion: 'org-1',
+            });
+
+            const errors = await validate(dto);
+
+            expect(errors).toHaveLength(0);
+        });
+
+        it.each(['+51987654321', '+51 987654321', '+1 234 567 8900'])(
+            'should accept a valid international telefono: %s',
+            async (telefono) => {
+                const dto = plainToInstance(HttpCreateContactDto, {
+                    nombres: 'Juan',
+                    correo: 'juan@example.com',
+                    idOrganizacion: 'org-1',
+                    telefono,
+                });
+
+                const errors = await validate(dto);
+                const telefonoError = errors.find(
+                    (e) => e.property === 'telefono',
+                );
+
+                expect(telefonoError).toBeUndefined();
+            },
+        );
+
+        it.each(['987654321', 'abc123', '+', '51-987654321'])(
+            'should reject a telefono without international format: %s',
+            async (telefono) => {
+                const dto = plainToInstance(HttpCreateContactDto, {
+                    nombres: 'Juan',
+                    correo: 'juan@example.com',
+                    idOrganizacion: 'org-1',
+                    telefono,
+                });
+
+                const errors = await validate(dto);
+                const telefonoError = errors.find(
+                    (e) => e.property === 'telefono',
+                );
+
+                expect(telefonoError).toBeDefined();
+                expect(
+                    Object.values(telefonoError!.constraints ?? {}),
+                ).toContain(
+                    'El teléfono debe tener formato internacional: "+" seguido del código de país y el número, p. ej. +51987654321.',
+                );
+            },
+        );
     });
 
     describe('HttpUpdateContactDto', () => {
@@ -81,6 +183,51 @@ describe('Organization DTOs', () => {
             expect(dto.nombreComercial).toBe('Empresa');
             expect(dto.ruc).toBe('12345678901');
             expect(dto.tipo).toBe('CLIENTE');
+        });
+
+        // Mantis #195: los mensajes de validación deben estar en español
+        it('should return a Spanish error when ubicacion exceeds 100 chars', async () => {
+            const dto = plainToInstance(HttpCreateOrganizationDto, {
+                codigoCliente: 'CLI-001',
+                nombre: 'Empresa SAC',
+                nombreComercial: 'Empresa',
+                tipo: 'EMPRESA_NACIONAL',
+                tamano: 'GRANDE',
+                idAuthor: 1,
+                ubicacion: 'a'.repeat(101),
+            });
+
+            const errors = await validate(dto);
+            const ubicacionError = errors.find(
+                (e) => e.property === 'ubicacion',
+            );
+
+            expect(ubicacionError).toBeDefined();
+            expect(Object.values(ubicacionError!.constraints ?? {})).toContain(
+                'La ubicación debe tener entre 1 y 100 caracteres.',
+            );
+        });
+
+        it('should return a Spanish error when actividadEconomica exceeds its limit', async () => {
+            const dto = plainToInstance(HttpCreateOrganizationDto, {
+                codigoCliente: 'CLI-001',
+                nombre: 'Empresa SAC',
+                nombreComercial: 'Empresa',
+                tipo: 'EMPRESA_NACIONAL',
+                tamano: 'GRANDE',
+                idAuthor: 1,
+                actividadEconomica: 'a'.repeat(121),
+            });
+
+            const errors = await validate(dto);
+            const actividadError = errors.find(
+                (e) => e.property === 'actividadEconomica',
+            );
+
+            expect(actividadError).toBeDefined();
+            expect(Object.values(actividadError!.constraints ?? {})).toContain(
+                'La actividad económica debe tener entre 1 y 120 caracteres.',
+            );
         });
     });
 

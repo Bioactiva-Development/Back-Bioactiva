@@ -5,7 +5,9 @@ import { ConflictDomainException } from '@/shared/domain/exceptions/conflict-dom
 describe('Invitation Exceptions', () => {
     describe('InvitationRevokedException', () => {
         it('should create instance with message', () => {
-            const exception = new InvitationRevokedException('Token has been revoked');
+            const exception = new InvitationRevokedException(
+                'Token has been revoked',
+            );
             expect(exception).toBeInstanceOf(ConflictDomainException);
             expect(exception.message).toBe('Token has been revoked');
         });

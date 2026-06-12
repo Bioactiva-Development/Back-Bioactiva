@@ -2,9 +2,7 @@ import { ResetTokenValidatorService } from '@/modules/reset_password/application
 import { maskEmail } from '@/shared/domain/utils/mask-email';
 
 export class ValidateResetTokenUseCase {
-    constructor(
-        private readonly tokenValidator: ResetTokenValidatorService,
-    ) {}
+    constructor(private readonly tokenValidator: ResetTokenValidatorService) {}
 
     async execute(token: string): Promise<{ correo: string }> {
         const { user } = await this.tokenValidator.resolveValidToken(token);

@@ -5,6 +5,7 @@ import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
+import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 
 export class CreateOrganizationUseCase {
     constructor(
@@ -27,6 +28,14 @@ export class CreateOrganizationUseCase {
             if (existingOrg) {
                 throw new OrganizationAlreadyExistsException(dto.ruc);
             }
+        }
+
+        const existingByCode =
+            await this.organizationRepository.findByCodigoCliente(
+                dto.codigoCliente,
+            );
+        if (existingByCode) {
+            throw new DuplicateClientCodeException(dto.codigoCliente);
         }
 
         const organization = new Organization(
