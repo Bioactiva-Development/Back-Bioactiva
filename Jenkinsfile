@@ -75,9 +75,12 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE')
+                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE'),
+                    file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
+                        mkdir -p credentials
+                        cp "$RECAPTCHA_FILE" credentials/recaptcha-account.json
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
