@@ -50,7 +50,7 @@ export class NotificationsController {
         @Body() dto: HttpCreateReminderDto,
     ): Promise<NotificationResponseDto> {
         const notification = await this.createReminderUseCase.execute({
-            idActividad: dto.idActividad,
+            idLead: dto.idLead,
             fechaEnvio: dto.fechaEnvio,
             idTemplate: dto.idTemplate,
             asunto: dto.asunto,
@@ -68,7 +68,7 @@ export class NotificationsController {
         @Body() dto: HttpCreateFollowUpDto,
     ): Promise<NotificationResponseDto> {
         const notification = await this.createFollowUpUseCase.execute({
-            idActividad: dto.idActividad,
+            idLead: dto.idLead,
             internal: {
                 fechaEnvio: dto.internal.fechaEnvio,
                 idTemplate: dto.internal.idTemplate,

@@ -4,17 +4,22 @@ import {
     IsDate,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     Length,
     Min,
 } from 'class-validator';
 
 export class HttpCreateReminderDto {
-    @ApiProperty({ example: 1, description: 'ID de la actividad asociada' })
+    @ApiProperty({
+        example: 1,
+        description:
+            'ID del lead. La actividad activa (única) se resuelve en el servidor',
+    })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idActividad!: number;
+    idLead!: number;
 
     @ApiProperty({
         example: '2026-06-10T14:00:00.000Z',
@@ -25,11 +30,18 @@ export class HttpCreateReminderDto {
     @IsDate()
     fechaEnvio!: Date;
 
-    @ApiProperty({ example: 1, description: 'ID de la plantilla de correo' })
+    @ApiProperty({
+        example: 1,
+        required: false,
+        nullable: true,
+        description:
+            'ID de la plantilla de correo (opcional). Si se omite, se usa el asunto/cuerpo enviado',
+    })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    idTemplate: number | null = null;
 
     @ApiProperty({
         example: 'Recordatorio: actividad pendiente',
