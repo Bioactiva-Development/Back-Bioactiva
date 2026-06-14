@@ -81,7 +81,7 @@ describe('Notifications module', () => {
             createReminder.execute.mockResolvedValue(sampleReminder());
 
             const result = await controller.createReminder({
-                idActividad: 1,
+                idLead: 2,
                 fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
                 idTemplate: 5,
                 asunto: 'Asunto',

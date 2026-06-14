@@ -17,6 +17,11 @@ export interface ActivityContext {
  * notificaciones a los repositorios de actividades/leads/usuarios.
  */
 export interface ActivityContextReaderPort {
-    getByActivityId(idActividad: number): Promise<ActivityContext | null>;
+    /**
+     * Actividad activa (única por regla de negocio) del lead. La notificación se
+     * asocia siempre a esta actividad; el formulario solo la muestra de forma
+     * informativa. Devuelve null si el lead no tiene una actividad activa.
+     */
+    getActiveActivityByLead(idLead: number): Promise<ActivityContext | null>;
     getUserEmail(idUsuario: number): Promise<string | null>;
 }

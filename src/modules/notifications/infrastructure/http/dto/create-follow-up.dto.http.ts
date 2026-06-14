@@ -5,6 +5,7 @@ import {
     IsEmail,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     Length,
     Min,
@@ -19,12 +20,15 @@ export class HttpFollowUpInternalDto {
 
     @ApiProperty({
         example: 1,
-        description: 'ID de la plantilla del correo interno',
+        required: false,
+        nullable: true,
+        description: 'ID de la plantilla del correo interno (opcional)',
     })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    idTemplate: number | null = null;
 
     @ApiProperty({ example: 'Revisión de actividad' })
     @IsString()
@@ -56,12 +60,15 @@ export class HttpFollowUpExternalDto {
 
     @ApiProperty({
         example: 2,
-        description: 'ID de la plantilla del correo externo',
+        required: false,
+        nullable: true,
+        description: 'ID de la plantilla del correo externo (opcional)',
     })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    idTemplate: number | null = null;
 
     @ApiProperty({ example: 'Seguimiento de su propuesta' })
     @IsString()
@@ -76,11 +83,15 @@ export class HttpFollowUpExternalDto {
 }
 
 export class HttpCreateFollowUpDto {
-    @ApiProperty({ example: 1, description: 'ID de la actividad asociada' })
+    @ApiProperty({
+        example: 1,
+        description:
+            'ID del lead. La actividad activa (única) se resuelve en el servidor',
+    })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idActividad!: number;
+    idLead!: number;
 
     @ApiProperty({ type: HttpFollowUpInternalDto })
     @ValidateNested()

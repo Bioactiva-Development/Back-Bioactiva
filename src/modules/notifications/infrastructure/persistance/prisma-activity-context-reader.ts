@@ -9,24 +9,36 @@ import {
 export class PrismaActivityContextReader implements ActivityContextReaderPort {
     constructor(private readonly prisma: PrismaService) {}
 
-    async getByActivityId(
-        idActividad: number,
+    async getActiveActivityByLead(
+        idLead: number,
     ): Promise<ActivityContext | null> {
+        // Una sola actividad activa por lead (regla de negocio). "Activa" = aún
+        // pendiente y no eliminada; REALIZADA/CANCELADA no se consideran activas.
         const actividad = await this.prisma.actividad.findFirst({
-            where: { id: idActividad, deletedAt: null },
-            include: {
-                responsable: { select: { correo: true } },
-                lead: {
-                    include: {
-                        contacto: { select: { correo: true, correo2: true } },
-                    },
-                },
-            },
+            where: { idLead, estado: 'PENDIENTE', deletedAt: null },
+            include: this.contextInclude,
         });
-        if (!actividad) {
-            return null;
-        }
+        return actividad ? this.toContext(actividad) : null;
+    }
 
+    private readonly contextInclude = {
+        responsable: { select: { correo: true } },
+        lead: {
+            include: {
+                contacto: { select: { correo: true, correo2: true } },
+            },
+        },
+    } as const;
+
+    private toContext(actividad: {
+        id: number;
+        idLead: number;
+        idResponsable: number;
+        fechaFin: Date;
+        estado: string;
+        responsable: { correo: string };
+        lead: { contacto: { correo: string | null; correo2: string | null } | null };
+    }): ActivityContext {
         const contacto = actividad.lead.contacto;
         const contactEmails = [contacto?.correo, contacto?.correo2].filter(
             (email): email is string => Boolean(email),

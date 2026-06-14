@@ -3,6 +3,7 @@ import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-c
 import { NotificationType } from '@/modules/notifications/domain/enums/notification-type';
 import { ClientEmailRequiredException } from '@/modules/notifications/domain/exceptions/client-email-required.exception';
 import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
+import { LeadHasNoActiveActivityException } from '@/modules/notifications/domain/exceptions/lead-has-no-active-activity.exception';
 
 describe('Notifications module', () => {
     describe('CreateFollowUpUseCase', () => {
@@ -23,17 +24,17 @@ describe('Notifications module', () => {
         };
 
         const command = () => ({
-            idActividad: 1,
+            idLead: 2,
             internal: {
                 fechaEnvio: new Date(2099, 0, 1, 14, 0, 0),
-                idTemplate: 5,
+                idTemplate: 5 as number | null,
                 asunto: 'Interno',
                 cuerpo: 'Cuerpo interno',
             },
             external: {
                 correoCliente: 'cliente@empresa.com',
                 fechaEnvio: new Date(2099, 0, 1, 16, 0, 0),
-                idTemplate: 6,
+                idTemplate: 6 as number | null,
                 asunto: 'Externo',
                 cuerpo: 'Cuerpo externo',
             },
@@ -63,7 +64,7 @@ describe('Notifications module', () => {
                     .mockResolvedValue({ id: 1, activo: true }),
             };
             contextReader = {
-                getByActivityId: jest.fn().mockResolvedValue(context),
+                getActiveActivityByLead: jest.fn().mockResolvedValue(context),
             };
             useCase = new CreateFollowUpUseCase(
                 repository,
@@ -98,6 +99,26 @@ describe('Notifications module', () => {
             await expect(useCase.execute(cmd)).rejects.toThrow(
                 InvalidScheduleDateException,
             );
+        });
+
+        it('throws when the lead has no active activity', async () => {
+            contextReader.getActiveActivityByLead.mockResolvedValue(null);
+            await expect(useCase.execute(command())).rejects.toThrow(
+                LeadHasNoActiveActivityException,
+            );
+        });
+
+        it('creates a follow-up without templates (manual subject/body)', async () => {
+            const cmd = command();
+            cmd.internal.idTemplate = null;
+            cmd.external.idTemplate = null;
+
+            const result = await useCase.execute(cmd);
+
+            expect(result.tipo).toBe(NotificationType.SEGUIMIENTO);
+            expect(result.id_template_interno).toBeNull();
+            expect(result.id_template_externo).toBeNull();
+            expect(templateReader.findActiveById).not.toHaveBeenCalled();
         });
     });
 });

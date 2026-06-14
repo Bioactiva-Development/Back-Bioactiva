@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { ActivityController } from '@/modules/activities/infrastructure/http/activity.controller';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
+import { CreateActivityCalendarEventUseCase } from '@/modules/activities/application/use-cases/create-activity-calendar-event.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
@@ -13,6 +14,7 @@ describe('ActivityController', () => {
     let controller: ActivityController;
     const mocks = {
         create: { execute: jest.fn() as any },
+        createCalendarEvent: { execute: jest.fn() as any },
         get: { execute: jest.fn() as any },
         list: { execute: jest.fn() as any },
         update: { execute: jest.fn() as any },
@@ -49,6 +51,10 @@ describe('ActivityController', () => {
             controllers: [ActivityController],
             providers: [
                 { provide: CreateActivityUseCase, useValue: mocks.create },
+                {
+                    provide: CreateActivityCalendarEventUseCase,
+                    useValue: mocks.createCalendarEvent,
+                },
                 { provide: GetActivityByIdUseCase, useValue: mocks.get },
                 { provide: ListActivitiesUseCase, useValue: mocks.list },
                 { provide: UpdateActivityUseCase, useValue: mocks.update },
@@ -72,6 +78,13 @@ describe('ActivityController', () => {
         };
         const result = await controller.create(httpDto);
         expect(mocks.create.execute).toHaveBeenCalled();
+        expect(result.id).toBe(1);
+    });
+
+    it('createCalendarEvent delegates and maps to a response dto', async () => {
+        mocks.createCalendarEvent.execute.mockResolvedValue(enriched);
+        const result = await controller.createCalendarEvent(1);
+        expect(mocks.createCalendarEvent.execute).toHaveBeenCalledWith(1);
         expect(result.id).toBe(1);
     });
 

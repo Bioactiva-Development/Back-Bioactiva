@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
     ACTIVITY_REPOSITORY,
@@ -12,21 +11,14 @@ import {
     USER_REPOSITORY,
     type UserRepositoryPort,
 } from '@/modules/users/domain/ports/user-repository.port';
-import {
-    CALENDAR_SYNC,
-    type CalendarSyncPort,
-} from '@/modules/integrations/domain/ports/calendar-sync.port';
 import { CreateActivityDto } from '@/modules/activities/application/dto/create-activity.dto';
 import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { EstadoActividad } from '@/modules/activities/domain/enums/estado-actividad';
-import { TipoActividad } from '@/modules/activities/domain/enums/tipo-actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
 import { PendingActivityExistsException } from '@/modules/activities/domain/exceptions/pending-activity-exists.exception';
 
 export class CreateActivityUseCase {
-    private readonly logger = new Logger(CreateActivityUseCase.name);
-
     constructor(
         @Inject(ACTIVITY_REPOSITORY)
         private readonly activityRepository: ActivityRepository,
@@ -34,8 +26,6 @@ export class CreateActivityUseCase {
         private readonly leadRepository: LeadRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: UserRepositoryPort,
-        @Inject(CALENDAR_SYNC)
-        private readonly calendarSync: CalendarSyncPort,
     ) {}
 
     async execute(dto: CreateActivityDto) {
@@ -89,62 +79,9 @@ export class CreateActivityUseCase {
             null,
         );
 
-        const result =
-            await this.activityRepository.saveWithRelations(actividad);
-
-        if (dto.syncWithMicrosoft) {
-            await this.syncWithMicrosoft(
-                result.activity,
-                dto.createTeamsMeeting,
-            );
-        }
-
-        return result;
-    }
-
-    /**
-     * Sincroniza la actividad con Outlook/Teams. Cualquier error de Microsoft
-     * se captura y registra sin afectar la creación de la actividad (RN-003).
-     * Solo se ejecuta si el responsable tiene Microsoft conectado (RN-001).
-     */
-    private async syncWithMicrosoft(
-        activity: Actividad,
-        createTeamsMeeting: boolean,
-    ): Promise<void> {
-        try {
-            const connected = await this.calendarSync.isUserConnected(
-                activity.id_responsable,
-            );
-            if (!connected) {
-                return;
-            }
-
-            const eventInput = {
-                subject: activity.nombre_actividad,
-                start: activity.fecha_inicio,
-                end: activity.fecha_fin,
-                body: activity.notas,
-            };
-
-            // Solo las REUNION con createTeamsMeeting se crean como online meeting;
-            // así el evento y la reunión de Teams se obtienen en una sola llamada.
-            const onlineMeeting =
-                activity.tipo === TipoActividad.REUNION && createTeamsMeeting;
-
-            const result = await this.calendarSync.createCalendarEvent(
-                activity.id_responsable,
-                eventInput,
-                { onlineMeeting },
-            );
-
-            activity.outlook_event_id = result.outlookEventId;
-            activity.teams_meeting_url = result.teamsJoinUrl;
-
-            await this.activityRepository.save(activity);
-        } catch (error) {
-            this.logger.error(
-                `Falló la sincronización con Microsoft para la actividad ${activity.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-        }
+        // El evento de Outlook/Teams ya no se crea aquí: se programa de forma
+        // explícita desde el Calendario (CreateActivityCalendarEventUseCase),
+        // según CU007 (pasos 83-90).
+        return this.activityRepository.saveWithRelations(actividad);
     }
 }
