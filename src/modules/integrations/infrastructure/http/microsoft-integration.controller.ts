@@ -18,6 +18,10 @@ import { DisconnectMicrosoftAccountUseCase } from '@/modules/integrations/applic
 import { OAuthCallbackQueryDto } from '@/modules/integrations/infrastructure/http/dto/oauth-callback-query.dto';
 import { ConnectUrlDto } from '@/modules/integrations/application/dto/connect-url.dto';
 import { ConnectionStatusDto } from '@/modules/integrations/application/dto/connection-status.dto';
+import {
+    DEFAULT_RETURN_PATH,
+    sanitizeReturnPath,
+} from '@/modules/integrations/application/microsoft-return-path';
 
 const FRONTEND_URL =
     process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3120';
@@ -33,8 +37,11 @@ export class MicrosoftIntegrationController {
 
     @Get('connect')
     @UseGuards(JwtAuthGuard)
-    async connect(@CurrentUser() user: User): Promise<ConnectUrlDto> {
-        return await this.connectUseCase.execute(user.id!);
+    async connect(
+        @CurrentUser() user: User,
+        @Query('returnTo') returnTo?: string,
+    ): Promise<ConnectUrlDto> {
+        return await this.connectUseCase.execute(user.id!, returnTo);
     }
 
     @Get('callback')
@@ -42,13 +49,28 @@ export class MicrosoftIntegrationController {
         @Query() query: OAuthCallbackQueryDto,
         @Res() res: Response,
     ): Promise<void> {
+        const stateParts = query.state.split(':');
+        const userId = Number.parseInt(stateParts[0], 10);
+        const returnPath = this.resolveReturnPath(stateParts[2]);
         try {
-            const stateParts = query.state.split(':');
-            const userId = Number.parseInt(stateParts[0], 10);
             await this.callbackUseCase.execute(query.code, userId);
-            return res.redirect(`${FRONTEND_URL}/ajustes?microsoft=connected`);
+            return res.redirect(
+                `${FRONTEND_URL}${returnPath}?microsoft=connected`,
+            );
         } catch {
-            return res.redirect(`${FRONTEND_URL}/ajustes?microsoft=error`);
+            return res.redirect(`${FRONTEND_URL}${returnPath}?microsoft=error`);
+        }
+    }
+
+    /** Reconstruye la ruta de retorno guardada en el `state` (saneada). */
+    private resolveReturnPath(encoded?: string): string {
+        if (!encoded) {
+            return DEFAULT_RETURN_PATH;
+        }
+        try {
+            return sanitizeReturnPath(decodeURIComponent(encoded));
+        } catch {
+            return DEFAULT_RETURN_PATH;
         }
     }
 

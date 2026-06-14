@@ -9,7 +9,5 @@ export class CreateActivityDto {
         public readonly tipo: TipoActividad,
         public readonly notas: string | null,
         public readonly idResponsable: number,
-        public readonly syncWithMicrosoft: boolean = false,
-        public readonly createTeamsMeeting: boolean = false,
     ) {}
 }

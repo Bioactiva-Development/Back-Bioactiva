@@ -8,6 +8,7 @@ import { UsersModule } from '@/modules/users/user.module';
 import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
+import { CreateActivityCalendarEventUseCase } from '@/modules/activities/application/use-cases/create-activity-calendar-event.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
@@ -31,6 +32,7 @@ import { DeleteActivityUseCase } from '@/modules/activities/application/use-case
             useExisting: PrismaActivityRepository,
         },
         CreateActivityUseCase,
+        CreateActivityCalendarEventUseCase,
         GetActivityByIdUseCase,
         ListActivitiesUseCase,
         UpdateActivityUseCase,
