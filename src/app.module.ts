@@ -19,6 +19,7 @@ import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { ResetModule } from '@/modules/reset/reset.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { DataManagementModule } from '@/modules/data-management/data-management.module';
 
 @Module({
     imports: [
@@ -36,6 +37,7 @@ import { NotificationsModule } from '@/modules/notifications/notifications.modul
         DashboardModule,
         ResetModule,
         NotificationsModule,
+        DataManagementModule,
 
         ConfigModule.forRoot({
             isGlobal: true,

@@ -51,7 +51,7 @@ export class NotificationsController {
     ): Promise<NotificationResponseDto> {
         const notification = await this.createReminderUseCase.execute({
             idLead: dto.idLead,
-            fechaEnvio: dto.fechaEnvio,
+            minutosAntes: dto.minutosAntes,
             idTemplate: dto.idTemplate,
             asunto: dto.asunto,
             cuerpo: dto.cuerpo,

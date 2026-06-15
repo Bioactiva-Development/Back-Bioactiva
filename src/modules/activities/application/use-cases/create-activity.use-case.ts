@@ -7,10 +7,6 @@ import {
     LEAD_REPOSITORY,
     type LeadRepository,
 } from '@/modules/leads/domain/ports/lead-repository.port';
-import {
-    USER_REPOSITORY,
-    type UserRepositoryPort,
-} from '@/modules/users/domain/ports/user-repository.port';
 import { CreateActivityDto } from '@/modules/activities/application/dto/create-activity.dto';
 import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { EstadoActividad } from '@/modules/activities/domain/enums/estado-actividad';
@@ -24,8 +20,6 @@ export class CreateActivityUseCase {
         private readonly activityRepository: ActivityRepository,
         @Inject(LEAD_REPOSITORY)
         private readonly leadRepository: LeadRepository,
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: UserRepositoryPort,
     ) {}
 
     async execute(dto: CreateActivityDto) {
@@ -36,14 +30,10 @@ export class CreateActivityUseCase {
             );
         }
 
-        const responsable = await this.userRepository.findById(
-            dto.idResponsable,
-        );
-        if (!responsable) {
-            throw new ActivityNotFoundException(
-                `Responsable con id ${dto.idResponsable} no encontrado`,
-            );
-        }
+        // El responsable de la actividad es siempre el encargado del lead
+        // (regla de negocio: una actividad tiene un único responsable y es el
+        // encargado del lead). No se toma de la petición.
+        const idResponsable = lead.id_encargado;
 
         if (dto.fechaFin <= dto.fechaInicio) {
             throw new InvalidActivityDateException(
@@ -73,7 +63,7 @@ export class CreateActivityUseCase {
             null,
             false,
             dto.idLead,
-            dto.idResponsable,
+            idResponsable,
             new Date(),
             new Date(),
             null,

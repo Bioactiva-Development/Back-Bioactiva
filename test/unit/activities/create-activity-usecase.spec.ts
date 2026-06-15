@@ -13,7 +13,8 @@ import { PendingActivityExistsException } from '@/modules/activities/domain/exce
  * ---------------------
  * Verifica las validaciones de creación con repositorios mockeados:
  * - Lead existente y no eliminado (RN-001) → si no, ActivityNotFoundException.
- * - Responsable existente (RN-002) → si no, ActivityNotFoundException.
+ * - El responsable es SIEMPRE el encargado del lead (no se elige): se deriva de
+ *   lead.id_encargado, no de la petición.
  * - fechaInicio < fechaFin (RN-003) → InvalidActivityDateException.
  * - Sin actividad PENDIENTE previa del lead (RN-004) → PendingActivityExistsException.
  * - La actividad creada inicia en estado PENDIENTE (RN-005).
@@ -23,10 +24,9 @@ describe('Activities module', () => {
         let useCase: CreateActivityUseCase;
         let activityRepository: any;
         let leadRepository: any;
-        let userRepository: any;
 
         const validLeadId = 1;
-        const validResponsableId = 5;
+        const leadEncargadoId = 5;
         const fechaInicio = new Date('2026-06-01T10:00:00.000Z');
         const fechaFin = new Date('2026-06-01T11:00:00.000Z');
 
@@ -40,7 +40,6 @@ describe('Activities module', () => {
                 overrides?.fechaFin ?? fechaFin,
                 overrides?.tipo ?? TipoActividad.LLAMADA,
                 overrides?.notas !== undefined ? overrides.notas : null,
-                overrides?.idResponsable ?? validResponsableId,
             );
 
         beforeEach(() => {
@@ -50,32 +49,34 @@ describe('Activities module', () => {
                 save: jest.fn(),
             };
             leadRepository = { findById: jest.fn() };
-            userRepository = { findById: jest.fn() };
 
             useCase = new CreateActivityUseCase(
                 activityRepository,
                 leadRepository,
-                userRepository,
             );
         });
 
-        it('should create activity with valid data', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+        it('should create activity assigning the lead encargado as responsable', async () => {
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
-            activityRepository.saveWithRelations.mockResolvedValue({
-                activity: {},
-            });
+
+            let savedResponsable: number | null = null;
+            activityRepository.saveWithRelations.mockImplementation(
+                (activity: Actividad) => {
+                    savedResponsable = activity.id_responsable;
+                    return { activity };
+                },
+            );
 
             const result = await useCase.execute(buildDto());
 
             expect(result).toBeDefined();
             expect(leadRepository.findById).toHaveBeenCalledWith(validLeadId);
-            expect(userRepository.findById).toHaveBeenCalledWith(
-                validResponsableId,
-            );
+            // El responsable se deriva del encargado del lead, no de la petición.
+            expect(savedResponsable).toBe(leadEncargadoId);
             expect(activityRepository.findPendingByLead).toHaveBeenCalledWith(
                 validLeadId,
             );
@@ -91,19 +92,10 @@ describe('Activities module', () => {
             expect(activityRepository.saveWithRelations).not.toHaveBeenCalled();
         });
 
-        it('should throw when responsable does not exist', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue(null);
-
-            await expect(useCase.execute(buildDto())).rejects.toThrow(
-                ActivityNotFoundException,
-            );
-        });
-
         it('should throw when fechaFin is before or equal to fechaInicio', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
 
             const dto = buildDto({
@@ -117,9 +109,9 @@ describe('Activities module', () => {
         });
 
         it('should throw when a pending activity already exists for the lead', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue({
                 id: 99,
@@ -133,9 +125,9 @@ describe('Activities module', () => {
         });
 
         it('should assign PENDIENTE as initial state', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
 
@@ -153,9 +145,9 @@ describe('Activities module', () => {
         });
 
         it('no longer creates the Outlook/Teams event on creation', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
             activityRepository.saveWithRelations.mockResolvedValue({

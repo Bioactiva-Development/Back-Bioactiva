@@ -8,6 +8,5 @@ export class CreateActivityDto {
         public readonly fechaFin: Date,
         public readonly tipo: TipoActividad,
         public readonly notas: string | null,
-        public readonly idResponsable: number,
     ) {}
 }

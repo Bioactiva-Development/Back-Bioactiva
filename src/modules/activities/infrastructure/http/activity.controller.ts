@@ -81,7 +81,6 @@ export class ActivityController {
             httpDto.fechaFin,
             httpDto.tipo,
             httpDto.notas ?? null,
-            httpDto.idResponsable,
         );
         const result = await this.createActivityUseCase.execute(createDto);
         return new ActivityResponseDto(result);

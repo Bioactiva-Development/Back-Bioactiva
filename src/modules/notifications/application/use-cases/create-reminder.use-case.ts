@@ -16,10 +16,7 @@ import {
     type ActivityContextReaderPort,
 } from '@/modules/notifications/domain/ports/activity-context-reader.port';
 import { ScheduledNotification } from '@/modules/notifications/domain/entities/scheduled-notification';
-import {
-    assertInternalDate,
-    ensureBusinessHour,
-} from '@/modules/notifications/domain/services/notification-schedule.policy';
+import { computeReminderSendAt } from '@/modules/notifications/domain/services/notification-schedule.policy';
 import { LeadHasNoActiveActivityException } from '@/modules/notifications/domain/exceptions/lead-has-no-active-activity.exception';
 import { DuplicateNotificationException } from '@/modules/notifications/domain/exceptions/duplicate-notification.exception';
 import { EmailTemplateNotFoundException } from '@/modules/notifications/domain/exceptions/email-template-not-found.exception';
@@ -67,8 +64,14 @@ export class CreateReminderUseCase {
             }
         }
 
-        const fechaEnvio = ensureBusinessHour(command.fechaEnvio);
-        assertInternalDate(fechaEnvio, context.fechaFin, new Date());
+        // El recordatorio se programa N minutos antes de que finalice la
+        // actividad (máx. 2 horas antes). No se ajusta a horario laboral: debe
+        // dispararse exactamente con la antelación pedida respecto a la fechaFin.
+        const fechaEnvio = computeReminderSendAt(
+            context.fechaFin,
+            command.minutosAntes,
+            new Date(),
+        );
 
         const notification = ScheduledNotification.createReminder({
             idActividad: context.idActividad,
