@@ -15,9 +15,15 @@ import {
     ACTIVITY_CONTEXT_READER,
     type ActivityContextReaderPort,
 } from '@/modules/notifications/domain/ports/activity-context-reader.port';
-import { ScheduledNotification } from '@/modules/notifications/domain/entities/scheduled-notification';
+import {
+    ScheduledNotification,
+    type FollowUpInstanceInput,
+} from '@/modules/notifications/domain/entities/scheduled-notification';
 import {
     assertExternalAfterInternal,
+    assertExternalDate,
+    assertInstanceCount,
+    assertInstancesChained,
     assertInternalDate,
     ensureBusinessHour,
 } from '@/modules/notifications/domain/services/notification-schedule.policy';
@@ -58,52 +64,79 @@ export class CreateFollowUpUseCase {
             throw new DuplicateNotificationException();
         }
 
-        await this.assertTemplateExists(command.internal.idTemplate);
-        await this.assertTemplateExists(command.external.idTemplate);
+        assertInstanceCount(command.instancias.length);
 
         if (
-            !command.external.correoCliente ||
-            !context.contactEmails.includes(command.external.correoCliente)
+            !command.correoCliente ||
+            !context.contactEmails.includes(command.correoCliente)
         ) {
             throw new ClientEmailRequiredException();
         }
 
-        const internalDate = ensureBusinessHour(command.internal.fechaEnvio);
-        const externalDate = ensureBusinessHour(command.external.fechaEnvio);
-        assertInternalDate(internalDate, context.fechaFin, new Date());
-        assertExternalAfterInternal(internalDate, externalDate);
+        const now = new Date();
+        const instancias: FollowUpInstanceInput[] = [];
+        let previousExternal: Date | null = null;
+
+        for (const instancia of command.instancias) {
+            await this.assertTemplateExists(instancia.internal.idTemplate);
+            await this.assertTemplateExists(instancia.external.idTemplate);
+
+            const internalDate = ensureBusinessHour(
+                instancia.internal.fechaEnvio,
+            );
+            const externalDate = ensureBusinessHour(
+                instancia.external.fechaEnvio,
+            );
+            assertInternalDate(internalDate, context.fechaFin, now);
+            assertExternalDate(externalDate, context.fechaFin, now);
+            assertExternalAfterInternal(internalDate, externalDate);
+            if (previousExternal) {
+                assertInstancesChained(previousExternal, internalDate);
+            }
+            previousExternal = externalDate;
+
+            instancias.push({
+                internal: {
+                    asunto: instancia.internal.asunto,
+                    cuerpo: instancia.internal.cuerpo,
+                    fechaEnvio: internalDate,
+                    idTemplate: instancia.internal.idTemplate,
+                },
+                external: {
+                    asunto: instancia.external.asunto,
+                    cuerpo: instancia.external.cuerpo,
+                    fechaEnvio: externalDate,
+                    idTemplate: instancia.external.idTemplate,
+                },
+            });
+        }
 
         const notification = ScheduledNotification.createFollowUp({
             idActividad: context.idActividad,
             idLead: context.idLead,
             idResponsable: context.idResponsable,
-            internal: {
-                asunto: command.internal.asunto,
-                cuerpo: command.internal.cuerpo,
-                fechaEnvio: internalDate,
-                idTemplate: command.internal.idTemplate,
-            },
-            external: {
-                correoCliente: command.external.correoCliente,
-                asunto: command.external.asunto,
-                cuerpo: command.external.cuerpo,
-                fechaEnvio: externalDate,
-                idTemplate: command.external.idTemplate,
-            },
+            correoCliente: command.correoCliente,
+            instancias,
         });
 
         const saved = await this.notificationRepository.save(notification);
 
-        const internalJobId = await this.scheduler.scheduleInternal({
-            notificationId: saved.id!,
-            sendAt: internalDate,
-        });
-        const externalJobId = await this.scheduler.scheduleExternal({
-            notificationId: saved.id!,
-            sendAt: externalDate,
-        });
-        saved.assignInternalJob(internalJobId);
-        saved.assignExternalJob(externalJobId);
+        for (const instancia of saved.instancias) {
+            const internalJobId = await this.scheduler.scheduleInstanceInternal(
+                {
+                    instanciaId: instancia.id!,
+                    sendAt: instancia.fecha_envio_interno,
+                },
+            );
+            const externalJobId = await this.scheduler.scheduleInstanceExternal(
+                {
+                    instanciaId: instancia.id!,
+                    sendAt: instancia.fecha_envio_externo,
+                },
+            );
+            instancia.assignInternalJob(internalJobId);
+            instancia.assignExternalJob(externalJobId);
+        }
 
         return this.notificationRepository.save(saved);
     }

@@ -1,14 +1,20 @@
 import {
     NotificacionProgramada as PrismaNotificacionProgramada,
+    SeguimientoInstancia as PrismaSeguimientoInstancia,
     Prisma,
 } from '@prisma/client';
 import { ScheduledNotification } from '@/modules/notifications/domain/entities/scheduled-notification';
 import { NotificationStatus } from '@/modules/notifications/domain/enums/notification-status';
 import { NotificationType } from '@/modules/notifications/domain/enums/notification-type';
+import { FollowUpInstanceMapper } from '@/modules/notifications/infrastructure/persistance/mappers/follow-up-instance.mapper';
+
+type NotificacionProgramadaWithInstancias = PrismaNotificacionProgramada & {
+    instancias: PrismaSeguimientoInstancia[];
+};
 
 export class NotificationMapper {
     static toDomain(
-        record: PrismaNotificacionProgramada,
+        record: NotificacionProgramadaWithInstancias,
     ): ScheduledNotification {
         return new ScheduledNotification(
             record.id,
@@ -24,12 +30,10 @@ export class NotificationMapper {
             record.jobIdInterno,
             record.enviadoInterno,
             record.correoCliente,
-            record.asuntoExterno,
-            record.cuerpoExterno,
-            record.fechaEnvioExterno,
-            record.idTemplateExterno,
-            record.jobIdExterno,
-            record.enviadoExterno,
+            record.instancias
+                .slice()
+                .sort((a, b) => a.orden - b.orden)
+                .map((instancia) => FollowUpInstanceMapper.toDomain(instancia)),
             record.createdAt,
             record.updatedAt,
         );
@@ -37,13 +41,13 @@ export class NotificationMapper {
 
     static toCreateData(
         notification: ScheduledNotification,
-    ): Prisma.NotificacionProgramadaUncheckedCreateInput {
+    ): Prisma.NotificacionProgramadaCreateInput {
         return {
             tipo: notification.tipo,
             estado: notification.estado,
-            idActividad: notification.id_actividad,
-            idLead: notification.id_lead,
-            idResponsable: notification.id_responsable,
+            actividad: { connect: { id: notification.id_actividad } },
+            lead: { connect: { id: notification.id_lead } },
+            responsable: { connect: { id: notification.id_responsable } },
             asuntoInterno: notification.asunto_interno,
             cuerpoInterno: notification.cuerpo_interno,
             fechaEnvioInterno: notification.fecha_envio_interno,
@@ -51,12 +55,11 @@ export class NotificationMapper {
             jobIdInterno: notification.job_id_interno,
             enviadoInterno: notification.enviado_interno,
             correoCliente: notification.correo_cliente,
-            asuntoExterno: notification.asunto_externo,
-            cuerpoExterno: notification.cuerpo_externo,
-            fechaEnvioExterno: notification.fecha_envio_externo,
-            idTemplateExterno: notification.id_template_externo,
-            jobIdExterno: notification.job_id_externo,
-            enviadoExterno: notification.enviado_externo,
+            instancias: {
+                create: notification.instancias.map((instancia) =>
+                    FollowUpInstanceMapper.toCreateData(instancia),
+                ),
+            },
         };
     }
 
@@ -71,11 +74,6 @@ export class NotificationMapper {
             jobIdInterno: notification.job_id_interno,
             enviadoInterno: notification.enviado_interno,
             correoCliente: notification.correo_cliente,
-            asuntoExterno: notification.asunto_externo,
-            cuerpoExterno: notification.cuerpo_externo,
-            fechaEnvioExterno: notification.fecha_envio_externo,
-            jobIdExterno: notification.job_id_externo,
-            enviadoExterno: notification.enviado_externo,
         };
     }
 }

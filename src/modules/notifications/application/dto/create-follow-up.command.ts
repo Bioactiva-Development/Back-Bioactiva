@@ -6,8 +6,16 @@ export interface FollowUpEmailInput {
     cuerpo: string;
 }
 
-export interface CreateFollowUpCommand {
-    idLead: number;
+export interface FollowUpInstanceCommand {
     internal: FollowUpEmailInput;
-    external: FollowUpEmailInput & { correoCliente: string };
+    external: FollowUpEmailInput;
+}
+
+export interface CreateFollowUpCommand {
+    /** La actividad activa (única) del lead se resuelve en el servidor. */
+    idLead: number;
+    /** Mismo destinatario del cliente para todas las instancias. */
+    correoCliente: string;
+    /** Entre 1 y 3 instancias escalonadas. */
+    instancias: FollowUpInstanceCommand[];
 }

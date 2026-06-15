@@ -5,9 +5,7 @@ import { EmailTemplateRepositoryPort } from '@/modules/notifications/domain/port
 import { EmailTemplateMapper } from '@/modules/notifications/infrastructure/persistance/mappers/email-template.mapper';
 
 @Injectable()
-export class PrismaEmailTemplateRepository
-    implements EmailTemplateRepositoryPort
-{
+export class PrismaEmailTemplateRepository implements EmailTemplateRepositoryPort {
     constructor(private readonly prisma: PrismaService) {}
 
     async create(template: EmailTemplate): Promise<EmailTemplate> {
@@ -52,14 +50,18 @@ export class PrismaEmailTemplateRepository
     }
 
     async isUsedByNotification(id: number): Promise<boolean> {
-        const count = await this.prisma.notificacionProgramada.count({
-            where: {
-                OR: [
-                    { idTemplateInterno: id },
-                    { idTemplateExterno: id },
-                ],
-            },
-        });
-        return count > 0;
+        const [reminderCount, instanceCount] = await Promise.all([
+            // Recordatorios: plantilla del correo interno.
+            this.prisma.notificacionProgramada.count({
+                where: { idTemplateInterno: id },
+            }),
+            // Seguimientos: plantillas interna/externa de cada instancia.
+            this.prisma.seguimientoInstancia.count({
+                where: {
+                    OR: [{ idTemplateInterno: id }, { idTemplateExterno: id }],
+                },
+            }),
+        ]);
+        return reminderCount > 0 || instanceCount > 0;
     }
 }
