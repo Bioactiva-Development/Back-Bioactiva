@@ -120,12 +120,10 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-prod:8000}
+      # El service account de reCAPTCHA se inyecta con `docker cp` durante el
+      # deploy (ver Jenkinsfile). No se usa bind-mount: es frágil cuando el
+      # daemon de Docker no comparte el filesystem del workspace de Jenkins.
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/recaptcha-account.json
-    volumes:
-      # Se monta el DIRECTORIO, no el archivo: un bind-mount de archivo único
-      # cuyo origen falta hace que Docker cree un directorio en esa ruta y el
-      # cliente de reCAPTCHA falle con "does not exist, or it is not a file".
-      - ./credentials:/app/credentials:ro
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"
@@ -148,12 +146,10 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
       PYTHON_SCRAPER_URL: ${PYTHON_SCRAPER_URL:-http://bioactiva-sunat-development:8000}
+      # El service account de reCAPTCHA se inyecta con `docker cp` durante el
+      # deploy (ver Jenkinsfile). No se usa bind-mount: es frágil cuando el
+      # daemon de Docker no comparte el filesystem del workspace de Jenkins.
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/recaptcha-account.json
-    volumes:
-      # Se monta el DIRECTORIO, no el archivo: un bind-mount de archivo único
-      # cuyo origen falta hace que Docker cree un directorio en esa ruta y el
-      # cliente de reCAPTCHA falle con "does not exist, or it is not a file".
-      - ./credentials:/app/credentials:ro
     command: >
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"

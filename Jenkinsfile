@@ -79,12 +79,10 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
-                        # Primero se baja el stack para liberar el bind-mount del
-                        # directorio de credenciales; recién entonces se limpia y
-                        # reinstala el archivo. Si se borrara antes del down, el
-                        # daemon recrearía la ruta como un directorio root-owned
-                        # (que jenkins no puede borrar) y el archivo terminaría
-                        # dentro de él, rompiendo el mount.
+                        # Se baja el stack, se levanta y se inyecta el service
+                        # account de reCAPTCHA con `docker cp` directo al contenedor.
+                        # Evita bind-mounts de archivo, frágiles cuando el daemon
+                        # no comparte el filesystem del workspace de Jenkins.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
@@ -92,10 +90,7 @@ pipeline {
                             --profile testing \
                             down
 
-                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
-                        mkdir -p credentials
-                        echo "$RECAPTCHA_FILE"
-                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
+                        cat "$RECAPTCHA_FILE"
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
@@ -103,6 +98,8 @@ pipeline {
                             --env-file "$ENV_FILE" \
                             --profile testing \
                             up -d --build
+
+                        docker cp "$RECAPTCHA_FILE" bioactiva-backend-prod:/app/credentials/recaptcha-account.json
                     '''
                 }
             }
@@ -118,12 +115,10 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
-                        # Primero se baja el stack para liberar el bind-mount del
-                        # directorio de credenciales; recién entonces se limpia y
-                        # reinstala el archivo. Si se borrara antes del down, el
-                        # daemon recrearía la ruta como un directorio root-owned
-                        # (que jenkins no puede borrar) y el archivo terminaría
-                        # dentro de él, rompiendo el mount.
+                        # Se baja el stack, se levanta y se inyecta el service
+                        # account de reCAPTCHA con `docker cp` directo al contenedor.
+                        # Evita bind-mounts de archivo, frágiles cuando el daemon
+                        # no comparte el filesystem del workspace de Jenkins.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \
@@ -131,10 +126,7 @@ pipeline {
                             --profile development \
                             down
 
-                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
-                        mkdir -p credentials
-                        echo "$RECAPTCHA_FILE"
-                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
+                        cat "$RECAPTCHA_FILE"
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
@@ -142,6 +134,8 @@ pipeline {
                             --env-file "$ENV_FILE" \
                             --profile development \
                             up -d --build
+
+                        docker cp "$RECAPTCHA_FILE" bioactiva-backend-development:/app/credentials/recaptcha-account.json
                     '''
                 }
             }
