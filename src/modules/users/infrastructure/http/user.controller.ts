@@ -35,7 +35,6 @@ import { User } from '@/modules/users/domain/entities/user';
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMINISTRADOR)
 @Controller('users')
 export class UserController {
     constructor(
@@ -49,7 +48,7 @@ export class UserController {
     @ApiOperation({
         summary: 'Listar usuarios',
         description:
-            'Obtiene un listado paginado de usuarios con filtros opcionales. Solo accesible para administradores.',
+            'Obtiene un listado paginado de usuarios con filtros opcionales. Un administrador ve a todos los usuarios; un trabajador solo ve a otros trabajadores.',
     })
     @ApiResponse({
         status: 200,
@@ -57,12 +56,9 @@ export class UserController {
         type: PaginatedUserResponseDto,
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
-    @ApiResponse({
-        status: 403,
-        description: 'No autorizado — se requiere rol ADMINISTRADOR',
-    })
     async findAll(
         @Query() query: ListUsersQueryDto,
+        @CurrentUser() currentUser: User,
     ): Promise<PaginatedUserResponseDto> {
         const dto = new ListUsersDto(
             query.search,
@@ -71,7 +67,10 @@ export class UserController {
             query.page,
             query.limit,
         );
-        const { data, total } = await this.getAllUsersUseCase.execute(dto);
+        const { data, total } = await this.getAllUsersUseCase.execute(
+            dto,
+            currentUser.role,
+        );
         const responseData = data.map((user) => new UserResponseDto(user));
         return new PaginatedUserResponseDto(
             responseData,
@@ -82,6 +81,7 @@ export class UserController {
     }
 
     @Patch(':id/disable')
+    @Roles(UserRole.ADMINISTRADOR)
     @HttpCode(204)
     @ApiOperation({
         summary: 'Deshabilitar usuario',
@@ -111,6 +111,7 @@ export class UserController {
     }
 
     @Patch(':id/enable')
+    @Roles(UserRole.ADMINISTRADOR)
     @HttpCode(204)
     @ApiOperation({
         summary: 'Habilitar usuario',
@@ -133,6 +134,7 @@ export class UserController {
     }
 
     @Patch(':id/role')
+    @Roles(UserRole.ADMINISTRADOR)
     @ApiOperation({
         summary: 'Cambiar el rol de un usuario',
         description:

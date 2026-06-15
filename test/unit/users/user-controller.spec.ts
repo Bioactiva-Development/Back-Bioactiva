@@ -40,21 +40,25 @@ describe('UserController', () => {
         controller = module.get(UserController);
     });
 
-    it('should list users with pagination', async () => {
+    it('should list users with pagination, passing the viewer role', async () => {
         getAllUsersUseCase.execute.mockResolvedValue({
             data: [],
             total: 0,
         });
 
         const query = { page: 1, limit: 10 } as any;
-        const result = await controller.findAll(query);
+        const currentUser = { role: UserRole.ADMINISTRADOR } as User;
+        const result = await controller.findAll(query, currentUser);
 
-        expect(getAllUsersUseCase.execute).toHaveBeenCalled();
+        expect(getAllUsersUseCase.execute).toHaveBeenCalledWith(
+            expect.anything(),
+            UserRole.ADMINISTRADOR,
+        );
         expect(result.data).toEqual([]);
         expect(result.meta.total).toBe(0);
     });
 
-    it('should list users with search and role filter', async () => {
+    it('forwards the worker role so the use case restricts the listing', async () => {
         getAllUsersUseCase.execute.mockResolvedValue({
             data: [],
             total: 0,
@@ -67,9 +71,13 @@ describe('UserController', () => {
             page: 1,
             limit: 20,
         } as any;
-        const result = await controller.findAll(query);
+        const currentUser = { role: UserRole.TRABAJADOR } as User;
+        const result = await controller.findAll(query, currentUser);
 
-        expect(getAllUsersUseCase.execute).toHaveBeenCalled();
+        expect(getAllUsersUseCase.execute).toHaveBeenCalledWith(
+            expect.anything(),
+            UserRole.TRABAJADOR,
+        );
         expect(result.meta.total).toBe(0);
     });
 
