@@ -22,11 +22,13 @@ import { CreateActivityCalendarEventUseCase } from '@/modules/activities/applica
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
+import { UpdateNotesUseCase } from '@/modules/activities/application/use-cases/update-notes.use-case';
 import { CompleteActivityUseCase } from '@/modules/activities/application/use-cases/complete-activity.use-case';
 import { CancelActivityUseCase } from '@/modules/activities/application/use-cases/cancel-activity.use-case';
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
 import { HttpCreateActivityDto } from '@/modules/activities/infrastructure/http/dto/create-activity.dto.http';
 import { HttpUpdateActivityDto } from '@/modules/activities/infrastructure/http/dto/update-activity.dto.http';
+import { HttpUpdateNotesDto } from '@/modules/activities/infrastructure/http/dto/update-notes.dto.http';
 import { ListActivitiesQueryDto } from '@/modules/activities/infrastructure/http/dto/list-activities-query.dto.http';
 import { ActivityResponseDto } from '@/modules/activities/infrastructure/http/dto/activity-response.dto';
 import { PaginatedActivityResponseDto } from '@/modules/activities/infrastructure/http/dto/paginated-activity-response.dto';
@@ -45,6 +47,7 @@ export class ActivityController {
         private readonly getActivityByIdUseCase: GetActivityByIdUseCase,
         private readonly listActivitiesUseCase: ListActivitiesUseCase,
         private readonly updateActivityUseCase: UpdateActivityUseCase,
+        private readonly updateNotesUseCase: UpdateNotesUseCase,
         private readonly completeActivityUseCase: CompleteActivityUseCase,
         private readonly cancelActivityUseCase: CancelActivityUseCase,
         private readonly deleteActivityUseCase: DeleteActivityUseCase,
@@ -195,6 +198,23 @@ export class ActivityController {
             httpDto.idResponsable,
         );
         const result = await this.updateActivityUseCase.execute(id, updateDto);
+        return new ActivityResponseDto(result);
+    }
+
+    @Patch(':id/notes')
+    @ApiOperation({ summary: 'Actualizar las notas de una actividad' })
+    @ApiResponse({
+        status: 200,
+        description: 'Notas actualizadas exitosamente',
+        type: ActivityResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+    async updateNotes(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() httpDto: HttpUpdateNotesDto,
+    ): Promise<ActivityResponseDto> {
+        const result = await this.updateNotesUseCase.execute(id, httpDto.notas);
         return new ActivityResponseDto(result);
     }
 
