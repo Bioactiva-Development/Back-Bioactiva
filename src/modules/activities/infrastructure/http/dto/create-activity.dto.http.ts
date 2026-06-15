@@ -61,12 +61,18 @@ export class HttpCreateActivityDto {
     @Length(1, 1000)
     notas?: string | null;
 
-    @ApiProperty({
-        example: 1,
-        description: 'ID del usuario responsable',
+    /**
+     * @deprecated El responsable ya no se elige: la actividad se asigna siempre
+     * al encargado del lead. El campo se acepta por compatibilidad pero se ignora.
+     */
+    @ApiPropertyOptional({
+        deprecated: true,
+        description:
+            'Obsoleto. El responsable es siempre el encargado del lead; este valor se ignora.',
     })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idResponsable!: number;
+    idResponsable?: number;
 }

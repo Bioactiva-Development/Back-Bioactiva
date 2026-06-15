@@ -1,14 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsDate,
     IsInt,
     IsNotEmpty,
     IsOptional,
     IsString,
     Length,
+    Max,
     Min,
 } from 'class-validator';
+import { MAX_REMINDER_MINUTES } from '@/modules/notifications/domain/services/notification-schedule.policy';
 
 export class HttpCreateReminderDto {
     @ApiProperty({
@@ -22,13 +23,17 @@ export class HttpCreateReminderDto {
     idLead!: number;
 
     @ApiProperty({
-        example: '2026-06-10T14:00:00.000Z',
+        example: 15,
+        minimum: 1,
+        maximum: MAX_REMINDER_MINUTES,
         description:
-            'Fecha y hora en que el responsable recibe el recordatorio',
+            'Minutos antes de que finalice la actividad en que el encargado recibe el recordatorio (1–120; máx. 2 horas antes).',
     })
-    @Type(() => Date)
-    @IsDate()
-    fechaEnvio!: Date;
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(MAX_REMINDER_MINUTES)
+    minutosAntes!: number;
 
     @ApiProperty({
         example: 1,

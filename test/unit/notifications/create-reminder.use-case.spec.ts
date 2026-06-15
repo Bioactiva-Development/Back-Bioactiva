@@ -25,11 +25,14 @@ describe('Notifications module', () => {
 
         const command = {
             idLead: 2,
-            fechaEnvio: new Date(2099, 0, 1, 14, 0, 0),
+            minutosAntes: 30,
             idTemplate: 5 as number | null,
             asunto: 'Recordatorio',
             cuerpo: 'Cuerpo',
         };
+
+        // El recordatorio se programa minutosAntes de la fechaFin de la actividad.
+        const expectedSendAt = new Date('2099-01-10T13:30:00.000Z');
 
         beforeEach(() => {
             repository = {
@@ -69,7 +72,7 @@ describe('Notifications module', () => {
             expect(result.id_responsable).toBe(3);
             expect(scheduler.scheduleInternal).toHaveBeenCalledWith({
                 notificationId: 10,
-                sendAt: command.fechaEnvio,
+                sendAt: expectedSendAt,
             });
             expect(result.job_id_interno).toBe('notif-internal-10');
             expect(repository.save).toHaveBeenCalledTimes(2);
