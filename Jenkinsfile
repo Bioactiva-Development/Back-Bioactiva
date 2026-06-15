@@ -79,18 +79,22 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
-                        # Limpia restos con dueño root que el daemon de Docker pudo
-                        # crear como bind-mount cuando el archivo fuente no existía
-                        # (jenkins no puede borrarlos sin privilegios).
-                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
-                        mkdir -p credentials
-                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
+                        # Primero se baja el stack para liberar el bind-mount del
+                        # directorio de credenciales; recién entonces se limpia y
+                        # reinstala el archivo. Si se borrara antes del down, el
+                        # daemon recrearía la ruta como un directorio root-owned
+                        # (que jenkins no puede borrar) y el archivo terminaría
+                        # dentro de él, rompiendo el mount.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile testing \
                             down
+
+                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
+                        mkdir -p credentials
+                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
@@ -113,18 +117,22 @@ pipeline {
                     file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
-                        # Limpia restos con dueño root que el daemon de Docker pudo
-                        # crear como bind-mount cuando el archivo fuente no existía
-                        # (jenkins no puede borrarlos sin privilegios).
-                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
-                        mkdir -p credentials
-                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
+                        # Primero se baja el stack para liberar el bind-mount del
+                        # directorio de credenciales; recién entonces se limpia y
+                        # reinstala el archivo. Si se borrara antes del down, el
+                        # daemon recrearía la ruta como un directorio root-owned
+                        # (que jenkins no puede borrar) y el archivo terminaría
+                        # dentro de él, rompiendo el mount.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile development \
                             down
+
+                        docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
+                        mkdir -p credentials
+                        install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
