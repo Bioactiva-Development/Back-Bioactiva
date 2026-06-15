@@ -63,7 +63,7 @@ export class ActivityController {
     @ApiResponse({
         status: 400,
         description:
-            'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+            'Datos inválidos (fechaFin debe ser mayor que fechaInicio, o la fecha es anterior a la actual)',
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({

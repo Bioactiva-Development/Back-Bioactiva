@@ -35,6 +35,16 @@ export class CreateActivityUseCase {
         // encargado del lead). No se toma de la petición.
         const idResponsable = lead.id_encargado;
 
+        // Mantis #441: una actividad pendiente no puede programarse en el pasado.
+        // Se permite la fecha actual (cualquier hora de hoy) o una fecha futura.
+        const inicioDelDia = new Date();
+        inicioDelDia.setHours(0, 0, 0, 0);
+        if (dto.fechaInicio < inicioDelDia) {
+            throw new InvalidActivityDateException(
+                'La fecha de la actividad no puede ser anterior a la fecha actual',
+            );
+        }
+
         if (dto.fechaFin <= dto.fechaInicio) {
             throw new InvalidActivityDateException(
                 'La fecha de inicio debe ser menor que la fecha de fin',
