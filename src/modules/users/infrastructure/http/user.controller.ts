@@ -19,6 +19,7 @@ import { RolesGuard } from '@/modules/auth/infrastructure/jwt/guards/roles.guard
 import { Roles } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
+import { GetAssignableUsersUseCase } from '@/modules/users/application/use-cases/get-assignable-users.use-case';
 import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
 import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
 import { ChangeUserRoleUseCase } from '@/modules/users/application/use-cases/change-user-role.use-case';
@@ -28,6 +29,7 @@ import { ChangeRoleDto } from '@/modules/users/infrastructure/http/dtos/change-r
 import { UserResponseDto } from '@/modules/users/infrastructure/http/dtos/user-response.dto';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { PaginatedUserResponseDto } from '@/modules/users/infrastructure/http/dtos/paginated-user-response.dto';
+import { AssignableUserResponseDto } from '@/modules/users/infrastructure/http/dtos/assignable-user-response.dto';
 import { ListUsersDto } from '@/modules/users/application/dto/list-users.dto';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -39,6 +41,7 @@ import { User } from '@/modules/users/domain/entities/user';
 export class UserController {
     constructor(
         private readonly getAllUsersUseCase: GetAllUsersUseCase,
+        private readonly getAssignableUsersUseCase: GetAssignableUsersUseCase,
         private readonly disableUserUseCase: DisableUserUseCase,
         private readonly enableUserUseCase: EnableUserUseCase,
         private readonly changeUserRoleUseCase: ChangeUserRoleUseCase,
@@ -78,6 +81,25 @@ export class UserController {
             dto.page,
             dto.limit,
         );
+    }
+
+    @Get('assignable')
+    @ApiOperation({
+        summary: 'Listar usuarios habilitados para asignación',
+        description:
+            'Devuelve todos los usuarios en estado Habilitado para poblar selectores ' +
+            '(p. ej. el encargado de un lead). Accesible para cualquier usuario ' +
+            'autenticado, sin importar el rol.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Usuarios habilitados',
+        type: [AssignableUserResponseDto],
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    async findAssignable(): Promise<AssignableUserResponseDto[]> {
+        const users = await this.getAssignableUsersUseCase.execute();
+        return users.map((user) => new AssignableUserResponseDto(user));
     }
 
     @Patch(':id/disable')
