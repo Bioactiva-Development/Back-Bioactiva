@@ -22,21 +22,25 @@ describe('Notifications module', () => {
             contactEmails: ['cliente@empresa.com'],
         };
 
-        const command = () => ({
-            idActividad: 1,
+        const instance = (internalHour: number, externalHour: number) => ({
             internal: {
-                fechaEnvio: new Date(2099, 0, 1, 14, 0, 0),
+                fechaEnvio: new Date(2099, 0, 1, internalHour, 0, 0),
                 idTemplate: 5,
                 asunto: 'Interno',
                 cuerpo: 'Cuerpo interno',
             },
             external: {
-                correoCliente: 'cliente@empresa.com',
-                fechaEnvio: new Date(2099, 0, 1, 16, 0, 0),
+                fechaEnvio: new Date(2099, 0, 1, externalHour, 0, 0),
                 idTemplate: 6,
                 asunto: 'Externo',
                 cuerpo: 'Cuerpo externo',
             },
+        });
+
+        const command = () => ({
+            idActividad: 1,
+            correoCliente: 'cliente@empresa.com',
+            instancias: [instance(10, 11)],
         });
 
         beforeEach(() => {
@@ -44,18 +48,23 @@ describe('Notifications module', () => {
                 save: jest.fn(async (n: any) => {
                     if (n.id === null) {
                         n.id = 20;
+                        n.instancias.forEach((inst: any, i: number) => {
+                            if (inst.id === null) {
+                                inst.id = 100 + i;
+                            }
+                        });
                     }
                     return n;
                 }),
                 findActiveByActivity: jest.fn().mockResolvedValue(null),
             };
             scheduler = {
-                scheduleInternal: jest
+                scheduleInstanceInternal: jest
                     .fn()
-                    .mockResolvedValue('notif-internal-20'),
-                scheduleExternal: jest
+                    .mockResolvedValue('seg-internal-100'),
+                scheduleInstanceExternal: jest
                     .fn()
-                    .mockResolvedValue('notif-external-20'),
+                    .mockResolvedValue('seg-external-100'),
             };
             templateReader = {
                 findActiveById: jest
@@ -73,28 +82,57 @@ describe('Notifications module', () => {
             );
         });
 
-        it('creates a follow-up and schedules both emails', async () => {
+        it('creates a follow-up and schedules each instance', async () => {
             const result = await useCase.execute(command());
 
             expect(result.tipo).toBe(NotificationType.SEGUIMIENTO);
             expect(result.correo_cliente).toBe('cliente@empresa.com');
-            expect(scheduler.scheduleInternal).toHaveBeenCalled();
-            expect(scheduler.scheduleExternal).toHaveBeenCalled();
-            expect(result.job_id_interno).toBe('notif-internal-20');
-            expect(result.job_id_externo).toBe('notif-external-20');
+            expect(result.instancias).toHaveLength(1);
+            expect(scheduler.scheduleInstanceInternal).toHaveBeenCalled();
+            expect(scheduler.scheduleInstanceExternal).toHaveBeenCalled();
+            expect(result.instancias[0].job_id_interno).toBe(
+                'seg-internal-100',
+            );
+            expect(result.instancias[0].job_id_externo).toBe(
+                'seg-external-100',
+            );
         });
 
         it('rejects a client email not associated to the lead', async () => {
             const cmd = command();
-            cmd.external.correoCliente = 'otro@externo.com';
+            cmd.correoCliente = 'otro@externo.com';
             await expect(useCase.execute(cmd)).rejects.toThrow(
                 ClientEmailRequiredException,
             );
         });
 
         it('rejects when external email is not after internal', async () => {
-            const cmd = command();
-            cmd.external.fechaEnvio = new Date(2099, 0, 1, 14, 0, 0);
+            const cmd = { ...command(), instancias: [instance(14, 14)] };
+            await expect(useCase.execute(cmd)).rejects.toThrow(
+                InvalidScheduleDateException,
+            );
+        });
+
+        it('rejects when instances overlap (not chained)', async () => {
+            const cmd = {
+                ...command(),
+                instancias: [instance(10, 13), instance(12, 15)],
+            };
+            await expect(useCase.execute(cmd)).rejects.toThrow(
+                InvalidScheduleDateException,
+            );
+        });
+
+        it('rejects more than 3 instances', async () => {
+            const cmd = {
+                ...command(),
+                instancias: [
+                    instance(9, 10),
+                    instance(11, 12),
+                    instance(13, 14),
+                    instance(15, 16),
+                ],
+            };
             await expect(useCase.execute(cmd)).rejects.toThrow(
                 InvalidScheduleDateException,
             );

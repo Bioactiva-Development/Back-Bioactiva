@@ -1,6 +1,7 @@
 import { NotificationStatus } from '@/modules/notifications/domain/enums/notification-status';
 import { NotificationType } from '@/modules/notifications/domain/enums/notification-type';
 import { NotificationCannotBeCancelledException } from '@/modules/notifications/domain/exceptions/notification-cannot-be-cancelled.exception';
+import { FollowUpInstance } from '@/modules/notifications/domain/entities/follow-up-instance';
 
 export interface InternalEmail {
     asunto: string;
@@ -9,19 +10,22 @@ export interface InternalEmail {
     idTemplate: number | null;
 }
 
-export interface ExternalEmail {
-    correoCliente: string;
-    asunto: string;
-    cuerpo: string;
-    fechaEnvio: Date;
-    idTemplate: number | null;
+export interface FollowUpInstanceInput {
+    internal: InternalEmail;
+    external: {
+        asunto: string;
+        cuerpo: string;
+        fechaEnvio: Date;
+        idTemplate: number | null;
+    };
 }
 
 /**
  * Notificación programada (CU007). Un RECORDATORIO solo envía el correo interno
- * al responsable; un SEGUIMIENTO añade el correo externo al cliente. La entidad
- * conserva una copia editable del asunto/cuerpo por envío (la plantilla original
- * no se muta) y gestiona sus transiciones de estado.
+ * al responsable (campos planos asunto/cuerpo internos). Un SEGUIMIENTO agrupa
+ * de 1 a 3 instancias escalonadas ({@link FollowUpInstance}), cada una con su
+ * correo interno y externo; el destinatario del cliente (`correo_cliente`) es el
+ * mismo para todas las instancias. La entidad gestiona sus transiciones de estado.
  */
 export class ScheduledNotification {
     constructor(
@@ -31,19 +35,14 @@ export class ScheduledNotification {
         public id_actividad: number,
         public id_lead: number,
         public id_responsable: number,
-        public asunto_interno: string,
-        public cuerpo_interno: string,
-        public fecha_envio_interno: Date,
+        public asunto_interno: string | null,
+        public cuerpo_interno: string | null,
+        public fecha_envio_interno: Date | null,
         public id_template_interno: number | null,
         public job_id_interno: string | null,
         public enviado_interno: boolean,
         public correo_cliente: string | null,
-        public asunto_externo: string | null,
-        public cuerpo_externo: string | null,
-        public fecha_envio_externo: Date | null,
-        public id_template_externo: number | null,
-        public job_id_externo: string | null,
-        public enviado_externo: boolean,
+        public instancias: FollowUpInstance[],
         public readonly created_at: Date,
         public updated_at: Date,
     ) {}
@@ -69,12 +68,7 @@ export class ScheduledNotification {
             null,
             false,
             null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            false,
+            [],
             now,
             now,
         );
@@ -84,10 +78,17 @@ export class ScheduledNotification {
         idActividad: number;
         idLead: number;
         idResponsable: number;
-        internal: InternalEmail;
-        external: ExternalEmail;
+        correoCliente: string;
+        instancias: FollowUpInstanceInput[];
     }): ScheduledNotification {
         const now = new Date();
+        const instancias = input.instancias.map((instancia, index) =>
+            FollowUpInstance.create({
+                orden: index + 1,
+                internal: instancia.internal,
+                external: instancia.external,
+            }),
+        );
         return new ScheduledNotification(
             null,
             NotificationType.SEGUIMIENTO,
@@ -95,19 +96,14 @@ export class ScheduledNotification {
             input.idActividad,
             input.idLead,
             input.idResponsable,
-            input.internal.asunto,
-            input.internal.cuerpo,
-            input.internal.fechaEnvio,
-            input.internal.idTemplate,
+            null,
+            null,
+            null,
+            null,
             null,
             false,
-            input.external.correoCliente,
-            input.external.asunto,
-            input.external.cuerpo,
-            input.external.fechaEnvio,
-            input.external.idTemplate,
-            null,
-            false,
+            input.correoCliente,
+            instancias,
             now,
             now,
         );
@@ -126,12 +122,7 @@ export class ScheduledNotification {
         this.updated_at = new Date();
     }
 
-    assignExternalJob(jobId: string): void {
-        this.job_id_externo = jobId;
-        this.updated_at = new Date();
-    }
-
-    /** El correo interno fue enviado. En un recordatorio cierra la notificación. */
+    /** El correo interno de un recordatorio fue enviado: la notificación se cierra. */
     markInternalSent(): void {
         this.enviado_interno = true;
         if (this.isReminder()) {
@@ -140,11 +131,20 @@ export class ScheduledNotification {
         this.updated_at = new Date();
     }
 
-    /** El correo externo fue enviado: el seguimiento queda vencido. */
-    markExternalSent(): void {
-        this.enviado_externo = true;
-        this.estado = NotificationStatus.VENCIDA;
-        this.updated_at = new Date();
+    /**
+     * Si todas las instancias de un seguimiento ya se enviaron (interno y
+     * externo), el seguimiento queda vencido.
+     */
+    closeIfAllInstancesSent(): void {
+        if (
+            this.isFollowUp() &&
+            this.estado === NotificationStatus.PROGRAMADA &&
+            this.instancias.length > 0 &&
+            this.instancias.every((instancia) => instancia.isFullySent())
+        ) {
+            this.estado = NotificationStatus.VENCIDA;
+            this.updated_at = new Date();
+        }
     }
 
     /** Cancelación manual desde la pestaña Notificaciones (solo si está programada). */
@@ -157,8 +157,8 @@ export class ScheduledNotification {
     }
 
     /**
-     * El responsable marcó la actividad como completada antes de la fecha del
-     * correo externo: se cancela el envío al cliente y el seguimiento se cierra.
+     * El responsable marcó la actividad como completada: se cancelan los envíos
+     * pendientes y el seguimiento se cierra.
      */
     completeFollowUp(): void {
         if (this.estado !== NotificationStatus.PROGRAMADA) {
@@ -168,8 +168,20 @@ export class ScheduledNotification {
         this.updated_at = new Date();
     }
 
-    /** ¿Queda un envío externo pendiente que deba cancelarse en BullMQ? */
-    hasPendingExternal(): boolean {
-        return this.isFollowUp() && !this.enviado_externo;
+    /**
+     * jobIds de los envíos de instancias que aún no se han enviado y que, por
+     * tanto, deben cancelarse en BullMQ.
+     */
+    pendingInstanceJobIds(): string[] {
+        const jobIds: string[] = [];
+        for (const instancia of this.instancias) {
+            if (instancia.hasPendingInternal() && instancia.job_id_interno) {
+                jobIds.push(instancia.job_id_interno);
+            }
+            if (instancia.hasPendingExternal() && instancia.job_id_externo) {
+                jobIds.push(instancia.job_id_externo);
+            }
+        }
+        return jobIds;
     }
 }

@@ -6,7 +6,8 @@ import { NotificationSchedulerPort } from '@/modules/notifications/domain/ports/
 export const NOTIFICATIONS_QUEUE = 'NOTIFICATIONS_QUEUE';
 
 export const SEND_INTERNAL_JOB = 'send-internal';
-export const SEND_EXTERNAL_JOB = 'send-external';
+export const SEND_INSTANCE_INTERNAL_JOB = 'send-instance-internal';
+export const SEND_INSTANCE_EXTERNAL_JOB = 'send-instance-external';
 
 @Injectable()
 export class NotificationSchedulerPublisher implements NotificationSchedulerPort {
@@ -22,19 +23,31 @@ export class NotificationSchedulerPublisher implements NotificationSchedulerPort
         return this.schedule(
             SEND_INTERNAL_JOB,
             `notif-internal-${input.notificationId}`,
-            input.notificationId,
+            { notificationId: input.notificationId },
             input.sendAt,
         );
     }
 
-    async scheduleExternal(input: {
-        notificationId: number;
+    async scheduleInstanceInternal(input: {
+        instanciaId: number;
         sendAt: Date;
     }): Promise<string> {
         return this.schedule(
-            SEND_EXTERNAL_JOB,
-            `notif-external-${input.notificationId}`,
-            input.notificationId,
+            SEND_INSTANCE_INTERNAL_JOB,
+            `seg-internal-${input.instanciaId}`,
+            { instanciaId: input.instanciaId },
+            input.sendAt,
+        );
+    }
+
+    async scheduleInstanceExternal(input: {
+        instanciaId: number;
+        sendAt: Date;
+    }): Promise<string> {
+        return this.schedule(
+            SEND_INSTANCE_EXTERNAL_JOB,
+            `seg-external-${input.instanciaId}`,
+            { instanciaId: input.instanciaId },
             input.sendAt,
         );
     }
@@ -46,23 +59,19 @@ export class NotificationSchedulerPublisher implements NotificationSchedulerPort
     private async schedule(
         jobName: string,
         jobId: string,
-        notificationId: number,
+        data: Record<string, number>,
         sendAt: Date,
     ): Promise<string> {
         const delay = Math.max(0, sendAt.getTime() - Date.now());
 
-        await this.queue.add(
-            jobName,
-            { notificationId },
-            {
-                jobId,
-                delay,
-                attempts: 3,
-                backoff: { type: 'exponential', delay: 60_000 },
-                removeOnComplete: true,
-                removeOnFail: false,
-            },
-        );
+        await this.queue.add(jobName, data, {
+            jobId,
+            delay,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 60_000 },
+            removeOnComplete: true,
+            removeOnFail: false,
+        });
 
         return jobId;
     }

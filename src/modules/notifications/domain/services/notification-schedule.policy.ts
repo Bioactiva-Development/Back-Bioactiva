@@ -34,6 +34,23 @@ export function assertInternalDate(
     }
 }
 
+export function assertExternalDate(
+    fechaEnvio: Date,
+    fechaFinActividad: Date,
+    now: Date,
+): void {
+    if (fechaEnvio <= now) {
+        throw new InvalidScheduleDateException(
+            'El correo al cliente debe programarse después de la fecha actual.',
+        );
+    }
+    if (fechaEnvio >= fechaFinActividad) {
+        throw new InvalidScheduleDateException(
+            'El correo al cliente debe programarse antes de la fecha de fin de la actividad.',
+        );
+    }
+}
+
 export function assertExternalAfterInternal(
     internal: Date,
     external: Date,
@@ -41,6 +58,34 @@ export function assertExternalAfterInternal(
     if (external <= internal) {
         throw new InvalidScheduleDateException(
             'El correo al cliente debe programarse después del recordatorio interno.',
+        );
+    }
+}
+
+export const MIN_FOLLOW_UP_INSTANCES = 1;
+export const MAX_FOLLOW_UP_INSTANCES = 3;
+
+/** Un seguimiento debe tener entre 1 y 3 instancias. */
+export function assertInstanceCount(count: number): void {
+    if (count < MIN_FOLLOW_UP_INSTANCES || count > MAX_FOLLOW_UP_INSTANCES) {
+        throw new InvalidScheduleDateException(
+            `Un seguimiento debe tener entre ${MIN_FOLLOW_UP_INSTANCES} y ${MAX_FOLLOW_UP_INSTANCES} instancias.`,
+        );
+    }
+}
+
+/**
+ * Las instancias se ejecutan en orden y sus fechas no se solapan: el correo
+ * interno de una instancia debe programarse después del correo externo de la
+ * instancia anterior.
+ */
+export function assertInstancesChained(
+    previousExternal: Date,
+    currentInternal: Date,
+): void {
+    if (currentInternal <= previousExternal) {
+        throw new InvalidScheduleDateException(
+            'Cada instancia de seguimiento debe programarse después de que finalice la anterior.',
         );
     }
 }

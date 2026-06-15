@@ -16,23 +16,29 @@ describe('Notifications module', () => {
                 idActividad: 1,
                 idLead: 2,
                 idResponsable: 3,
-                internal: {
-                    asunto: 'I',
-                    cuerpo: 'I',
-                    fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
-                    idTemplate: 5,
-                },
-                external: {
-                    correoCliente: 'cliente@empresa.com',
-                    asunto: 'E',
-                    cuerpo: 'E',
-                    fechaEnvio: new Date('2099-01-01T16:00:00.000Z'),
-                    idTemplate: 6,
-                },
+                correoCliente: 'cliente@empresa.com',
+                instancias: [
+                    {
+                        internal: {
+                            asunto: 'I',
+                            cuerpo: 'I',
+                            fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
+                            idTemplate: 5,
+                        },
+                        external: {
+                            asunto: 'E',
+                            cuerpo: 'E',
+                            fechaEnvio: new Date('2099-01-01T16:00:00.000Z'),
+                            idTemplate: 6,
+                        },
+                    },
+                ],
             });
             (n as any).id = 20;
-            n.assignInternalJob('notif-internal-20');
-            n.assignExternalJob('notif-external-20');
+            const instancia = n.instancias[0];
+            (instancia as any).id = 100;
+            instancia.assignInternalJob('seg-internal-100');
+            instancia.assignExternalJob('seg-external-100');
             return n;
         };
 
@@ -45,14 +51,14 @@ describe('Notifications module', () => {
             useCase = new CancelNotificationUseCase(repository, scheduler);
         });
 
-        it('cancels a scheduled notification and removes its jobs', async () => {
+        it('cancels a scheduled follow-up and removes its instance jobs', async () => {
             repository.findById.mockResolvedValue(buildFollowUp());
 
             const result = await useCase.execute(20);
 
             expect(result.estado).toBe(NotificationStatus.CANCELADA);
-            expect(scheduler.cancel).toHaveBeenCalledWith('notif-internal-20');
-            expect(scheduler.cancel).toHaveBeenCalledWith('notif-external-20');
+            expect(scheduler.cancel).toHaveBeenCalledWith('seg-internal-100');
+            expect(scheduler.cancel).toHaveBeenCalledWith('seg-external-100');
             expect(repository.save).toHaveBeenCalled();
         });
 
@@ -63,10 +69,11 @@ describe('Notifications module', () => {
             );
         });
 
-        it('throws when the notification was already executed', async () => {
+        it('throws when the follow-up was already executed', async () => {
             const n = buildFollowUp();
-            n.markInternalSent();
-            n.markExternalSent();
+            n.instancias[0].markInternalSent();
+            n.instancias[0].markExternalSent();
+            n.closeIfAllInstancesSent();
             repository.findById.mockResolvedValue(n);
 
             await expect(useCase.execute(20)).rejects.toThrow(

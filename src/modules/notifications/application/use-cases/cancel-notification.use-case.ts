@@ -29,11 +29,13 @@ export class CancelNotificationUseCase {
         // Lanza si ya está vencida/cancelada (no puede cancelarse lo ejecutado).
         notification.cancel();
 
+        // Recordatorio: correo interno pendiente.
         if (notification.job_id_interno && !notification.enviado_interno) {
             await this.scheduler.cancel(notification.job_id_interno);
         }
-        if (notification.job_id_externo && !notification.enviado_externo) {
-            await this.scheduler.cancel(notification.job_id_externo);
+        // Seguimiento: envíos de instancias aún pendientes.
+        for (const jobId of notification.pendingInstanceJobIds()) {
+            await this.scheduler.cancel(jobId);
         }
 
         return this.notificationRepository.save(notification);

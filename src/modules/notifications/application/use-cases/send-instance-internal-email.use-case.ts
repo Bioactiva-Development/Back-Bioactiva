@@ -14,8 +14,12 @@ import {
 } from '@/modules/notifications/domain/ports/activity-context-reader.port';
 import { NotificationStatus } from '@/modules/notifications/domain/enums/notification-status';
 
-export class SendInternalEmailUseCase {
-    private readonly logger = new Logger(SendInternalEmailUseCase.name);
+/**
+ * Envío del correo interno de una instancia de seguimiento al responsable de la
+ * actividad. Lo dispara el job `send-instance-internal`.
+ */
+export class SendInstanceInternalEmailUseCase {
+    private readonly logger = new Logger(SendInstanceInternalEmailUseCase.name);
 
     constructor(
         @Inject(NOTIFICATION_REPOSITORY)
@@ -26,24 +30,20 @@ export class SendInternalEmailUseCase {
         private readonly activityContextReader: ActivityContextReaderPort,
     ) {}
 
-    async execute(notificationId: number): Promise<void> {
+    async execute(instanciaId: number): Promise<void> {
         const notification =
-            await this.notificationRepository.findById(notificationId);
+            await this.notificationRepository.findByInstanceId(instanciaId);
         if (
             !notification ||
-            notification.estado !== NotificationStatus.PROGRAMADA ||
-            notification.enviado_interno
+            notification.estado !== NotificationStatus.PROGRAMADA
         ) {
             return;
         }
 
-        if (
-            notification.asunto_interno === null ||
-            notification.cuerpo_interno === null
-        ) {
-            this.logger.warn(
-                `Recordatorio ${notificationId} sin contenido interno; se omite`,
-            );
+        const instancia = notification.instancias.find(
+            (item) => item.id === instanciaId,
+        );
+        if (!instancia || instancia.enviado_interno) {
             return;
         }
 
@@ -52,21 +52,21 @@ export class SendInternalEmailUseCase {
         );
         if (!email) {
             this.logger.warn(
-                `No se encontró correo del responsable ${notification.id_responsable} para la notificación ${notificationId}`,
+                `No se encontró correo del responsable ${notification.id_responsable} para la instancia ${instanciaId}`,
             );
             return;
         }
 
         await this.mailer.send({
             to: email,
-            subject: notification.asunto_interno,
+            subject: instancia.asunto_interno,
             html: this.withLeadLink(
-                notification.cuerpo_interno,
+                instancia.cuerpo_interno,
                 notification.id_lead,
             ),
         });
 
-        notification.markInternalSent();
+        instancia.markInternalSent();
         await this.notificationRepository.save(notification);
     }
 

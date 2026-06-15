@@ -5,8 +5,15 @@ export interface FollowUpEmailInput {
     cuerpo: string;
 }
 
+export interface FollowUpInstanceCommand {
+    internal: FollowUpEmailInput;
+    external: FollowUpEmailInput;
+}
+
 export interface CreateFollowUpCommand {
     idActividad: number;
-    internal: FollowUpEmailInput;
-    external: FollowUpEmailInput & { correoCliente: string };
+    /** Mismo destinatario del cliente para todas las instancias. */
+    correoCliente: string;
+    /** Entre 1 y 3 instancias escalonadas. */
+    instancias: FollowUpInstanceCommand[];
 }
