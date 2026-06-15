@@ -27,6 +27,11 @@ COPY --from=builder /app/prisma.config.ts ./
 COPY src/modules/common/mail/templates ./dist/modules/common/mail/templates
 COPY src/modules/common/mail/templates ./src/modules/common/mail/templates
 
+# Directorio donde el compose monta (bind-mount) el service account de
+# reCAPTCHA en runtime. Se crea en la imagen para garantizar que el destino
+# del montaje exista siempre como directorio.
+RUN mkdir -p /app/credentials
+
 EXPOSE 3000
 
 # Healthcheck HTTP contra GET / (sin auth). Lee PORT del entorno (default 3000);

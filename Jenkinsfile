@@ -94,7 +94,7 @@ pipeline {
 
                         docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
                         mkdir -p credentials
-                        cat "RECAPTCHA_FILE"
+                        echo "$RECAPTCHA_FILE"
                         install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
@@ -133,6 +133,7 @@ pipeline {
 
                         docker run --rm -v "$WORKSPACE":/w -w /w alpine sh -c 'rm -rf credentials'
                         mkdir -p credentials
+                        echo "$RECAPTCHA_FILE"
                         install -m 600 "$RECAPTCHA_FILE" credentials/recaptcha-account.json
 
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
