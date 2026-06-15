@@ -16,13 +16,9 @@ import {
     type ActivityContextReaderPort,
 } from '@/modules/notifications/domain/ports/activity-context-reader.port';
 import { ScheduledNotification } from '@/modules/notifications/domain/entities/scheduled-notification';
-import {
-    assertInternalDate,
-    ensureBusinessHour,
-} from '@/modules/notifications/domain/services/notification-schedule.policy';
-import { ActivityContextNotFoundException } from '@/modules/notifications/domain/exceptions/activity-context-not-found.exception';
+import { computeReminderSendAt } from '@/modules/notifications/domain/services/notification-schedule.policy';
+import { LeadHasNoActiveActivityException } from '@/modules/notifications/domain/exceptions/lead-has-no-active-activity.exception';
 import { DuplicateNotificationException } from '@/modules/notifications/domain/exceptions/duplicate-notification.exception';
-import { TemplateRequiredException } from '@/modules/notifications/domain/exceptions/template-required.exception';
 import { EmailTemplateNotFoundException } from '@/modules/notifications/domain/exceptions/email-template-not-found.exception';
 import { CreateReminderCommand } from '@/modules/notifications/application/dto/create-reminder.command';
 
@@ -41,36 +37,41 @@ export class CreateReminderUseCase {
     async execute(
         command: CreateReminderCommand,
     ): Promise<ScheduledNotification> {
-        const context = await this.activityContextReader.getByActivityId(
-            command.idActividad,
+        const context = await this.activityContextReader.getActiveActivityByLead(
+            command.idLead,
         );
         if (!context) {
-            throw new ActivityContextNotFoundException(
-                `Actividad con id ${command.idActividad} no encontrada`,
+            throw new LeadHasNoActiveActivityException(
+                `El lead con id ${command.idLead} no tiene una actividad activa`,
             );
         }
 
         const existing = await this.notificationRepository.findActiveByActivity(
-            command.idActividad,
+            context.idActividad,
         );
         if (existing) {
             throw new DuplicateNotificationException();
         }
 
-        if (!command.idTemplate) {
-            throw new TemplateRequiredException();
-        }
-        const template = await this.templateReader.findActiveById(
-            command.idTemplate,
-        );
-        if (!template) {
-            throw new EmailTemplateNotFoundException(
-                `Plantilla con id ${command.idTemplate} no encontrada o inactiva`,
+        if (command.idTemplate != null) {
+            const template = await this.templateReader.findActiveById(
+                command.idTemplate,
             );
+            if (!template) {
+                throw new EmailTemplateNotFoundException(
+                    `Plantilla con id ${command.idTemplate} no encontrada o inactiva`,
+                );
+            }
         }
 
-        const fechaEnvio = ensureBusinessHour(command.fechaEnvio);
-        assertInternalDate(fechaEnvio, context.fechaFin, new Date());
+        // El recordatorio se programa N minutos antes de que finalice la
+        // actividad (máx. 2 horas antes). No se ajusta a horario laboral: debe
+        // dispararse exactamente con la antelación pedida respecto a la fechaFin.
+        const fechaEnvio = computeReminderSendAt(
+            context.fechaFin,
+            command.minutosAntes,
+            new Date(),
+        );
 
         const notification = ScheduledNotification.createReminder({
             idActividad: context.idActividad,

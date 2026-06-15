@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
+import { CreateActivityCalendarEventUseCase } from '@/modules/activities/application/use-cases/create-activity-calendar-event.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
@@ -40,6 +41,7 @@ import { ListActivitiesDto } from '@/modules/activities/application/dto/list-act
 export class ActivityController {
     constructor(
         private readonly createActivityUseCase: CreateActivityUseCase,
+        private readonly createActivityCalendarEventUseCase: CreateActivityCalendarEventUseCase,
         private readonly getActivityByIdUseCase: GetActivityByIdUseCase,
         private readonly listActivitiesUseCase: ListActivitiesUseCase,
         private readonly updateActivityUseCase: UpdateActivityUseCase,
@@ -79,11 +81,37 @@ export class ActivityController {
             httpDto.fechaFin,
             httpDto.tipo,
             httpDto.notas ?? null,
-            httpDto.idResponsable,
-            httpDto.syncWithMicrosoft ?? false,
-            httpDto.createTeamsMeeting ?? false,
         );
         const result = await this.createActivityUseCase.execute(createDto);
+        return new ActivityResponseDto(result);
+    }
+
+    @Post(':id/calendar-event')
+    @ApiOperation({
+        summary:
+            'Crear el evento de Microsoft Calendar y la reunión de Teams para una actividad de tipo Reunión',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Evento de calendario creado y vinculado a la actividad',
+        type: ActivityResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'La actividad no es de tipo Reunión o el encargado no tiene Microsoft conectado',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'La actividad ya tiene un evento de calendario',
+    })
+    async createCalendarEvent(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<ActivityResponseDto> {
+        const result =
+            await this.createActivityCalendarEventUseCase.execute(id);
         return new ActivityResponseDto(result);
     }
 

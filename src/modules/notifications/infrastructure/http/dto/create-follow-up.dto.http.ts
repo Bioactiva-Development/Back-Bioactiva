@@ -8,6 +8,7 @@ import {
     IsEmail,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     Length,
     Min,
@@ -20,11 +21,17 @@ export class HttpFollowUpEmailDto {
     @IsDate()
     fechaEnvio!: Date;
 
-    @ApiProperty({ example: 1, description: 'ID de la plantilla del correo' })
+    @ApiProperty({
+        example: 1,
+        required: false,
+        nullable: true,
+        description: 'ID de la plantilla del correo (opcional)',
+    })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    idTemplate: number | null = null;
 
     @ApiProperty({ example: 'Revisión de actividad' })
     @IsString()
@@ -57,11 +64,15 @@ export class HttpFollowUpInstanceDto {
 }
 
 export class HttpCreateFollowUpDto {
-    @ApiProperty({ example: 1, description: 'ID de la actividad asociada' })
+    @ApiProperty({
+        example: 1,
+        description:
+            'ID del lead. La actividad activa (única) se resuelve en el servidor',
+    })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idActividad!: number;
+    idLead!: number;
 
     @ApiProperty({
         example: 'cliente@empresa.com',

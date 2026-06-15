@@ -1,35 +1,52 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsDate,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     Length,
+    Max,
     Min,
 } from 'class-validator';
+import { MAX_REMINDER_MINUTES } from '@/modules/notifications/domain/services/notification-schedule.policy';
 
 export class HttpCreateReminderDto {
-    @ApiProperty({ example: 1, description: 'ID de la actividad asociada' })
+    @ApiProperty({
+        example: 1,
+        description:
+            'ID del lead. La actividad activa (única) se resuelve en el servidor',
+    })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idActividad!: number;
+    idLead!: number;
 
     @ApiProperty({
-        example: '2026-06-10T14:00:00.000Z',
+        example: 15,
+        minimum: 1,
+        maximum: MAX_REMINDER_MINUTES,
         description:
-            'Fecha y hora en que el responsable recibe el recordatorio',
+            'Minutos antes de que finalice la actividad en que el encargado recibe el recordatorio (1–120; máx. 2 horas antes).',
     })
-    @Type(() => Date)
-    @IsDate()
-    fechaEnvio!: Date;
-
-    @ApiProperty({ example: 1, description: 'ID de la plantilla de correo' })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    @Max(MAX_REMINDER_MINUTES)
+    minutosAntes!: number;
+
+    @ApiProperty({
+        example: 1,
+        required: false,
+        nullable: true,
+        description:
+            'ID de la plantilla de correo (opcional). Si se omite, se usa el asunto/cuerpo enviado',
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    idTemplate: number | null = null;
 
     @ApiProperty({
         example: 'Recordatorio: actividad pendiente',

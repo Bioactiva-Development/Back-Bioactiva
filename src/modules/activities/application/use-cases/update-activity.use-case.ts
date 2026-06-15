@@ -5,10 +5,6 @@ import {
     type ActivityRepository,
 } from '@/modules/activities/domain/ports/activity-repository.port';
 import {
-    USER_REPOSITORY,
-    type UserRepositoryPort,
-} from '@/modules/users/domain/ports/user-repository.port';
-import {
     CALENDAR_SYNC,
     type CalendarSyncPort,
 } from '@/modules/integrations/domain/ports/calendar-sync.port';
@@ -22,8 +18,6 @@ export class UpdateActivityUseCase {
     constructor(
         @Inject(ACTIVITY_REPOSITORY)
         private readonly activityRepository: ActivityRepository,
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: UserRepositoryPort,
         @Inject(CALENDAR_SYNC)
         private readonly calendarSync: CalendarSyncPort,
     ) {}
@@ -36,17 +30,9 @@ export class UpdateActivityUseCase {
             );
         }
 
-        if (dto.idResponsable !== undefined) {
-            const responsable = await this.userRepository.findById(
-                dto.idResponsable,
-            );
-            if (!responsable) {
-                throw new ActivityNotFoundException(
-                    `Responsable con id ${dto.idResponsable} no encontrado`,
-                );
-            }
-            activity.id_responsable = dto.idResponsable;
-        }
+        // El responsable no se actualiza desde la petición: es siempre el
+        // encargado del lead (regla de negocio). Cualquier idResponsable recibido
+        // se ignora.
 
         if (dto.nombreActividad !== undefined) {
             activity.nombre_actividad = dto.nombreActividad;
