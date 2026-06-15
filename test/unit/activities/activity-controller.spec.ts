@@ -6,6 +6,7 @@ import { CreateActivityCalendarEventUseCase } from '@/modules/activities/applica
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
+import { UpdateNotesUseCase } from '@/modules/activities/application/use-cases/update-notes.use-case';
 import { CompleteActivityUseCase } from '@/modules/activities/application/use-cases/complete-activity.use-case';
 import { CancelActivityUseCase } from '@/modules/activities/application/use-cases/cancel-activity.use-case';
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
@@ -18,6 +19,7 @@ describe('ActivityController', () => {
         get: { execute: jest.fn() as any },
         list: { execute: jest.fn() as any },
         update: { execute: jest.fn() as any },
+        updateNotes: { execute: jest.fn() as any },
         complete: { execute: jest.fn() as any },
         cancel: { execute: jest.fn() as any },
         del: { execute: jest.fn() as any },
@@ -58,6 +60,7 @@ describe('ActivityController', () => {
                 { provide: GetActivityByIdUseCase, useValue: mocks.get },
                 { provide: ListActivitiesUseCase, useValue: mocks.list },
                 { provide: UpdateActivityUseCase, useValue: mocks.update },
+                { provide: UpdateNotesUseCase, useValue: mocks.updateNotes },
                 { provide: CompleteActivityUseCase, useValue: mocks.complete },
                 { provide: CancelActivityUseCase, useValue: mocks.cancel },
                 { provide: DeleteActivityUseCase, useValue: mocks.del },
@@ -106,6 +109,13 @@ describe('ActivityController', () => {
         mocks.update.execute.mockResolvedValue(enriched);
         await controller.update(1, { nombreActividad: 'X' } as any);
         expect(mocks.update.execute).toHaveBeenCalledWith(1, expect.anything());
+    });
+
+    it('updateNotes delegates with id and notas', async () => {
+        mocks.updateNotes.execute.mockResolvedValue(enriched);
+        const result = await controller.updateNotes(1, { notas: 'Nueva nota' });
+        expect(mocks.updateNotes.execute).toHaveBeenCalledWith(1, 'Nueva nota');
+        expect(result.id).toBe(1);
     });
 
     it.each([

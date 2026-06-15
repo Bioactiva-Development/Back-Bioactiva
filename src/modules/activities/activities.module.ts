@@ -12,6 +12,7 @@ import { CreateActivityCalendarEventUseCase } from '@/modules/activities/applica
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
+import { UpdateNotesUseCase } from '@/modules/activities/application/use-cases/update-notes.use-case';
 import { CompleteActivityUseCase } from '@/modules/activities/application/use-cases/complete-activity.use-case';
 import { CancelActivityUseCase } from '@/modules/activities/application/use-cases/cancel-activity.use-case';
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
@@ -36,6 +37,7 @@ import { DeleteActivityUseCase } from '@/modules/activities/application/use-case
         GetActivityByIdUseCase,
         ListActivitiesUseCase,
         UpdateActivityUseCase,
+        UpdateNotesUseCase,
         CompleteActivityUseCase,
         CancelActivityUseCase,
         DeleteActivityUseCase,

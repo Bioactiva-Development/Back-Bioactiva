@@ -27,8 +27,11 @@ describe('Activities module', () => {
 
         const validLeadId = 1;
         const leadEncargadoId = 5;
-        const fechaInicio = new Date('2026-06-01T10:00:00.000Z');
-        const fechaFin = new Date('2026-06-01T11:00:00.000Z');
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        // Fechas relativas a "ahora" para que las pruebas no caduquen y respeten
+        // la regla de que la actividad no puede programarse en el pasado.
+        const fechaInicio = new Date(Date.now() + DAY_MS);
+        const fechaFin = new Date(Date.now() + DAY_MS + 60 * 60 * 1000);
 
         const buildDto = (
             overrides?: Partial<CreateActivityDto>,
@@ -99,13 +102,31 @@ describe('Activities module', () => {
             });
 
             const dto = buildDto({
-                fechaInicio: new Date('2026-06-01T11:00:00.000Z'),
-                fechaFin: new Date('2026-06-01T10:00:00.000Z'),
+                fechaInicio: new Date(Date.now() + 2 * DAY_MS),
+                fechaFin: new Date(Date.now() + DAY_MS),
             });
 
             await expect(useCase.execute(dto)).rejects.toThrow(
                 InvalidActivityDateException,
             );
+        });
+
+        // Mantis #441: no se puede programar una actividad en el pasado.
+        it('should throw when fechaInicio is before the current date', async () => {
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
+            });
+
+            const dto = buildDto({
+                fechaInicio: new Date(Date.now() - DAY_MS),
+                fechaFin: new Date(Date.now() + DAY_MS),
+            });
+
+            await expect(useCase.execute(dto)).rejects.toThrow(
+                InvalidActivityDateException,
+            );
+            expect(activityRepository.saveWithRelations).not.toHaveBeenCalled();
         });
 
         it('should throw when a pending activity already exists for the lead', async () => {
