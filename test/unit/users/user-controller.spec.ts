@@ -111,6 +111,7 @@ describe('UserController', () => {
             id: 3,
             nombres: 'Fabricio',
             apellidos: 'Lanche',
+            correo: 'fabricio@example.com',
             rol: 'ADMINISTRADOR',
         });
     });
