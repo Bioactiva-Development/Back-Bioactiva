@@ -156,11 +156,19 @@ export class ImportPlannerService {
                 continue;
             }
             if (!nombreComercial) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Organización".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Organización".',
+                });
                 continue;
             }
             if (!nombre) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Nombre completo".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Nombre completo".',
+                });
                 continue;
             }
             const tipo = resolveEnum(TIPO_EMPRESA_SYNONYMS, tipoRaw);
@@ -229,11 +237,19 @@ export class ImportPlannerService {
                 continue;
             }
             if (!nombres) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Nombre".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Nombre".',
+                });
                 continue;
             }
             if (!correo) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Correo electrónico 1".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Correo electrónico 1".',
+                });
                 continue;
             }
             const vocativoRaw = str(row, 'vocativo');
@@ -287,7 +303,11 @@ export class ImportPlannerService {
                 continue;
             }
             if (!servicio) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Servicio de interés".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Servicio de interés".',
+                });
                 continue;
             }
             const estado = resolveEnum(LEAD_STATE_SYNONYMS, estadoRaw);
@@ -304,7 +324,8 @@ export class ImportPlannerService {
                 warnings.push({
                     sheet,
                     row: rowNumber,
-                    message: 'Sin "Encargado": se asignará al usuario que importa.',
+                    message:
+                        'Sin "Encargado": se asignará al usuario que importa.',
                 });
             }
 
@@ -324,7 +345,6 @@ export class ImportPlannerService {
                 servicioInteres: servicio,
                 comentarios: str(row, 'comentarios'),
                 desafioOportunidad: str(row, 'desafio u oportunidad'),
-                notasContacto: str(row, 'historial de contacto'),
                 canalCaptacion: str(row, 'canal de captacion'),
                 createdAt: dateVal(row, 'fecha de creacion'),
                 fechaCierre: dateVal(row, 'fecha de cierre'),
@@ -359,22 +379,40 @@ export class ImportPlannerService {
                 continue;
             }
             if (!excelLeadId) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "ID de lead".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "ID de lead".',
+                });
                 continue;
             }
             if (!dirigido) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Dirigido a".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Dirigido a".',
+                });
                 continue;
             }
             if (!servicio) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Nombre del servicio".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Nombre del servicio".',
+                });
                 continue;
             }
             if (!remitente) {
-                errors.push({ sheet, row: rowNumber, message: 'Falta "Remitente".' });
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Remitente".',
+                });
                 continue;
             }
-            const monto = montoRaw ? montoRaw.replace(/[^\d.,]/g, '').replace(',', '.') : null;
+            const monto = montoRaw
+                ? montoRaw.replace(/[^\d.,]/g, '').replace(',', '.')
+                : null;
             if (!monto || Number.isNaN(Number(monto))) {
                 errors.push({
                     sheet,

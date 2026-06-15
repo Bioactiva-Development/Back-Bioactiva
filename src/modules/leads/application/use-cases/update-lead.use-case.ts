@@ -94,9 +94,6 @@ export class UpdateLeadUseCase {
         if (dto.desafioOportunidad !== undefined) {
             lead.desafio_oportunidad = dto.desafioOportunidad;
         }
-        if (dto.notasContacto !== undefined) {
-            lead.notas_contacto = dto.notasContacto;
-        }
         if (dto.canalCaptacion !== undefined) {
             lead.canal_captacion = dto.canalCaptacion;
         }

@@ -69,7 +69,10 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 for (const o of existingOrgs) {
                     usedCodigos.add(o.codigoCliente);
                     if (o.ruc) orgIdByRuc.set(o.ruc, o.id);
-                    orgIdByComercial.set(normalizeCell(o.nombreComercial), o.id);
+                    orgIdByComercial.set(
+                        normalizeCell(o.nombreComercial),
+                        o.id,
+                    );
                     orgIdByNombre.set(normalizeCell(o.nombre), o.id);
                 }
 
@@ -99,10 +102,11 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                     let codigo = org.codigoCliente;
                     let suffix = 2;
                     while (usedCodigos.has(codigo)) {
-                        codigo = `${org.codigoCliente.slice(0, 17)}-${suffix}`.slice(
-                            0,
-                            20,
-                        );
+                        codigo =
+                            `${org.codigoCliente.slice(0, 17)}-${suffix}`.slice(
+                                0,
+                                20,
+                            );
                         suffix++;
                     }
                     usedCodigos.add(codigo);
@@ -233,7 +237,6 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                             servicioInteres: l.servicioInteres,
                             comentarios: l.comentarios,
                             desafioOportunidad: l.desafioOportunidad,
-                            notasContacto: l.notasContacto,
                             canalCaptacion: l.canalCaptacion,
                             idOrg: orgId,
                             idContacto: contactoId,

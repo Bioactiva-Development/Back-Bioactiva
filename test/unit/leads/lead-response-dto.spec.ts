@@ -10,7 +10,6 @@ describe('Leads module', () => {
                 servicio_interes: 'Consultoría',
                 comentarios: 'c',
                 desafio_oportunidad: 'd',
-                notas_contacto: 'n',
                 canal_captacion: 'LinkedIn',
                 id_org: 'org-1',
                 id_contacto: 5,

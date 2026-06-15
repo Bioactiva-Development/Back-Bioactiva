@@ -89,7 +89,6 @@ describe('Leads module', () => {
                 overrides?.servicioInteres ?? 'Consultoría TI',
                 overrides?.comentarios ?? null,
                 overrides?.desafioOportunidad ?? null,
-                overrides?.notasContacto ?? null,
                 overrides?.canalCaptacion ?? null,
                 overrides?.idEncargado ?? validEncargadoId,
                 overrides?.idAuthor ?? validAuthorId,

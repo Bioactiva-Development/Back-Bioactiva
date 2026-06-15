@@ -49,15 +49,6 @@ export class HttpUpdateLeadDto {
     desafioOportunidad?: string | null;
 
     @ApiPropertyOptional({
-        example: 'Llamada inicial realizada, cliente muy interesado',
-        description: 'Notas de contacto',
-    })
-    @IsOptional()
-    @IsString()
-    @Length(1, 1000)
-    notasContacto?: string | null;
-
-    @ApiPropertyOptional({
         example: 'LinkedIn',
         description: 'Canal de captación del lead',
     })

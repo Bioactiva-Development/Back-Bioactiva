@@ -44,7 +44,6 @@ export interface LeadInput {
     servicioInteres: string;
     comentarios: string | null;
     desafioOportunidad: string | null;
-    notasContacto: string | null;
     canalCaptacion: string | null;
     createdAt: Date | null;
     fechaCierre: Date | null;

@@ -79,7 +79,6 @@ export class GenerateTemplateUseCase {
                 'Servicio de interés',
                 'Comentarios',
                 'Desafío u oportunidad',
-                'Historial de contacto',
                 'Encargado',
                 'Canal de captación',
                 'Próxima actividad',
@@ -117,8 +116,14 @@ export class GenerateTemplateUseCase {
                 campo: 'Tipo de organización',
                 valores: Object.values(TIPO_EMPRESA_LABEL).join(', '),
             },
-            { campo: 'Tamaño', valores: Object.values(TAMANO_LABEL).join(', ') },
-            { campo: 'Sector', valores: Object.values(SECTOR_LABEL).join(', ') },
+            {
+                campo: 'Tamaño',
+                valores: Object.values(TAMANO_LABEL).join(', '),
+            },
+            {
+                campo: 'Sector',
+                valores: Object.values(SECTOR_LABEL).join(', '),
+            },
             {
                 campo: 'Vocativo',
                 valores: Object.values(VOCATIVO_LABEL).join(', '),

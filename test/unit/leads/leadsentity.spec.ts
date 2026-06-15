@@ -17,7 +17,6 @@ describe('Leads module', () => {
                 'Desarrollo de sitio web',
                 'Cliente interesado en soluciones custom',
                 'Necesita migrar de plataforma antigua',
-                'Contacto activo y comprometido',
                 1,
                 'LinkedIn',
                 1,

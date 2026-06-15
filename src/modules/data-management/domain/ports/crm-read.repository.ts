@@ -46,7 +46,8 @@ export interface LeadExportRow {
     servicioInteres: string;
     comentarios: string | null;
     desafioOportunidad: string | null;
-    notasContacto: string | null;
+    /** Historial de contacto: registro de las actividades del lead (derivado). */
+    historial: string | null;
     canalCaptacion: string | null;
     createdAt: Date;
     fechaCierre: Date | null;

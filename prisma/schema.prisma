@@ -245,7 +245,6 @@ model Lead {
   servicioInteres     String @db.VarChar(120)
   comentarios         String? @db.VarChar(500)
   desafioOportunidad  String? @db.VarChar(500)
-  notasContacto       String? @db.VarChar(1000)
   canalCaptacion      String? @db.VarChar(60)
 
   idOrg String @db.Uuid

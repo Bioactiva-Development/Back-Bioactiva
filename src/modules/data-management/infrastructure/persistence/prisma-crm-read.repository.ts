@@ -32,6 +32,33 @@ function fullName(
     return [nombres, apellidos].filter(Boolean).join(' ').trim();
 }
 
+/**
+ * "Historial de contacto" del lead: registro de sus actividades (una línea por
+ * actividad, en orden cronológico). Reemplaza al antiguo campo notasContacto.
+ */
+function buildHistorial(
+    actividades: {
+        nombreActividad: string;
+        fechaInicio: Date;
+        estado: string;
+        notas: string | null;
+    }[],
+): string | null {
+    if (actividades.length === 0) {
+        return null;
+    }
+    return actividades
+        .map((a) => {
+            const d = a.fechaInicio;
+            const fecha = `${String(d.getDate()).padStart(2, '0')}/${String(
+                d.getMonth() + 1,
+            ).padStart(2, '0')}/${d.getFullYear()}`;
+            const base = `${fecha} · ${a.nombreActividad} (${a.estado})`;
+            return a.notas ? `${base}: ${a.notas}` : base;
+        })
+        .join('\n');
+}
+
 @Injectable()
 export class PrismaCrmReadRepository implements ICrmReadRepository {
     constructor(private readonly prisma: PrismaService) {}
@@ -192,24 +219,30 @@ export class PrismaCrmReadRepository implements ICrmReadRepository {
                 },
                 encargado: { select: { nombres: true, apellidos: true } },
                 actividades: {
-                    where: { estado: 'PENDIENTE', deletedAt: null },
+                    where: { deletedAt: null },
                     orderBy: { fechaInicio: 'asc' },
-                    take: 1,
-                    select: { nombreActividad: true, fechaInicio: true, fechaFin: true },
+                    select: {
+                        nombreActividad: true,
+                        fechaInicio: true,
+                        fechaFin: true,
+                        estado: true,
+                        notas: true,
+                    },
                 },
             },
             orderBy: { id: 'asc' },
         });
 
         return records.map((r) => {
-            const pending = r.actividades[0] ?? null;
+            const pending =
+                r.actividades.find((a) => a.estado === 'PENDIENTE') ?? null;
             return {
                 id: r.id,
                 estado: r.estado,
                 servicioInteres: r.servicioInteres,
                 comentarios: r.comentarios,
                 desafioOportunidad: r.desafioOportunidad,
-                notasContacto: r.notasContacto,
+                historial: buildHistorial(r.actividades),
                 canalCaptacion: r.canalCaptacion,
                 createdAt: r.createdAt,
                 fechaCierre: r.fechaCierre,

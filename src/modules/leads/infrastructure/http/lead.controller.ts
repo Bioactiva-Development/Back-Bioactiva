@@ -67,7 +67,6 @@ export class LeadController {
             httpDto.servicioInteres,
             httpDto.comentarios ?? null,
             httpDto.desafioOportunidad ?? null,
-            httpDto.notasContacto ?? null,
             httpDto.canalCaptacion ?? null,
             httpDto.idEncargado,
             user.id!,
@@ -140,7 +139,6 @@ export class LeadController {
             httpDto.servicioInteres,
             httpDto.comentarios,
             httpDto.desafioOportunidad,
-            httpDto.notasContacto,
             httpDto.canalCaptacion,
             httpDto.idEncargado,
         );
