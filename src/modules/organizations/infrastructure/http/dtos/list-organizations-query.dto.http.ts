@@ -1,11 +1,27 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import {
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    Length,
+    Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { Size } from '@/modules/organizations/domain/enums/size';
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 
 export class ListOrganizationsQueryDto {
+    @ApiPropertyOptional({
+        description:
+            'Búsqueda por nombre (o nombre comercial) de la organización',
+    })
+    @IsOptional()
+    @IsString()
+    @Length(1, 100)
+    term?: string;
+
     @ApiPropertyOptional({
         enum: Sector,
         description: 'Filtrar por sector',
@@ -33,7 +49,11 @@ export class ListOrganizationsQueryDto {
     @IsEnum(EnterpriseType)
     tipo?: EnterpriseType;
 
-    @ApiPropertyOptional({ description: 'Número de página', default: 1, example: 1 })
+    @ApiPropertyOptional({
+        description: 'Número de página',
+        default: 1,
+        example: 1,
+    })
     @IsOptional()
     @Type(() => Number)
     @IsInt()

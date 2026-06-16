@@ -276,6 +276,36 @@ describe('Organizations module', () => {
                 );
             });
 
+            it('should filter by organization name (term) on nombre and nombreComercial', async () => {
+                (
+                    mockPrisma.organizacion!.findMany as jest.Mock
+                ).mockResolvedValue([]);
+
+                await repository.findAll({ term: 'biofarma' });
+
+                expect(mockPrisma.organizacion!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            deletedAt: null,
+                            OR: [
+                                {
+                                    nombre: {
+                                        contains: 'biofarma',
+                                        mode: 'insensitive',
+                                    },
+                                },
+                                {
+                                    nombreComercial: {
+                                        contains: 'biofarma',
+                                        mode: 'insensitive',
+                                    },
+                                },
+                            ],
+                        }),
+                    }),
+                );
+            });
+
             it('countAll should count with the same filters (no pagination)', async () => {
                 (mockPrisma.organizacion!.count as jest.Mock).mockResolvedValue(
                     3,

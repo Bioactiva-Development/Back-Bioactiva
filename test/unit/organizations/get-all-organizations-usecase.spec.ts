@@ -49,6 +49,7 @@ describe('Organizations module', () => {
             expect(result.data).toEqual(orgs);
             expect(result.total).toBe(1);
             expect(mockRepository.findAll).toHaveBeenCalledWith({
+                term: undefined,
                 sector: undefined,
                 tamano: undefined,
                 tipo: undefined,
@@ -57,7 +58,7 @@ describe('Organizations module', () => {
             });
         });
 
-        it('should pass sector, tamano and tipo filters to the repository', async () => {
+        it('should pass term, sector, tamano and tipo filters to the repository', async () => {
             mockRepository.findAll.mockResolvedValue([]);
             mockRepository.countAll.mockResolvedValue(0);
 
@@ -65,12 +66,14 @@ describe('Organizations module', () => {
                 Sector.TECNOLOGIA,
                 Size.GRANDE,
                 EnterpriseType.EMPRESA_NACIONAL,
+                'biofarma',
                 2,
                 5,
             );
             await useCase.execute(dto);
 
             expect(mockRepository.findAll).toHaveBeenCalledWith({
+                term: 'biofarma',
                 sector: Sector.TECNOLOGIA,
                 tamano: Size.GRANDE,
                 tipo: EnterpriseType.EMPRESA_NACIONAL,
@@ -78,6 +81,7 @@ describe('Organizations module', () => {
                 limit: 5,
             });
             expect(mockRepository.countAll).toHaveBeenCalledWith({
+                term: 'biofarma',
                 sector: Sector.TECNOLOGIA,
                 tamano: Size.GRANDE,
                 tipo: EnterpriseType.EMPRESA_NACIONAL,

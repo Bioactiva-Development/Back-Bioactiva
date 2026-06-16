@@ -62,6 +62,17 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         params?: Omit<ListOrganizationsParams, 'page' | 'limit'>,
     ): Prisma.OrganizacionWhereInput {
         const where: Prisma.OrganizacionWhereInput = { deletedAt: null };
+        if (params?.term) {
+            where.OR = [
+                { nombre: { contains: params.term, mode: 'insensitive' } },
+                {
+                    nombreComercial: {
+                        contains: params.term,
+                        mode: 'insensitive',
+                    },
+                },
+            ];
+        }
         if (params?.sector) {
             where.sector = params.sector as PrismaSector;
         }

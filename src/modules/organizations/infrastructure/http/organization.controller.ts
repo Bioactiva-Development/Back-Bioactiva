@@ -72,6 +72,7 @@ export class OrganizationController {
             query.sector,
             query.tamano,
             query.tipo,
+            query.term,
             query.page,
             query.limit,
         );

@@ -1,6 +1,8 @@
 import { Organization } from '@modules/organizations/domain/entities/organization';
 
 export interface ListOrganizationsParams {
+    /** Búsqueda por nombre / nombre comercial de la organización. */
+    term?: string;
     /** Sector de la organización (valor del enum Sector). */
     sector?: string;
     /** Tamaño de la organización (valor del enum Size). */
