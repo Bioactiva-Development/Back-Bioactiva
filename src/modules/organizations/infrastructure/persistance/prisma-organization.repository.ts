@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoCorreo as PrismaEstadoCorreo } from '@prisma/client';
+import {
+    EstadoCorreo as PrismaEstadoCorreo,
+    Sector as PrismaSector,
+    Tamano as PrismaTamano,
+    TipoEmpresa as PrismaTipoEmpresa,
+    Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
-import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
+import {
+    IOrganizationRepository,
+    type ListOrganizationsParams,
+} from '@/modules/organizations/domain/ports/organization.repository';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { OrganizationMapper } from '@/modules/organizations/infrastructure/mapper/organization.mapper';
 
@@ -49,11 +58,40 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         return record ? OrganizationMapper.toDomain(record) : null;
     }
 
-    async findAll(): Promise<Organization[]> {
+    private buildWhere(
+        params?: Omit<ListOrganizationsParams, 'page' | 'limit'>,
+    ): Prisma.OrganizacionWhereInput {
+        const where: Prisma.OrganizacionWhereInput = { deletedAt: null };
+        if (params?.sector) {
+            where.sector = params.sector as PrismaSector;
+        }
+        if (params?.tamano) {
+            where.tamano = params.tamano as PrismaTamano;
+        }
+        if (params?.tipo) {
+            where.tipo = params.tipo as PrismaTipoEmpresa;
+        }
+        return where;
+    }
+
+    async findAll(params?: ListOrganizationsParams): Promise<Organization[]> {
+        const page = params?.page ?? 1;
+        const limit = params?.limit ?? 10;
         const records = await this.prisma.organizacion.findMany({
-            where: { deletedAt: null },
+            where: this.buildWhere(params),
+            orderBy: { createdAt: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
         });
         return records.map((record) => OrganizationMapper.toDomain(record));
+    }
+
+    async countAll(
+        params?: Omit<ListOrganizationsParams, 'page' | 'limit'>,
+    ): Promise<number> {
+        return this.prisma.organizacion.count({
+            where: this.buildWhere(params),
+        });
     }
 
     async softDelete(id: string): Promise<void> {

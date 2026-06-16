@@ -51,6 +51,7 @@ describe('Organizations module', () => {
                     findFirst: jest.fn(),
                     findMany: jest.fn(),
                     updateMany: jest.fn(),
+                    count: jest.fn(),
                 },
                 contacto: {
                     updateMany: jest.fn(),
@@ -138,9 +139,11 @@ describe('Organizations module', () => {
 
                 const result = await repository.findById('org-1');
 
-                expect(mockPrisma.organizacion!.findFirst).toHaveBeenCalledWith({
-                    where: { id: 'org-1', deletedAt: null },
-                });
+                expect(mockPrisma.organizacion!.findFirst).toHaveBeenCalledWith(
+                    {
+                        where: { id: 'org-1', deletedAt: null },
+                    },
+                );
                 expect(result).not.toBeNull();
                 expect(result!.ruc).toBe('20123456789');
             });
@@ -160,12 +163,12 @@ describe('Organizations module', () => {
             it('should deactivate the organization and expire its contacts in one transaction', async () => {
                 const orgUpdateOp = { __op: 'org-update' };
                 const contactUpdateOp = { __op: 'contact-update' };
-                (
-                    mockPrisma.organizacion!.update as jest.Mock
-                ).mockReturnValue(orgUpdateOp);
-                (
-                    mockPrisma.contacto!.updateMany as jest.Mock
-                ).mockReturnValue(contactUpdateOp);
+                (mockPrisma.organizacion!.update as jest.Mock).mockReturnValue(
+                    orgUpdateOp,
+                );
+                (mockPrisma.contacto!.updateMany as jest.Mock).mockReturnValue(
+                    contactUpdateOp,
+                );
                 (mockPrisma.$transaction as jest.Mock).mockResolvedValue([]);
 
                 await repository.softDelete('org-1');
@@ -244,6 +247,46 @@ describe('Organizations module', () => {
                 const result = await repository.findAll();
 
                 expect(result).toHaveLength(0);
+            });
+
+            it('should apply sector, tamano and tipo filters with pagination', async () => {
+                (
+                    mockPrisma.organizacion!.findMany as jest.Mock
+                ).mockResolvedValue([]);
+
+                await repository.findAll({
+                    sector: 'TECNOLOGIA',
+                    tamano: 'GRANDE',
+                    tipo: 'EMPRESA_NACIONAL',
+                    page: 2,
+                    limit: 5,
+                });
+
+                expect(mockPrisma.organizacion!.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: {
+                            deletedAt: null,
+                            sector: 'TECNOLOGIA',
+                            tamano: 'GRANDE',
+                            tipo: 'EMPRESA_NACIONAL',
+                        },
+                        skip: 5,
+                        take: 5,
+                    }),
+                );
+            });
+
+            it('countAll should count with the same filters (no pagination)', async () => {
+                (mockPrisma.organizacion!.count as jest.Mock).mockResolvedValue(
+                    3,
+                );
+
+                const total = await repository.countAll({ sector: 'SALUD' });
+
+                expect(total).toBe(3);
+                expect(mockPrisma.organizacion!.count).toHaveBeenCalledWith({
+                    where: { deletedAt: null, sector: 'SALUD' },
+                });
             });
         });
     });
