@@ -9,6 +9,7 @@ import { Lead } from '@/modules/leads/domain/entities/lead';
 import {
     EstadoActividad as PrismaEstadoActividad,
     LeadState as PrismaLeadState,
+    Sector as PrismaSector,
     Prisma,
 } from '@prisma/client';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
@@ -183,6 +184,28 @@ export class PrismaLeadRepository implements LeadRepository {
                 mode: 'insensitive',
             };
         }
+        if (params?.term || params?.sector) {
+            // Se mantiene el filtro de soft-delete de la organización y se le
+            // suman las condiciones por nombre (término) y/o sector.
+            const organizacion: Prisma.OrganizacionWhereInput = {
+                deletedAt: null,
+            };
+            if (params.term) {
+                organizacion.OR = [
+                    { nombre: { contains: params.term, mode: 'insensitive' } },
+                    {
+                        nombreComercial: {
+                            contains: params.term,
+                            mode: 'insensitive',
+                        },
+                    },
+                ];
+            }
+            if (params.sector) {
+                organizacion.sector = params.sector as PrismaSector;
+            }
+            where.organizacion = organizacion;
+        }
         if (params?.fechaDesde || params?.fechaHasta) {
             const createdAt: Prisma.DateTimeFilter = {};
             if (params.fechaDesde) {
@@ -216,9 +239,15 @@ export class PrismaLeadRepository implements LeadRepository {
         const yellowCutoff = new Date(
             now.getTime() + ACTIVITY_ALERT_YELLOW_DAYS * MS_PER_DAY,
         );
-        const pending = { deletedAt: null, estado: PrismaEstadoActividad.PENDIENTE };
+        const pending = {
+            deletedAt: null,
+            estado: PrismaEstadoActividad.PENDIENTE,
+        };
         const overdue = { ...pending, fechaFin: { lt: now } };
-        const upcoming = { ...pending, fechaFin: { gte: now, lte: yellowCutoff } };
+        const upcoming = {
+            ...pending,
+            fechaFin: { gte: now, lte: yellowCutoff },
+        };
 
         switch (filter) {
             case ActivityAlertFilter.VENCIDAS:

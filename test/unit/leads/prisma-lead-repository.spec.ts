@@ -349,6 +349,53 @@ describe('Leads module', () => {
                 );
             });
 
+            it('should filter by organization name (term) on nombre and nombreComercial', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({ term: 'biofarma' });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            organizacion: {
+                                deletedAt: null,
+                                OR: [
+                                    {
+                                        nombre: {
+                                            contains: 'biofarma',
+                                            mode: 'insensitive',
+                                        },
+                                    },
+                                    {
+                                        nombreComercial: {
+                                            contains: 'biofarma',
+                                            mode: 'insensitive',
+                                        },
+                                    },
+                                ],
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('should filter by organization sector', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({ sector: 'TECNOLOGIA' });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            organizacion: {
+                                deletedAt: null,
+                                sector: 'TECNOLOGIA',
+                            },
+                        }),
+                    }),
+                );
+            });
+
             it('should compute ROJO alert when the lead has an overdue pending activity', async () => {
                 const overdue = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 prismaService.lead.findMany.mockResolvedValue([

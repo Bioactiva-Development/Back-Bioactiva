@@ -11,6 +11,7 @@ import {
 import { Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
+import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListLeadsQueryDto {
@@ -48,6 +49,24 @@ export class ListLeadsQueryDto {
     @IsString()
     @Length(1, 100)
     search?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Búsqueda por nombre (o nombre comercial) de la organización del lead',
+    })
+    @IsOptional()
+    @IsString()
+    @Length(1, 100)
+    term?: string;
+
+    @ApiPropertyOptional({
+        enum: Sector,
+        description: 'Filtrar por sector de la organización del lead',
+        example: 'TECNOLOGIA',
+    })
+    @IsOptional()
+    @IsEnum(Sector)
+    sector?: Sector;
 
     @ApiPropertyOptional({
         description: 'Filtrar por fecha de creación desde (ISO 8601)',
