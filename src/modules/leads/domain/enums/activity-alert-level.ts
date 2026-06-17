@@ -1,11 +1,18 @@
 /**
- * Semáforo de actividades de un Lead (Mantis pendientes #3):
- * - VERDE: al día — sin actividades pendientes próximas a vencer ni vencidas.
- * - AMARILLO: tiene actividades pendientes que vencen dentro del umbral.
- * - ROJO: tiene al menos una actividad pendiente ya vencida.
+ * Semáforo de actividades de un Lead. Un único nivel por lead: el más urgente
+ * entre sus actividades PENDIENTES. Orden de severidad (de menor a mayor):
+ * LIBRE < PENDIENTE < CRITICO < POR_VENCER.
+ *
+ * - LIBRE: el lead no tiene actividades pendientes.
+ * - PENDIENTE: tiene actividades pendientes, pero ninguna crítica ni por vencer.
+ * - CRITICO: alguna actividad pendiente ya superó la mitad de su tiempo
+ *   disponible (desde su creación hasta su fecha de cierre) sin completarse.
+ * - POR_VENCER: alguna actividad pendiente vence dentro de los próximos
+ *   ACTIVITY_ALERT_DUE_SOON_DAYS días (o ya está vencida).
  */
 export enum ActivityAlertLevel {
-    VERDE = 'VERDE',
-    AMARILLO = 'AMARILLO',
-    ROJO = 'ROJO',
+    LIBRE = 'LIBRE',
+    PENDIENTE = 'PENDIENTE',
+    CRITICO = 'CRITICO',
+    POR_VENCER = 'POR_VENCER',
 }

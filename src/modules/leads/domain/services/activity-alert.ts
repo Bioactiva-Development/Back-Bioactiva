@@ -1,49 +1,66 @@
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 /**
- * Días de antelación con los que una actividad pendiente se considera "próxima a
- * vencer" (amarillo). Una actividad cuya fechaFin ya pasó es "vencida" (rojo).
+ * Días de antelación con los que una actividad pendiente se considera "por
+ * vencer" (POR_VENCER). Una actividad ya vencida (fechaFin pasada) también cae
+ * en este nivel, por ser el más urgente.
  */
-export const ACTIVITY_ALERT_YELLOW_DAYS = 3;
+export const ACTIVITY_ALERT_DUE_SOON_DAYS = 4;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Calcula el nivel de alerta de un Lead a partir de las fechas de fin de sus
- * actividades PENDIENTES (las realizadas/canceladas no cuentan). La función es
- * pura: recibe el "ahora" para ser determinista y testeable.
+ * Fechas relevantes de una actividad PENDIENTE para calcular el semáforo: su
+ * creación y su cierre. CRITICO depende de ambas (mitad del tiempo disponible).
+ */
+export interface PendingActivityDates {
+    createdAt: Date;
+    fechaFin: Date;
+}
+
+/**
+ * ¿La actividad ya superó la mitad de su tiempo disponible? El punto medio es
+ * createdAt + (fechaFin - createdAt) / 2; es crítica cuando ahora lo alcanzó o
+ * pasó.
+ */
+function hasPassedMidpoint(activity: PendingActivityDates, now: Date): boolean {
+    const midpoint =
+        activity.createdAt.getTime() +
+        (activity.fechaFin.getTime() - activity.createdAt.getTime()) / 2;
+    return now.getTime() >= midpoint;
+}
+
+/**
+ * Calcula el nivel del semáforo de un Lead a partir de las fechas de sus
+ * actividades PENDIENTES (las realizadas/canceladas/eliminadas no cuentan).
+ * Devuelve el nivel más urgente. Función pura: recibe el "ahora" para ser
+ * determinista y testeable.
  *
- * @param pendingDueDates fechaFin de las actividades pendientes del lead.
+ * Severidad: POR_VENCER > CRITICO > PENDIENTE > LIBRE.
  */
 export function computeActivityAlert(
-    pendingDueDates: Date[],
+    pendingActivities: PendingActivityDates[],
     now: Date,
-    yellowThresholdDays: number = ACTIVITY_ALERT_YELLOW_DAYS,
+    dueSoonDays: number = ACTIVITY_ALERT_DUE_SOON_DAYS,
 ): ActivityAlertLevel {
-    if (pendingDueDates.length === 0) {
-        return ActivityAlertLevel.VERDE;
+    if (pendingActivities.length === 0) {
+        return ActivityAlertLevel.LIBRE;
     }
 
-    const yellowCutoff = new Date(
-        now.getTime() + yellowThresholdDays * MS_PER_DAY,
-    );
+    const dueSoonCutoff = now.getTime() + dueSoonDays * MS_PER_DAY;
 
-    let hasOverdue = false;
-    let hasUpcoming = false;
+    let level = ActivityAlertLevel.PENDIENTE;
 
-    for (const dueDate of pendingDueDates) {
-        if (dueDate < now) {
-            hasOverdue = true;
-        } else if (dueDate <= yellowCutoff) {
-            hasUpcoming = true;
+    for (const activity of pendingActivities) {
+        // POR_VENCER (incluye vencidas: fechaFin <= ahora + umbral) es el nivel
+        // más urgente, así que en cuanto aparece se puede devolver.
+        if (activity.fechaFin.getTime() <= dueSoonCutoff) {
+            return ActivityAlertLevel.POR_VENCER;
+        }
+        if (hasPassedMidpoint(activity, now)) {
+            level = ActivityAlertLevel.CRITICO;
         }
     }
 
-    if (hasOverdue) {
-        return ActivityAlertLevel.ROJO;
-    }
-    if (hasUpcoming) {
-        return ActivityAlertLevel.AMARILLO;
-    }
-    return ActivityAlertLevel.VERDE;
+    return level;
 }

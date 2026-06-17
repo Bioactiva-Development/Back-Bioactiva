@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
-import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
@@ -84,14 +84,14 @@ export class ListLeadsQueryDto {
     fechaHasta?: string;
 
     @ApiPropertyOptional({
-        enum: ActivityAlertFilter,
+        enum: ActivityAlertLevel,
         description:
-            'Filtra leads por el semáforo de actividades: TODAS (por vencer o vencidas), POR_VENCER (solo amarillas) o VENCIDAS (solo rojas). Si se omite, no filtra.',
-        example: ActivityAlertFilter.TODAS,
+            'Filtra leads por el nivel del semáforo de actividades: LIBRE (sin pendientes), PENDIENTE, CRITICO (pasó la mitad del tiempo) o POR_VENCER (vence en ≤4 días o vencida). Si se omite, no filtra.',
+        example: ActivityAlertLevel.POR_VENCER,
     })
     @IsOptional()
-    @IsEnum(ActivityAlertFilter)
-    alertaActividad?: ActivityAlertFilter;
+    @IsEnum(ActivityAlertLevel)
+    alertaActividad?: ActivityAlertLevel;
 
     @ApiPropertyOptional({
         description: 'Número de página',

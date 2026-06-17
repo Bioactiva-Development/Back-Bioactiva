@@ -1,6 +1,5 @@
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
-import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
 
 export interface LeadWithRelations {
     lead: Lead;
@@ -8,7 +7,7 @@ export interface LeadWithRelations {
     encargadoNombre: string;
     encargadoApellidos: string;
     contactName: string | null;
-    /** Semáforo de actividades del lead (al día / por vencer / vencida). */
+    /** Semáforo de actividades del lead (libre / pendiente / crítico / por vencer). */
     activityAlert: ActivityAlertLevel;
 }
 
@@ -26,12 +25,10 @@ export interface ListLeadsParams {
     fechaDesde?: Date;
     fechaHasta?: Date;
     /**
-     * Filtra por el semáforo de actividades del lead. Si se omite, no filtra:
-     * - TODAS: alerta amarilla o roja (por vencer o vencidas).
-     * - POR_VENCER: solo amarilla (próximas a vencer, sin vencidas).
-     * - VENCIDAS: solo roja (al menos una pendiente ya vencida).
+     * Filtra por el nivel del semáforo de actividades del lead. Si se omite, no
+     * filtra. Valores: LIBRE, PENDIENTE, CRITICO, POR_VENCER.
      */
-    alertaActividad?: ActivityAlertFilter;
+    alertaActividad?: ActivityAlertLevel;
     page?: number;
     limit?: number;
 }
