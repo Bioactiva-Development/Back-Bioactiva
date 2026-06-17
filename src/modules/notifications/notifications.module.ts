@@ -39,7 +39,8 @@ import { ListNotificationsUseCase } from '@/modules/notifications/application/us
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
 import { CompleteActivityFollowUpUseCase } from '@/modules/notifications/application/use-cases/complete-activity-follow-up.use-case';
 import { SendInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-internal-email.use-case';
-import { SendExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-external-email.use-case';
+import { SendInstanceInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-internal-email.use-case';
+import { SendInstanceExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-external-email.use-case';
 import { GenerateStaleLeadAlertsUseCase } from '@/modules/notifications/application/use-cases/generate-stale-lead-alerts.use-case';
 import { ListInAppNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-in-app-notifications.use-case';
 import { MarkInAppNotificationReadUseCase } from '@/modules/notifications/application/use-cases/mark-in-app-notification-read.use-case';
@@ -103,7 +104,8 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         ListActiveTemplatesUseCase,
         CompleteActivityFollowUpUseCase,
         SendInternalEmailUseCase,
-        SendExternalEmailUseCase,
+        SendInstanceInternalEmailUseCase,
+        SendInstanceExternalEmailUseCase,
         GenerateStaleLeadAlertsUseCase,
         ListInAppNotificationsUseCase,
         MarkInAppNotificationReadUseCase,

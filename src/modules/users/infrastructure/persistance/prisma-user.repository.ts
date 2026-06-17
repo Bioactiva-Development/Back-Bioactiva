@@ -111,6 +111,14 @@ export class PrismaUserRepository implements UserRepositoryPort {
         });
     }
 
+    async findEnabled(): Promise<User[]> {
+        const records = await this.prismaClient.usuario.findMany({
+            where: { estado: UserMapper.mapStateToPrisma(UserState.ACTIVO) },
+            orderBy: [{ nombres: 'asc' }, { apellidos: 'asc' }],
+        });
+        return records.map((r) => UserMapper.toDomain(r));
+    }
+
     private buildWhereInput(
         search?: string,
         role?: UserRole,

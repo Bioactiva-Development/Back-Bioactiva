@@ -50,8 +50,8 @@ export class NotificationsController {
         @Body() dto: HttpCreateReminderDto,
     ): Promise<NotificationResponseDto> {
         const notification = await this.createReminderUseCase.execute({
-            idActividad: dto.idActividad,
-            fechaEnvio: dto.fechaEnvio,
+            idLead: dto.idLead,
+            minutosAntes: dto.minutosAntes,
             idTemplate: dto.idTemplate,
             asunto: dto.asunto,
             cuerpo: dto.cuerpo,
@@ -68,20 +68,22 @@ export class NotificationsController {
         @Body() dto: HttpCreateFollowUpDto,
     ): Promise<NotificationResponseDto> {
         const notification = await this.createFollowUpUseCase.execute({
-            idActividad: dto.idActividad,
-            internal: {
-                fechaEnvio: dto.internal.fechaEnvio,
-                idTemplate: dto.internal.idTemplate,
-                asunto: dto.internal.asunto,
-                cuerpo: dto.internal.cuerpo,
-            },
-            external: {
-                correoCliente: dto.external.correoCliente,
-                fechaEnvio: dto.external.fechaEnvio,
-                idTemplate: dto.external.idTemplate,
-                asunto: dto.external.asunto,
-                cuerpo: dto.external.cuerpo,
-            },
+            idLead: dto.idLead,
+            correoCliente: dto.correoCliente,
+            instancias: dto.instancias.map((instancia) => ({
+                internal: {
+                    fechaEnvio: instancia.internal.fechaEnvio,
+                    idTemplate: instancia.internal.idTemplate,
+                    asunto: instancia.internal.asunto,
+                    cuerpo: instancia.internal.cuerpo,
+                },
+                external: {
+                    fechaEnvio: instancia.external.fechaEnvio,
+                    idTemplate: instancia.external.idTemplate,
+                    asunto: instancia.external.asunto,
+                    cuerpo: instancia.external.cuerpo,
+                },
+            })),
         });
         return new NotificationResponseDto(notification);
     }

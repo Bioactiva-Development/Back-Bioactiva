@@ -26,7 +26,6 @@ describe('LeadController', () => {
             servicio_interes: 'Consultoría',
             comentarios: null,
             desafio_oportunidad: null,
-            notas_contacto: null,
             canal_captacion: null,
             id_org: 'org-1',
             id_contacto: null,

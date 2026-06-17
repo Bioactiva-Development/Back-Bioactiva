@@ -16,5 +16,9 @@ export interface NotificationRepositoryPort {
     findActiveByActivity(
         idActividad: number,
     ): Promise<ScheduledNotification | null>;
+    /** Seguimiento (agregado completo) que contiene la instancia indicada. */
+    findByInstanceId(
+        instanciaId: number,
+    ): Promise<ScheduledNotification | null>;
     list(filter: ListNotificationsFilter): Promise<ScheduledNotification[]>;
 }

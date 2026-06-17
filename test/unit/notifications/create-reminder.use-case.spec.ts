@@ -3,7 +3,7 @@ import { CreateReminderUseCase } from '@/modules/notifications/application/use-c
 import { NotificationType } from '@/modules/notifications/domain/enums/notification-type';
 import { DuplicateNotificationException } from '@/modules/notifications/domain/exceptions/duplicate-notification.exception';
 import { EmailTemplateNotFoundException } from '@/modules/notifications/domain/exceptions/email-template-not-found.exception';
-import { ActivityContextNotFoundException } from '@/modules/notifications/domain/exceptions/activity-context-not-found.exception';
+import { LeadHasNoActiveActivityException } from '@/modules/notifications/domain/exceptions/lead-has-no-active-activity.exception';
 
 describe('Notifications module', () => {
     describe('CreateReminderUseCase', () => {
@@ -24,12 +24,15 @@ describe('Notifications module', () => {
         };
 
         const command = {
-            idActividad: 1,
-            fechaEnvio: new Date(2099, 0, 1, 14, 0, 0),
-            idTemplate: 5,
+            idLead: 2,
+            minutosAntes: 30,
+            idTemplate: 5 as number | null,
             asunto: 'Recordatorio',
             cuerpo: 'Cuerpo',
         };
+
+        // El recordatorio se programa minutosAntes de la fechaFin de la actividad.
+        const expectedSendAt = new Date('2099-01-10T13:30:00.000Z');
 
         beforeEach(() => {
             repository = {
@@ -52,7 +55,7 @@ describe('Notifications module', () => {
                     .mockResolvedValue({ id: 5, activo: true }),
             };
             contextReader = {
-                getByActivityId: jest.fn().mockResolvedValue(context),
+                getActiveActivityByLead: jest.fn().mockResolvedValue(context),
             };
             useCase = new CreateReminderUseCase(
                 repository,
@@ -69,17 +72,28 @@ describe('Notifications module', () => {
             expect(result.id_responsable).toBe(3);
             expect(scheduler.scheduleInternal).toHaveBeenCalledWith({
                 notificationId: 10,
-                sendAt: command.fechaEnvio,
+                sendAt: expectedSendAt,
             });
             expect(result.job_id_interno).toBe('notif-internal-10');
             expect(repository.save).toHaveBeenCalledTimes(2);
         });
 
-        it('throws when the activity does not exist', async () => {
-            contextReader.getByActivityId.mockResolvedValue(null);
+        it('throws when the lead has no active activity', async () => {
+            contextReader.getActiveActivityByLead.mockResolvedValue(null);
             await expect(useCase.execute(command)).rejects.toThrow(
-                ActivityContextNotFoundException,
+                LeadHasNoActiveActivityException,
             );
+        });
+
+        it('creates a reminder without template (manual subject/body)', async () => {
+            const result = await useCase.execute({
+                ...command,
+                idTemplate: null,
+            });
+
+            expect(result.tipo).toBe(NotificationType.RECORDATORIO);
+            expect(result.id_template_interno).toBeNull();
+            expect(templateReader.findActiveById).not.toHaveBeenCalled();
         });
 
         it('blocks a duplicate notification for the same activity', async () => {

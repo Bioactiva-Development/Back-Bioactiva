@@ -28,8 +28,8 @@ export class CompleteActivityFollowUpUseCase {
             return;
         }
 
-        if (notification.hasPendingExternal() && notification.job_id_externo) {
-            await this.scheduler.cancel(notification.job_id_externo);
+        for (const jobId of notification.pendingInstanceJobIds()) {
+            await this.scheduler.cancel(jobId);
         }
 
         notification.completeFollowUp();

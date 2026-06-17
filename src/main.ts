@@ -31,7 +31,7 @@ async function bootstrap() {
                     frameAncestors: ["'none'"],
                 },
             },
-            //testing
+            //testing 2
             crossOriginResourcePolicy: { policy: 'cross-origin' },
         }),
     );
@@ -57,6 +57,10 @@ async function bootstrap() {
     app.enableCors({
         origin: allowedOrigin,
         credentials: true,
+        // Permite que el frontend lea el nombre del archivo al descargar
+        // exportaciones (.xlsx) vía fetch/axios; sin esto el header queda oculto
+        // por CORS y el navegador no puede recuperar el filename.
+        exposedHeaders: ['Content-Disposition'],
     });
 
     app.use(cookieParser());

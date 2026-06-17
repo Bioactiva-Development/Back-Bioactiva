@@ -2,9 +2,11 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { ActivityController } from '@/modules/activities/infrastructure/http/activity.controller';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
+import { CreateActivityCalendarEventUseCase } from '@/modules/activities/application/use-cases/create-activity-calendar-event.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
+import { UpdateNotesUseCase } from '@/modules/activities/application/use-cases/update-notes.use-case';
 import { CompleteActivityUseCase } from '@/modules/activities/application/use-cases/complete-activity.use-case';
 import { CancelActivityUseCase } from '@/modules/activities/application/use-cases/cancel-activity.use-case';
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
@@ -13,9 +15,11 @@ describe('ActivityController', () => {
     let controller: ActivityController;
     const mocks = {
         create: { execute: jest.fn() as any },
+        createCalendarEvent: { execute: jest.fn() as any },
         get: { execute: jest.fn() as any },
         list: { execute: jest.fn() as any },
         update: { execute: jest.fn() as any },
+        updateNotes: { execute: jest.fn() as any },
         complete: { execute: jest.fn() as any },
         cancel: { execute: jest.fn() as any },
         del: { execute: jest.fn() as any },
@@ -49,9 +53,14 @@ describe('ActivityController', () => {
             controllers: [ActivityController],
             providers: [
                 { provide: CreateActivityUseCase, useValue: mocks.create },
+                {
+                    provide: CreateActivityCalendarEventUseCase,
+                    useValue: mocks.createCalendarEvent,
+                },
                 { provide: GetActivityByIdUseCase, useValue: mocks.get },
                 { provide: ListActivitiesUseCase, useValue: mocks.list },
                 { provide: UpdateActivityUseCase, useValue: mocks.update },
+                { provide: UpdateNotesUseCase, useValue: mocks.updateNotes },
                 { provide: CompleteActivityUseCase, useValue: mocks.complete },
                 { provide: CancelActivityUseCase, useValue: mocks.cancel },
                 { provide: DeleteActivityUseCase, useValue: mocks.del },
@@ -75,6 +84,13 @@ describe('ActivityController', () => {
         expect(result.id).toBe(1);
     });
 
+    it('createCalendarEvent delegates and maps to a response dto', async () => {
+        mocks.createCalendarEvent.execute.mockResolvedValue(enriched);
+        const result = await controller.createCalendarEvent(1);
+        expect(mocks.createCalendarEvent.execute).toHaveBeenCalledWith(1);
+        expect(result.id).toBe(1);
+    });
+
     it('findAll returns a paginated response', async () => {
         mocks.list.execute.mockResolvedValue({ data: [enriched], total: 1 });
         const result = await controller.findAll({ page: 1, limit: 10 } as any);
@@ -93,6 +109,13 @@ describe('ActivityController', () => {
         mocks.update.execute.mockResolvedValue(enriched);
         await controller.update(1, { nombreActividad: 'X' } as any);
         expect(mocks.update.execute).toHaveBeenCalledWith(1, expect.anything());
+    });
+
+    it('updateNotes delegates with id and notas', async () => {
+        mocks.updateNotes.execute.mockResolvedValue(enriched);
+        const result = await controller.updateNotes(1, { notas: 'Nueva nota' });
+        expect(mocks.updateNotes.execute).toHaveBeenCalledWith(1, 'Nueva nota');
+        expect(result.id).toBe(1);
     });
 
     it.each([

@@ -22,11 +22,6 @@ export class LeadResponseDto {
     })
     desafioOportunidad: string | null;
 
-    @ApiPropertyOptional({
-        example: 'Llamada inicial realizada',
-    })
-    notasContacto: string | null;
-
     @ApiPropertyOptional({ example: 'LinkedIn' })
     canalCaptacion: string | null;
 
@@ -76,7 +71,6 @@ export class LeadResponseDto {
         this.servicioInteres = enriched.lead.servicio_interes;
         this.comentarios = enriched.lead.comentarios;
         this.desafioOportunidad = enriched.lead.desafio_oportunidad;
-        this.notasContacto = enriched.lead.notas_contacto;
         this.canalCaptacion = enriched.lead.canal_captacion;
         this.idOrg = enriched.lead.id_org;
         this.organizationName = enriched.organizationName;

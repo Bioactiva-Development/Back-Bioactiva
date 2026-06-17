@@ -4,6 +4,44 @@ export const BUSINESS_HOUR_START = 9;
 export const BUSINESS_HOUR_END = 18;
 
 /**
+ * El recordatorio se programa como un contador de minutos ANTES de que finalice
+ * la actividad (`fechaFin`). El tope es 2 horas antes; el mínimo, 1 minuto.
+ */
+export const MAX_REMINDER_MINUTES = 120;
+export const MIN_REMINDER_MINUTES = 1;
+
+/**
+ * Calcula el instante de envío del recordatorio: `fechaFin - minutosAntes`.
+ * Valida que `minutosAntes` esté en [1, 120] y que el resultado sea futuro
+ * (la actividad no debe finalizar tan pronto que el recordatorio caiga en el
+ * pasado).
+ */
+export function computeReminderSendAt(
+    fechaFinActividad: Date,
+    minutosAntes: number,
+    now: Date,
+): Date {
+    if (
+        !Number.isInteger(minutosAntes) ||
+        minutosAntes < MIN_REMINDER_MINUTES ||
+        minutosAntes > MAX_REMINDER_MINUTES
+    ) {
+        throw new InvalidScheduleDateException(
+            `El recordatorio debe programarse entre ${MIN_REMINDER_MINUTES} y ${MAX_REMINDER_MINUTES} minutos antes del fin de la actividad.`,
+        );
+    }
+    const sendAt = new Date(
+        fechaFinActividad.getTime() - minutosAntes * 60_000,
+    );
+    if (sendAt <= now) {
+        throw new InvalidScheduleDateException(
+            'La actividad finaliza demasiado pronto para programar el recordatorio con esa antelación.',
+        );
+    }
+    return sendAt;
+}
+
+/**
  * CU007: si el envío cae fuera del horario laboral [09:00, 18:00), se reprograma
  * a las 09:00 del mismo día. Usa la hora local del servidor.
  */
@@ -34,6 +72,23 @@ export function assertInternalDate(
     }
 }
 
+export function assertExternalDate(
+    fechaEnvio: Date,
+    fechaFinActividad: Date,
+    now: Date,
+): void {
+    if (fechaEnvio <= now) {
+        throw new InvalidScheduleDateException(
+            'El correo al cliente debe programarse después de la fecha actual.',
+        );
+    }
+    if (fechaEnvio >= fechaFinActividad) {
+        throw new InvalidScheduleDateException(
+            'El correo al cliente debe programarse antes de la fecha de fin de la actividad.',
+        );
+    }
+}
+
 export function assertExternalAfterInternal(
     internal: Date,
     external: Date,
@@ -41,6 +96,34 @@ export function assertExternalAfterInternal(
     if (external <= internal) {
         throw new InvalidScheduleDateException(
             'El correo al cliente debe programarse después del recordatorio interno.',
+        );
+    }
+}
+
+export const MIN_FOLLOW_UP_INSTANCES = 1;
+export const MAX_FOLLOW_UP_INSTANCES = 3;
+
+/** Un seguimiento debe tener entre 1 y 3 instancias. */
+export function assertInstanceCount(count: number): void {
+    if (count < MIN_FOLLOW_UP_INSTANCES || count > MAX_FOLLOW_UP_INSTANCES) {
+        throw new InvalidScheduleDateException(
+            `Un seguimiento debe tener entre ${MIN_FOLLOW_UP_INSTANCES} y ${MAX_FOLLOW_UP_INSTANCES} instancias.`,
+        );
+    }
+}
+
+/**
+ * Las instancias se ejecutan en orden y sus fechas no se solapan: el correo
+ * interno de una instancia debe programarse después del correo externo de la
+ * instancia anterior.
+ */
+export function assertInstancesChained(
+    previousExternal: Date,
+    currentInternal: Date,
+): void {
+    if (currentInternal <= previousExternal) {
+        throw new InvalidScheduleDateException(
+            'Cada instancia de seguimiento debe programarse después de que finalice la anterior.',
         );
     }
 }

@@ -36,7 +36,6 @@ describe('Leads module', () => {
                 'Consultoría TI',
                 'Comentario inicial',
                 'Desafío inicial',
-                'Nota inicial',
                 validEncargadoId,
                 'LinkedIn',
                 1,
@@ -83,7 +82,6 @@ describe('Leads module', () => {
                 'Nuevo servicio',
                 'Nuevo comentario',
                 'Nuevo desafío',
-                'Nueva nota',
                 'Web',
                 undefined,
             );
@@ -92,7 +90,6 @@ describe('Leads module', () => {
             expect(existingLead.servicio_interes).toBe('Nuevo servicio');
             expect(existingLead.comentarios).toBe('Nuevo comentario');
             expect(existingLead.desafio_oportunidad).toBe('Nuevo desafío');
-            expect(existingLead.notas_contacto).toBe('Nueva nota');
             expect(existingLead.canal_captacion).toBe('Web');
             expect(leadRepository.saveWithRelations).toHaveBeenCalledWith(
                 existingLead,
@@ -150,7 +147,6 @@ describe('Leads module', () => {
             leadRepository.saveWithRelations.mockResolvedValue(existingLead);
 
             const dto = new UpdateLeadDto(
-                undefined,
                 undefined,
                 undefined,
                 undefined,
@@ -238,7 +234,6 @@ describe('Leads module', () => {
             userRepository.findById.mockResolvedValue(null);
 
             const dto = new UpdateLeadDto(
-                undefined,
                 undefined,
                 undefined,
                 undefined,

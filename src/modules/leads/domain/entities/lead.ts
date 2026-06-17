@@ -10,7 +10,6 @@ export class Lead {
         public servicio_interes: string,
         public comentarios: string | null,
         public desafio_oportunidad: string | null,
-        public notas_contacto: string | null,
         public id_encargado: number,
         public canal_captacion: string | null,
         public id_author: number,

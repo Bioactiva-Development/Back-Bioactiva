@@ -9,24 +9,40 @@ import {
 export class PrismaActivityContextReader implements ActivityContextReaderPort {
     constructor(private readonly prisma: PrismaService) {}
 
-    async getByActivityId(
-        idActividad: number,
+    async getActiveActivityByLead(
+        idLead: number,
     ): Promise<ActivityContext | null> {
+        // Una sola actividad activa por lead (regla de negocio). "Activa" = aún
+        // pendiente y no eliminada; REALIZADA/CANCELADA no se consideran activas.
         const actividad = await this.prisma.actividad.findFirst({
-            where: { id: idActividad, deletedAt: null },
-            include: {
-                responsable: { select: { correo: true } },
-                lead: {
-                    include: {
-                        contacto: { select: { correo: true, correo2: true } },
-                    },
-                },
-            },
+            where: { idLead, estado: 'PENDIENTE', deletedAt: null },
+            include: this.contextInclude,
         });
-        if (!actividad) {
-            return null;
-        }
+        return actividad ? this.toContext(actividad) : null;
+    }
 
+    // El responsable de la actividad es, por regla de negocio, el encargado del
+    // lead: se resuelve desde `lead.encargado` (fuente única de verdad), no desde
+    // `actividad.idResponsable`.
+    private readonly contextInclude = {
+        lead: {
+            include: {
+                encargado: { select: { id: true, correo: true } },
+                contacto: { select: { correo: true, correo2: true } },
+            },
+        },
+    } as const;
+
+    private toContext(actividad: {
+        id: number;
+        idLead: number;
+        fechaFin: Date;
+        estado: string;
+        lead: {
+            encargado: { id: number; correo: string };
+            contacto: { correo: string | null; correo2: string | null } | null;
+        };
+    }): ActivityContext {
         const contacto = actividad.lead.contacto;
         const contactEmails = [contacto?.correo, contacto?.correo2].filter(
             (email): email is string => Boolean(email),
@@ -35,8 +51,8 @@ export class PrismaActivityContextReader implements ActivityContextReaderPort {
         return {
             idActividad: actividad.id,
             idLead: actividad.idLead,
-            idResponsable: actividad.idResponsable,
-            responsableEmail: actividad.responsable.correo,
+            idResponsable: actividad.lead.encargado.id,
+            responsableEmail: actividad.lead.encargado.correo,
             fechaFin: actividad.fechaFin,
             estado: actividad.estado,
             contactEmails,

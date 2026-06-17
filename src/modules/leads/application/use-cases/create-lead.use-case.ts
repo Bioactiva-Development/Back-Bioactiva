@@ -77,7 +77,6 @@ export class CreateLeadUseCase {
             dto.servicioInteres,
             dto.comentarios,
             dto.desafioOportunidad,
-            dto.notasContacto,
             dto.idEncargado,
             dto.canalCaptacion,
             dto.idAuthor,

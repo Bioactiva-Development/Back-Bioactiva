@@ -75,9 +75,14 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE')
+                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE'),
+                    file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
+                        # Se baja el stack, se levanta y se inyecta el service
+                        # account de reCAPTCHA con `docker cp` directo al contenedor.
+                        # Evita bind-mounts de archivo, frágiles cuando el daemon
+                        # no comparte el filesystem del workspace de Jenkins.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
@@ -85,12 +90,16 @@ pipeline {
                             --profile testing \
                             down
 
+                        cat "$RECAPTCHA_FILE"
+
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-testing \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile testing \
                             up -d --build
+
+                        docker cp "$RECAPTCHA_FILE" bioactiva-backend-prod:/app/credentials/recaptcha-account.json
                     '''
                 }
             }
@@ -102,10 +111,14 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_DEV', variable: 'ENV_FILE')
+                    file(credentialsId: 'BIOACTIVA_SECRETS_BACKEND_DEV', variable: 'ENV_FILE'),
+                    file(credentialsId: 'BIOACTIVA_SECRETS_RECAPTCHA_JSON', variable: 'RECAPTCHA_FILE')
                 ]) {
                     sh '''
-                        cat "$ENV_FILE"
+                        # Se baja el stack, se levanta y se inyecta el service
+                        # account de reCAPTCHA con `docker cp` directo al contenedor.
+                        # Evita bind-mounts de archivo, frágiles cuando el daemon
+                        # no comparte el filesystem del workspace de Jenkins.
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \
@@ -113,12 +126,16 @@ pipeline {
                             --profile development \
                             down
 
+                        cat "$RECAPTCHA_FILE"
+
                         BIOACTIVA_ENV_FILE="$ENV_FILE" docker compose \
                             -p back-bioactiva-development \
                             -f docker-compose.yml \
                             --env-file "$ENV_FILE" \
                             --profile development \
                             up -d --build
+
+                        docker cp "$RECAPTCHA_FILE" bioactiva-backend-development:/app/credentials/recaptcha-account.json
                     '''
                 }
             }

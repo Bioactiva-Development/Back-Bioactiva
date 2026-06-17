@@ -10,10 +10,10 @@ import { InvalidActivityDateException } from '@/modules/activities/domain/except
 /**
  * UpdateActivityUseCase
  * ---------------------
- * Solo actualiza campos de negocio (nombre, fechas, notas, responsable);
- * nunca estado, lead, createdAt ni deletedAt.
+ * Solo actualiza campos de negocio (nombre, fechas, notas); nunca estado, lead,
+ * createdAt, deletedAt ni responsable (el responsable es intrínsecamente el
+ * encargado del lead y no se reasigna desde la edición).
  * - Actualiza nombre y notas.
- * - Valida el nuevo responsable (RN-002) → ActivityNotFoundException si no existe.
  * - Reprograma fechas combinando las parciales con las actuales y exige
  *   fechaInicio < fechaFin (RN-003) → InvalidActivityDateException.
  * - Lanza ActivityNotFoundException cuando la actividad no existe.
@@ -22,7 +22,6 @@ describe('Activities module', () => {
     describe('UpdateActivityUseCase', () => {
         let useCase: UpdateActivityUseCase;
         let activityRepository: any;
-        let userRepository: any;
         let calendarSync: any;
 
         const buildActividad = (outlookEventId: string | null = null) =>
@@ -50,7 +49,6 @@ describe('Activities module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
-            userRepository = { findById: jest.fn() };
             calendarSync = {
                 isUserConnected: jest.fn(),
                 createCalendarEvent: jest.fn(),
@@ -60,7 +58,6 @@ describe('Activities module', () => {
             };
             useCase = new UpdateActivityUseCase(
                 activityRepository,
-                userRepository,
                 calendarSync,
             );
         });
@@ -88,10 +85,9 @@ describe('Activities module', () => {
             );
         });
 
-        it('should update responsable when provided', async () => {
+        it('ignores any responsable sent in the update (kept = lead encargado)', async () => {
             const actividad = buildActividad();
             activityRepository.findById.mockResolvedValue(actividad);
-            userRepository.findById.mockResolvedValue({ id: 10 });
             activityRepository.saveWithRelations.mockResolvedValue({
                 activity: actividad,
             });
@@ -105,8 +101,8 @@ describe('Activities module', () => {
             );
             await useCase.execute(1, dto);
 
-            expect(actividad.id_responsable).toBe(10);
-            expect(userRepository.findById).toHaveBeenCalledWith(10);
+            // El responsable no cambia: sigue siendo el original (encargado del lead).
+            expect(actividad.id_responsable).toBe(5);
         });
 
         it('should reschedule when only fechaFin is provided', async () => {
@@ -151,23 +147,6 @@ describe('Activities module', () => {
             await expect(
                 useCase.execute(999, new UpdateActivityDto('x')),
             ).rejects.toThrow(ActivityNotFoundException);
-        });
-
-        it('should throw when new responsable does not exist', async () => {
-            const actividad = buildActividad();
-            activityRepository.findById.mockResolvedValue(actividad);
-            userRepository.findById.mockResolvedValue(null);
-
-            const dto = new UpdateActivityDto(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                999,
-            );
-            await expect(useCase.execute(1, dto)).rejects.toThrow(
-                ActivityNotFoundException,
-            );
         });
 
         // Caso 4: actualizar actividad sincronizada -> Outlook actualizado

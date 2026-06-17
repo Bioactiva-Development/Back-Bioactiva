@@ -22,7 +22,6 @@ describe('Quotations module', () => {
                 'Consultoría I+D',
                 null,
                 null,
-                null,
                 3, // id_encargado
                 null,
                 9, // id_author
@@ -64,9 +63,11 @@ describe('Quotations module', () => {
 
             await handler.handle(buildLead());
 
-            expect(cotizacionRepository.count).toHaveBeenCalledWith({ idLead: 7 });
-            const created = cotizacionRepository.saveWithRelations.mock
-                .calls[0][0];
+            expect(cotizacionRepository.count).toHaveBeenCalledWith({
+                idLead: 7,
+            });
+            const created =
+                cotizacionRepository.saveWithRelations.mock.calls[0][0];
             expect(created.estado).toBe(EstadoCot.PENDIENTE);
             expect(created.tipo).toBe(TipoMoneda.PEN);
             expect(created.monto).toBe('0.00');

@@ -37,6 +37,16 @@ export class SendInternalEmailUseCase {
             return;
         }
 
+        if (
+            notification.asunto_interno === null ||
+            notification.cuerpo_interno === null
+        ) {
+            this.logger.warn(
+                `Recordatorio ${notificationId} sin contenido interno; se omite`,
+            );
+            return;
+        }
+
         const email = await this.activityContextReader.getUserEmail(
             notification.id_responsable,
         );
