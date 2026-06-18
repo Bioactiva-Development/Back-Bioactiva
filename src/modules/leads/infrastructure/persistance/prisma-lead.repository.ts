@@ -189,27 +189,13 @@ export class PrismaLeadRepository implements LeadRepository {
                 mode: 'insensitive',
             };
         }
-        if (params?.term || params?.sector) {
+        if (params?.sector) {
             // Se mantiene el filtro de soft-delete de la organización y se le
-            // suman las condiciones por nombre (término) y/o sector.
-            const organizacion: Prisma.OrganizacionWhereInput = {
+            // suma el filtro por sector.
+            where.organizacion = {
                 deletedAt: null,
+                sector: params.sector as PrismaSector,
             };
-            if (params.term) {
-                organizacion.OR = [
-                    { nombre: { contains: params.term, mode: 'insensitive' } },
-                    {
-                        nombreComercial: {
-                            contains: params.term,
-                            mode: 'insensitive',
-                        },
-                    },
-                ];
-            }
-            if (params.sector) {
-                organizacion.sector = params.sector as PrismaSector;
-            }
-            where.organizacion = organizacion;
         }
         if (params?.fechaDesde || params?.fechaHasta) {
             const createdAt: Prisma.DateTimeFilter = {};

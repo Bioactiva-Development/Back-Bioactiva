@@ -51,15 +51,6 @@ export class ListLeadsQueryDto {
     search?: string;
 
     @ApiPropertyOptional({
-        description:
-            'Búsqueda por nombre (o nombre comercial) de la organización del lead',
-    })
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    term?: string;
-
-    @ApiPropertyOptional({
         enum: Sector,
         description: 'Filtrar por sector de la organización del lead',
         example: 'TECNOLOGIA',

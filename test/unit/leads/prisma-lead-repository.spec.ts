@@ -350,36 +350,6 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter by organization name (term) on nombre and nombreComercial', async () => {
-                prismaService.lead.findMany.mockResolvedValue([]);
-
-                await repository.list({ term: 'biofarma' });
-
-                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        where: expect.objectContaining({
-                            organizacion: {
-                                deletedAt: null,
-                                OR: [
-                                    {
-                                        nombre: {
-                                            contains: 'biofarma',
-                                            mode: 'insensitive',
-                                        },
-                                    },
-                                    {
-                                        nombreComercial: {
-                                            contains: 'biofarma',
-                                            mode: 'insensitive',
-                                        },
-                                    },
-                                ],
-                            },
-                        }),
-                    }),
-                );
-            });
-
             it('should filter by organization sector', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 

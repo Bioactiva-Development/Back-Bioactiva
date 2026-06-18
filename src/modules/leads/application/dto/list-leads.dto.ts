@@ -11,7 +11,6 @@ export class ListLeadsDto {
         public readonly alertaActividad?: ActivityAlertLevel,
         public readonly fechaDesde?: Date,
         public readonly fechaHasta?: Date,
-        public readonly term?: string,
         public readonly sector?: string,
     ) {}
 }

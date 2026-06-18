@@ -95,7 +95,6 @@ export class LeadController {
             query.alertaActividad,
             query.fechaDesde ? new Date(query.fechaDesde) : undefined,
             query.fechaHasta ? new Date(query.fechaHasta) : undefined,
-            query.term,
             query.sector,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
