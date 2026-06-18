@@ -14,8 +14,8 @@ export interface FollowUpInstanceCommand {
 export interface CreateFollowUpCommand {
     /** La actividad activa (única) del lead se resuelve en el servidor. */
     idLead: number;
-    /** Mismo destinatario del cliente para todas las instancias. */
+    /** Destinatario del cliente de la instancia. */
     correoCliente: string;
-    /** Entre 1 y 3 instancias escalonadas. */
+    /** Una única instancia de seguimiento. */
     instancias: FollowUpInstanceCommand[];
 }

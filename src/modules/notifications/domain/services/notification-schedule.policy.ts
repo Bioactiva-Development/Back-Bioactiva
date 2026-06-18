@@ -101,13 +101,13 @@ export function assertExternalAfterInternal(
 }
 
 export const MIN_FOLLOW_UP_INSTANCES = 1;
-export const MAX_FOLLOW_UP_INSTANCES = 3;
+export const MAX_FOLLOW_UP_INSTANCES = 1;
 
-/** Un seguimiento debe tener entre 1 y 3 instancias. */
+/** Un seguimiento debe tener exactamente una instancia. */
 export function assertInstanceCount(count: number): void {
     if (count < MIN_FOLLOW_UP_INSTANCES || count > MAX_FOLLOW_UP_INSTANCES) {
         throw new InvalidScheduleDateException(
-            `Un seguimiento debe tener entre ${MIN_FOLLOW_UP_INSTANCES} y ${MAX_FOLLOW_UP_INSTANCES} instancias.`,
+            'Un seguimiento debe tener exactamente una instancia.',
         );
     }
 }

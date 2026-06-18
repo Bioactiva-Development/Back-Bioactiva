@@ -114,25 +114,10 @@ describe('Notifications module', () => {
             );
         });
 
-        it('rejects when instances overlap (not chained)', async () => {
+        it('rejects more than one instance', async () => {
             const cmd = {
                 ...command(),
-                instancias: [instance(10, 13), instance(12, 15)],
-            };
-            await expect(useCase.execute(cmd)).rejects.toThrow(
-                InvalidScheduleDateException,
-            );
-        });
-
-        it('rejects more than 3 instances', async () => {
-            const cmd = {
-                ...command(),
-                instancias: [
-                    instance(9, 10),
-                    instance(11, 12),
-                    instance(13, 14),
-                    instance(15, 16),
-                ],
+                instancias: [instance(10, 11), instance(12, 13)],
             };
             await expect(useCase.execute(cmd)).rejects.toThrow(
                 InvalidScheduleDateException,
