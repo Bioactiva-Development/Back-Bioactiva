@@ -11,6 +11,7 @@ import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
+import { InvalidLeadTransitionException } from '@/modules/leads/domain/exceptions/invalid-lead-transition.exception';
 
 export class ChangeLeadStatusUseCase {
     constructor(
@@ -26,9 +27,21 @@ export class ChangeLeadStatusUseCase {
             throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
         }
 
+        const wasOffered = lead.estado === LeadState.OFERTADO;
+        const isStateChange = dto.estado !== lead.estado;
+
+        // Valida la transición antes que cualquier otra regla (sin mutar el
+        // lead): una transición inválida (p. ej. volver a EN_PROSPECTO) debe
+        // fallar con su propio error, no con el de actividades pendientes.
+        if (!lead.canTransitionTo(dto.estado)) {
+            throw new InvalidLeadTransitionException(
+                `No se puede cambiar el estado del lead de ${lead.estado} a ${dto.estado}`,
+            );
+        }
+
         // Un cambio real de estado exige que el lead no tenga actividades
         // pendientes: deben resolverse (completarse o cancelarse) primero.
-        if (dto.estado !== lead.estado) {
+        if (isStateChange) {
             const hasPending = await this.leadRepository.hasPendingActivities(
                 id,
             );
@@ -38,8 +51,6 @@ export class ChangeLeadStatusUseCase {
                 );
             }
         }
-
-        const wasOffered = lead.estado === LeadState.OFERTADO;
 
         lead.changeState(dto.estado);
 

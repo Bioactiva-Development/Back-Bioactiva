@@ -159,7 +159,7 @@ export class LeadController {
     @ApiResponse({
         status: 409,
         description:
-            'El lead tiene actividades pendientes; deben resolverse antes de cambiar de estado',
+            'Transición de estado inválida (p. ej. volver a EN_PROSPECTO) o el lead tiene actividades pendientes que deben resolverse antes de cambiar de estado',
     })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,

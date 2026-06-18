@@ -5,6 +5,7 @@ import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
+import { InvalidLeadTransitionException } from '@/modules/leads/domain/exceptions/invalid-lead-transition.exception';
 
 describe('Leads module', () => {
     describe('ChangeLeadStatusUseCase', () => {
@@ -78,7 +79,7 @@ describe('Leads module', () => {
         });
 
         it('should NOT notify the handler for non-OFERTADO transitions', async () => {
-            const lead = buildLead(LeadState.EN_PROSPECTO);
+            const lead = buildLead(LeadState.OFERTADO);
             leadRepository.findById.mockResolvedValue(lead);
             leadRepository.saveWithRelations.mockResolvedValue(lead);
 
@@ -90,8 +91,8 @@ describe('Leads module', () => {
             expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
         });
 
-        it('should change to any valid state', async () => {
-            const lead = buildLead();
+        it('should move freely between the post-prospecto states', async () => {
+            const lead = buildLead(LeadState.OFERTADO);
             leadRepository.findById.mockResolvedValue(lead);
             leadRepository.saveWithRelations.mockResolvedValue(lead);
 
@@ -109,9 +110,41 @@ describe('Leads module', () => {
 
             await useCase.execute(
                 1,
-                new ChangeLeadStatusDto(LeadState.EN_PROSPECTO),
+                new ChangeLeadStatusDto(LeadState.OFERTADO),
             );
+            expect(lead.estado).toBe(LeadState.OFERTADO);
+        });
+
+        it('should reject an invalid transition (back to EN_PROSPECTO) without checking pending activities', async () => {
+            const lead = buildLead(LeadState.OFERTADO);
+            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.hasPendingActivities.mockResolvedValue(true);
+
+            await expect(
+                useCase.execute(
+                    1,
+                    new ChangeLeadStatusDto(LeadState.EN_PROSPECTO),
+                ),
+            ).rejects.toThrow(InvalidLeadTransitionException);
+
+            expect(lead.estado).toBe(LeadState.OFERTADO);
+            expect(leadRepository.hasPendingActivities).not.toHaveBeenCalled();
+            expect(leadRepository.saveWithRelations).not.toHaveBeenCalled();
+        });
+
+        it('should reject closing a lead directly from EN_PROSPECTO', async () => {
+            const lead = buildLead(LeadState.EN_PROSPECTO);
+            leadRepository.findById.mockResolvedValue(lead);
+
+            await expect(
+                useCase.execute(
+                    1,
+                    new ChangeLeadStatusDto(LeadState.CIERRE_CON_VENTA),
+                ),
+            ).rejects.toThrow(InvalidLeadTransitionException);
+
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
+            expect(leadRepository.saveWithRelations).not.toHaveBeenCalled();
         });
 
         it('should block any state change when the lead has pending activities', async () => {
