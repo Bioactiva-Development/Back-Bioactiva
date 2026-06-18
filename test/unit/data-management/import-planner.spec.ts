@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { ExceljsReader } from '@/modules/data-management/infrastructure/excel/exceljs-reader.adapter';
 import {
@@ -15,7 +15,19 @@ describe('Importación CRM — reader + planner sobre el archivo de referencia',
         'crm_bioactiva_final.xlsx',
     );
 
-    it('parsea las 4 hojas y construye un plan sin errores bloqueantes', async () => {
+    // El archivo de referencia no se versiona (contiene datos reales y está en
+    // .gitignore), así que solo existe en entornos locales. En CI se omite el
+    // test de integración en vez de fallar con ENOENT.
+    const fixtureExists = existsSync(filePath);
+    const itWithFixture = fixtureExists ? it : it.skip;
+    if (!fixtureExists) {
+        // eslint-disable-next-line no-console
+        console.warn(
+            `Fixture ausente (${filePath}); se omite el test de integración del importador CRM.`,
+        );
+    }
+
+    itWithFixture('parsea las 4 hojas y construye un plan sin errores bloqueantes', async () => {
         const buffer = readFileSync(filePath);
         const workbook = await reader.read(buffer);
         const { plan, validation } = planner.plan(workbook);
