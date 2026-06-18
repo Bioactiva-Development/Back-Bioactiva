@@ -61,7 +61,7 @@ export class LeadResponseDto {
         enum: ActivityAlertLevel,
         example: ActivityAlertLevel.PENDIENTE,
         description:
-            'Semáforo de actividades del lead: LIBRE (sin pendientes), PENDIENTE, CRITICO (alguna pendiente pasó la mitad de su tiempo disponible) o POR_VENCER (alguna vence en ≤4 días o ya está vencida).',
+            'Semáforo de actividades del lead: SIN_ACTIVIDADES (sin pendientes), PENDIENTE, EN_RIESGO (alguna pendiente pasó la mitad de su tiempo disponible) o POR_VENCER (alguna vence en ≤4 días o ya está vencida).',
     })
     activityAlert: ActivityAlertLevel;
 

@@ -11,8 +11,8 @@ describe('Leads module', () => {
         const days = (n: number) =>
             new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
 
-        it('returns LIBRE when there are no pending activities', () => {
-            expect(computeActivityAlert([], now)).toBe(ActivityAlertLevel.LIBRE);
+        it('returns SIN_ACTIVIDADES when there are no pending activities', () => {
+            expect(computeActivityAlert([], now)).toBe(ActivityAlertLevel.SIN_ACTIVIDADES);
         });
 
         it('returns POR_VENCER when a pending activity is overdue', () => {
@@ -52,14 +52,14 @@ describe('Leads module', () => {
             ).toBe(ActivityAlertLevel.POR_VENCER);
         });
 
-        it('returns CRITICO when a pending activity passed its midpoint but is not due soon', () => {
+        it('returns EN_RIESGO when a pending activity passed its midpoint but is not due soon', () => {
             // createdAt hace 10 días, vence en 6 días: punto medio hace 2 días.
             expect(
                 computeActivityAlert(
                     [{ createdAt: days(-10), fechaFin: days(6) }],
                     now,
                 ),
-            ).toBe(ActivityAlertLevel.CRITICO);
+            ).toBe(ActivityAlertLevel.EN_RIESGO);
         });
 
         it('returns PENDIENTE when a pending activity is before its midpoint and not due soon', () => {
@@ -72,11 +72,11 @@ describe('Leads module', () => {
             ).toBe(ActivityAlertLevel.PENDIENTE);
         });
 
-        it('prioritizes POR_VENCER over CRITICO', () => {
+        it('prioritizes POR_VENCER over EN_RIESGO', () => {
             expect(
                 computeActivityAlert(
                     [
-                        { createdAt: days(-10), fechaFin: days(6) }, // crítico
+                        { createdAt: days(-10), fechaFin: days(6) }, // en riesgo
                         { createdAt: days(-1), fechaFin: days(2) }, // por vencer
                     ],
                     now,
@@ -84,16 +84,16 @@ describe('Leads module', () => {
             ).toBe(ActivityAlertLevel.POR_VENCER);
         });
 
-        it('prioritizes CRITICO over PENDIENTE', () => {
+        it('prioritizes EN_RIESGO over PENDIENTE', () => {
             expect(
                 computeActivityAlert(
                     [
                         { createdAt: days(-1), fechaFin: days(20) }, // pendiente
-                        { createdAt: days(-10), fechaFin: days(6) }, // crítico
+                        { createdAt: days(-10), fechaFin: days(6) }, // en riesgo
                     ],
                     now,
                 ),
-            ).toBe(ActivityAlertLevel.CRITICO);
+            ).toBe(ActivityAlertLevel.EN_RIESGO);
         });
     });
 });

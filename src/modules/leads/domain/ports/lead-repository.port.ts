@@ -26,7 +26,7 @@ export interface ListLeadsParams {
     fechaHasta?: Date;
     /**
      * Filtra por el nivel del semáforo de actividades del lead. Si se omite, no
-     * filtra. Valores: LIBRE, PENDIENTE, CRITICO, POR_VENCER.
+     * filtra. Valores: SIN_ACTIVIDADES, PENDIENTE, EN_RIESGO, POR_VENCER.
      */
     alertaActividad?: ActivityAlertLevel;
     page?: number;

@@ -25,7 +25,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Solo las actividades pendientes y no eliminadas determinan el semáforo; se
- * traen su fecha de creación y de fin (CRITICO depende de ambas).
+ * traen su fecha de creación y de fin (EN_RIESGO depende de ambas).
  */
 const PENDING_ACTIVITIES_INCLUDE = {
     where: { deletedAt: null, estado: PrismaEstadoActividad.PENDIENTE },
@@ -229,10 +229,10 @@ export class PrismaLeadRepository implements LeadRepository {
     /**
      * Traduce el filtro del semáforo a condiciones sobre las actividades
      * PENDIENTES del lead, alineadas con computeActivityAlert (severidad
-     * POR_VENCER > CRITICO > PENDIENTE > LIBRE):
-     * - LIBRE: sin actividades pendientes.
-     * - PENDIENTE: tiene pendientes, ninguna crítica ni por vencer.
-     * - CRITICO: alguna pendiente pasó la mitad de su tiempo, ninguna por vencer.
+     * POR_VENCER > EN_RIESGO > PENDIENTE > SIN_ACTIVIDADES):
+     * - SIN_ACTIVIDADES: sin actividades pendientes.
+     * - PENDIENTE: tiene pendientes, ninguna en riesgo ni por vencer.
+     * - EN_RIESGO: alguna pendiente pasó la mitad de su tiempo, ninguna por vencer.
      * - POR_VENCER: alguna pendiente vence en ≤4 días (incluye vencidas).
      */
     private async applyActivityAlertFilter(
@@ -255,7 +255,7 @@ export class PrismaLeadRepository implements LeadRepository {
         const dueSoon = { ...pending, fechaFin: { lte: dueSoonCutoff } };
 
         switch (filter) {
-            case ActivityAlertLevel.LIBRE:
+            case ActivityAlertLevel.SIN_ACTIVIDADES:
                 // Sin actividades pendientes.
                 where.actividades = { none: pending };
                 break;
@@ -263,7 +263,7 @@ export class PrismaLeadRepository implements LeadRepository {
                 // Alguna pendiente vencida o próxima a vencer.
                 where.actividades = { some: dueSoon };
                 break;
-            case ActivityAlertLevel.CRITICO: {
+            case ActivityAlertLevel.EN_RIESGO: {
                 // Alguna pendiente pasó el punto medio, pero ninguna por vencer.
                 const ids = await this.leadIdsWithMidpointPassedActivity(now);
                 where.id = { in: ids };
@@ -271,7 +271,7 @@ export class PrismaLeadRepository implements LeadRepository {
                 break;
             }
             case ActivityAlertLevel.PENDIENTE: {
-                // Tiene pendientes, pero ninguna crítica ni por vencer.
+                // Tiene pendientes, pero ninguna en riesgo ni por vencer.
                 const ids = await this.leadIdsWithMidpointPassedActivity(now);
                 where.id = { notIn: ids };
                 where.actividades = { some: pending, none: dueSoon };

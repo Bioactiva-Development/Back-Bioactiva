@@ -11,7 +11,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Fechas relevantes de una actividad PENDIENTE para calcular el semáforo: su
- * creación y su cierre. CRITICO depende de ambas (mitad del tiempo disponible).
+ * creación y su cierre. EN_RIESGO depende de ambas (mitad del tiempo disponible).
  */
 export interface PendingActivityDates {
     createdAt: Date;
@@ -36,7 +36,7 @@ function hasPassedMidpoint(activity: PendingActivityDates, now: Date): boolean {
  * Devuelve el nivel más urgente. Función pura: recibe el "ahora" para ser
  * determinista y testeable.
  *
- * Severidad: POR_VENCER > CRITICO > PENDIENTE > LIBRE.
+ * Severidad: POR_VENCER > EN_RIESGO > PENDIENTE > SIN_ACTIVIDADES.
  */
 export function computeActivityAlert(
     pendingActivities: PendingActivityDates[],
@@ -44,7 +44,7 @@ export function computeActivityAlert(
     dueSoonDays: number = ACTIVITY_ALERT_DUE_SOON_DAYS,
 ): ActivityAlertLevel {
     if (pendingActivities.length === 0) {
-        return ActivityAlertLevel.LIBRE;
+        return ActivityAlertLevel.SIN_ACTIVIDADES;
     }
 
     const dueSoonCutoff = now.getTime() + dueSoonDays * MS_PER_DAY;
@@ -58,7 +58,7 @@ export function computeActivityAlert(
             return ActivityAlertLevel.POR_VENCER;
         }
         if (hasPassedMidpoint(activity, now)) {
-            level = ActivityAlertLevel.CRITICO;
+            level = ActivityAlertLevel.EN_RIESGO;
         }
     }
 

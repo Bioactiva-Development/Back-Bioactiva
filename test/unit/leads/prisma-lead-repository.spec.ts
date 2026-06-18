@@ -414,7 +414,7 @@ describe('Leads module', () => {
                 expect(result[0].activityAlert).toBe('POR_VENCER');
             });
 
-            it('should compute CRITICO alert when a pending activity passed its midpoint but is far from due', async () => {
+            it('should compute EN_RIESGO alert when a pending activity passed its midpoint but is far from due', async () => {
                 const createdAt = new Date(
                     Date.now() - 10 * 24 * 60 * 60 * 1000,
                 );
@@ -428,17 +428,17 @@ describe('Leads module', () => {
 
                 const result = await repository.list();
 
-                expect(result[0].activityAlert).toBe('CRITICO');
+                expect(result[0].activityAlert).toBe('EN_RIESGO');
             });
 
-            it('should compute LIBRE alert when the lead has no pending activities', async () => {
+            it('should compute SIN_ACTIVIDADES alert when the lead has no pending activities', async () => {
                 prismaService.lead.findMany.mockResolvedValue([
                     { ...baseRecord, actividades: [] },
                 ]);
 
                 const result = await repository.list();
 
-                expect(result[0].activityAlert).toBe('LIBRE');
+                expect(result[0].activityAlert).toBe('SIN_ACTIVIDADES');
             });
 
             it('should filter by the createdAt range when fechaDesde/fechaHasta are provided', async () => {
@@ -457,11 +457,11 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter LIBRE as leads with no pending activities', async () => {
+            it('should filter SIN_ACTIVIDADES as leads with no pending activities', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
-                    alertaActividad: ActivityAlertLevel.LIBRE,
+                    alertaActividad: ActivityAlertLevel.SIN_ACTIVIDADES,
                 });
 
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
@@ -500,7 +500,7 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter CRITICO using midpoint lead ids and excluding due-soon activities', async () => {
+            it('should filter EN_RIESGO using midpoint lead ids and excluding due-soon activities', async () => {
                 prismaService.$queryRaw.mockResolvedValue([
                     { idLead: 7 },
                     { idLead: 9 },
@@ -508,7 +508,7 @@ describe('Leads module', () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
-                    alertaActividad: ActivityAlertLevel.CRITICO,
+                    alertaActividad: ActivityAlertLevel.EN_RIESGO,
                 });
 
                 expect(prismaService.$queryRaw).toHaveBeenCalled();
