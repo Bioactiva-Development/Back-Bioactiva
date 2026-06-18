@@ -26,8 +26,9 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install
-                    npm run test:cov
+                    corepack enable
+                    pnpm install --frozen-lockfile
+                    pnpm run test:cov
                 '''
             }
         }
