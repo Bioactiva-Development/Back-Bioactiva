@@ -90,12 +90,7 @@ export class ContactController {
     async findAll(
         @Query() query: HttpListContactsQueryDto,
     ): Promise<PaginatedContactResponseDto> {
-        const dto = new ListContactsDto(
-            query.idOrganization,
-            query.search,
-            query.page,
-            query.limit,
-        );
+        const dto = new ListContactsDto(query.search, query.page, query.limit);
         const { data, total } = await this.getAllContactsUseCase.execute(dto);
         const responseData = data.map((r) => new ContactResponseDto(r));
         return new PaginatedContactResponseDto(

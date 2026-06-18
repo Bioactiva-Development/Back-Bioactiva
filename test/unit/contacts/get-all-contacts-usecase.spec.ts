@@ -30,21 +30,19 @@ describe('Contacts module', () => {
             expect(mockRepository.count).toHaveBeenCalled();
         });
 
-        it('should forward organization and search filters to the repository', async () => {
+        it('should forward search filter and pagination to the repository', async () => {
             mockRepository.list.mockResolvedValue([]);
             mockRepository.count.mockResolvedValue(0);
 
-            const dto = new ListContactsDto('org-1', 'Juan', 2, 5);
+            const dto = new ListContactsDto('Juan', 2, 5);
             await useCase.execute(dto);
 
             expect(mockRepository.list).toHaveBeenCalledWith({
-                idOrganization: 'org-1',
                 search: 'Juan',
                 page: 2,
                 limit: 5,
             });
             expect(mockRepository.count).toHaveBeenCalledWith({
-                idOrganization: 'org-1',
                 search: 'Juan',
             });
         });
