@@ -6,6 +6,10 @@ export type ContactWithOrgName = {
 };
 
 export interface ListContactsParams {
+    /**
+     * Filtro interno por organización. El endpoint de listado de contactos no
+     * lo expone; lo usa el detalle de organización para paginar sus contactos.
+     */
     idOrganization?: string;
     search?: string;
     page?: number;

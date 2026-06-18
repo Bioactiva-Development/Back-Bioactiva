@@ -157,6 +157,12 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             where.idLead = params.idLead;
         }
 
+        if (params?.idOrg) {
+            // La cotización no guarda la organización: se filtra por la del lead
+            // asociado a través de la relación.
+            where.lead = { idOrg: params.idOrg };
+        }
+
         const estado = this.parseEstado(params?.estado);
         if (estado) {
             where.estado = estado;

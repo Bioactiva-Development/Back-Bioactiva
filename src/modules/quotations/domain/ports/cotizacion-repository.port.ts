@@ -13,6 +13,8 @@ export interface CotizacionWithRelations {
 
 export interface ListCotizacionesParams {
     idLead?: number;
+    /** Filtra por la organización del lead asociado (Lead.idOrg). */
+    idOrg?: string;
     estado?: string;
     idRemitente?: number;
     /** Filtra por moneda (PEN / USD). */

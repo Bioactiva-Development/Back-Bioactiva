@@ -3,7 +3,7 @@ import { PrismaLeadRepository } from '@/modules/leads/infrastructure/persistance
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
-import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 describe('Leads module', () => {
     describe('PrismaLeadRepository', () => {
@@ -37,6 +37,7 @@ describe('Leads module', () => {
                     findMany: jest.fn(),
                     count: jest.fn(),
                 },
+                $queryRaw: jest.fn(),
             };
 
             repository = new PrismaLeadRepository(prismaService);
@@ -349,25 +350,65 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should compute ROJO alert when the lead has an overdue pending activity', async () => {
+            it('should filter by organization sector', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({ sector: 'TECNOLOGIA' });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            organizacion: {
+                                deletedAt: null,
+                                sector: 'TECNOLOGIA',
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('should compute POR_VENCER alert when the lead has an overdue pending activity', async () => {
+                const createdAt = new Date(
+                    Date.now() - 10 * 24 * 60 * 60 * 1000,
+                );
                 const overdue = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 prismaService.lead.findMany.mockResolvedValue([
-                    { ...baseRecord, actividades: [{ fechaFin: overdue }] },
+                    {
+                        ...baseRecord,
+                        actividades: [{ createdAt, fechaFin: overdue }],
+                    },
                 ]);
 
                 const result = await repository.list();
 
-                expect(result[0].activityAlert).toBe('ROJO');
+                expect(result[0].activityAlert).toBe('POR_VENCER');
             });
 
-            it('should compute VERDE alert when the lead has no pending activities', async () => {
+            it('should compute EN_RIESGO alert when a pending activity passed its midpoint but is far from due', async () => {
+                const createdAt = new Date(
+                    Date.now() - 10 * 24 * 60 * 60 * 1000,
+                );
+                const fechaFin = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
+                prismaService.lead.findMany.mockResolvedValue([
+                    {
+                        ...baseRecord,
+                        actividades: [{ createdAt, fechaFin }],
+                    },
+                ]);
+
+                const result = await repository.list();
+
+                expect(result[0].activityAlert).toBe('EN_RIESGO');
+            });
+
+            it('should compute SIN_ACTIVIDADES alert when the lead has no pending activities', async () => {
                 prismaService.lead.findMany.mockResolvedValue([
                     { ...baseRecord, actividades: [] },
                 ]);
 
                 const result = await repository.list();
 
-                expect(result[0].activityAlert).toBe('VERDE');
+                expect(result[0].activityAlert).toBe('SIN_ACTIVIDADES');
             });
 
             it('should filter by the createdAt range when fechaDesde/fechaHasta are provided', async () => {
@@ -386,11 +427,32 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter TODAS as leads with upcoming or overdue activities', async () => {
+            it('should filter SIN_ACTIVIDADES as leads with no pending activities', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
-                    alertaActividad: ActivityAlertFilter.TODAS,
+                    alertaActividad: ActivityAlertLevel.SIN_ACTIVIDADES,
+                });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            actividades: {
+                                none: {
+                                    deletedAt: null,
+                                    estado: 'PENDIENTE',
+                                },
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('should filter POR_VENCER as leads with a pending activity due within the threshold (or overdue)', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({
+                    alertaActividad: ActivityAlertLevel.POR_VENCER,
                 });
 
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
@@ -408,21 +470,27 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter VENCIDAS as leads with at least one overdue activity', async () => {
+            it('should filter EN_RIESGO using midpoint lead ids and excluding due-soon activities', async () => {
+                prismaService.$queryRaw.mockResolvedValue([
+                    { idLead: 7 },
+                    { idLead: 9 },
+                ]);
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
-                    alertaActividad: ActivityAlertFilter.VENCIDAS,
+                    alertaActividad: ActivityAlertLevel.EN_RIESGO,
                 });
 
+                expect(prismaService.$queryRaw).toHaveBeenCalled();
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
                     expect.objectContaining({
                         where: expect.objectContaining({
+                            id: { in: [7, 9] },
                             actividades: {
-                                some: {
+                                none: {
                                     deletedAt: null,
                                     estado: 'PENDIENTE',
-                                    fechaFin: { lt: expect.any(Date) },
+                                    fechaFin: { lte: expect.any(Date) },
                                 },
                             },
                         }),
@@ -430,39 +498,27 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter POR_VENCER as leads with upcoming but no overdue activities', async () => {
+            it('should filter PENDIENTE excluding midpoint lead ids and due-soon activities', async () => {
+                prismaService.$queryRaw.mockResolvedValue([{ idLead: 7 }]);
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
-                    alertaActividad: ActivityAlertFilter.POR_VENCER,
+                    alertaActividad: ActivityAlertLevel.PENDIENTE,
                 });
 
+                expect(prismaService.$queryRaw).toHaveBeenCalled();
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
                     expect.objectContaining({
                         where: expect.objectContaining({
-                            AND: [
-                                {
-                                    actividades: {
-                                        some: {
-                                            deletedAt: null,
-                                            estado: 'PENDIENTE',
-                                            fechaFin: {
-                                                gte: expect.any(Date),
-                                                lte: expect.any(Date),
-                                            },
-                                        },
-                                    },
+                            id: { notIn: [7] },
+                            actividades: {
+                                some: { deletedAt: null, estado: 'PENDIENTE' },
+                                none: {
+                                    deletedAt: null,
+                                    estado: 'PENDIENTE',
+                                    fechaFin: { lte: expect.any(Date) },
                                 },
-                                {
-                                    actividades: {
-                                        none: {
-                                            deletedAt: null,
-                                            estado: 'PENDIENTE',
-                                            fechaFin: { lt: expect.any(Date) },
-                                        },
-                                    },
-                                },
-                            ],
+                            },
                         }),
                     }),
                 );

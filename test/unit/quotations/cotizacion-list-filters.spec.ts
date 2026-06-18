@@ -32,6 +32,19 @@ describe('Quotations module', () => {
             expect(callArg.where.tipo).toBeUndefined();
         });
 
+        it('filters by the organization of the associated lead (idOrg)', async () => {
+            await repository.list({ idOrg: 'org-uuid-1' });
+
+            expect(prismaService.cotizacion.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        lead: { idOrg: 'org-uuid-1' },
+                        deletedAt: null,
+                    }),
+                }),
+            );
+        });
+
         it('combines tipo with estado and idLead', async () => {
             await repository.list({
                 tipo: 'USD',

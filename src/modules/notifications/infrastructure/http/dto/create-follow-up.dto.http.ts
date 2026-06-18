@@ -84,11 +84,11 @@ export class HttpCreateFollowUpDto {
 
     @ApiProperty({
         type: [HttpFollowUpInstanceDto],
-        description: 'Entre 1 y 3 instancias escalonadas, en orden cronológico',
+        description: 'Una única instancia de seguimiento',
     })
     @IsArray()
     @ArrayMinSize(1)
-    @ArrayMaxSize(3)
+    @ArrayMaxSize(1)
     @ValidateNested({ each: true })
     @Type(() => HttpFollowUpInstanceDto)
     instancias!: HttpFollowUpInstanceDto[];

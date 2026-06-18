@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { InvalidLeadResponsibleException } from '@/modules/leads/domain/exceptions/invalid-lead-responsible.exception';
+import { InvalidLeadTransitionException } from '@/modules/leads/domain/exceptions/invalid-lead-transition.exception';
 
 describe('Leads module', () => {
     describe('Lead entity domain rules', () => {
@@ -42,7 +43,7 @@ describe('Leads module', () => {
             );
         });
 
-        it('should allow transitioning through different states', () => {
+        it('should allow transitioning through the post-prospecto states', () => {
             const lead = buildLead();
 
             lead.changeState(LeadState.OFERTADO);
@@ -51,7 +52,44 @@ describe('Leads module', () => {
             lead.changeState(LeadState.CIERRE_CON_VENTA);
             expect(lead.estado).toBe(LeadState.CIERRE_CON_VENTA);
 
-            lead.changeState(LeadState.EN_PROSPECTO);
+            lead.changeState(LeadState.CIERRE_SIN_VENTA);
+            expect(lead.estado).toBe(LeadState.CIERRE_SIN_VENTA);
+
+            lead.changeState(LeadState.OFERTADO);
+            expect(lead.estado).toBe(LeadState.OFERTADO);
+        });
+
+        it('should allow EN_PROSPECTO only to advance to OFERTADO', () => {
+            const lead = buildLead();
+
+            expect(lead.canTransitionTo(LeadState.OFERTADO)).toBe(true);
+            expect(lead.canTransitionTo(LeadState.CIERRE_CON_VENTA)).toBe(false);
+            expect(lead.canTransitionTo(LeadState.CIERRE_SIN_VENTA)).toBe(false);
+
+            expect(() =>
+                lead.changeState(LeadState.CIERRE_CON_VENTA),
+            ).toThrow(InvalidLeadTransitionException);
+            expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
+        });
+
+        it('should never allow returning to EN_PROSPECTO once it leaves', () => {
+            const lead = buildLead();
+            lead.changeState(LeadState.OFERTADO);
+
+            expect(lead.canTransitionTo(LeadState.EN_PROSPECTO)).toBe(false);
+            expect(() =>
+                lead.changeState(LeadState.EN_PROSPECTO),
+            ).toThrow(InvalidLeadTransitionException);
+            expect(lead.estado).toBe(LeadState.OFERTADO);
+        });
+
+        it('should treat staying in the same state as a valid no-op', () => {
+            const lead = buildLead();
+
+            expect(lead.canTransitionTo(LeadState.EN_PROSPECTO)).toBe(true);
+            expect(() =>
+                lead.changeState(LeadState.EN_PROSPECTO),
+            ).not.toThrow();
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
         });
 
@@ -59,6 +97,7 @@ describe('Leads module', () => {
             const lead = buildLead();
             expect(lead.fecha_cierre).toBeNull();
 
+            lead.changeState(LeadState.OFERTADO);
             lead.changeState(LeadState.CIERRE_CON_VENTA);
 
             expect(lead.fecha_cierre).toBeInstanceOf(Date);
@@ -66,10 +105,11 @@ describe('Leads module', () => {
 
         it('should clear fecha_cierre when leaving CIERRE_CON_VENTA', () => {
             const lead = buildLead();
+            lead.changeState(LeadState.OFERTADO);
             lead.changeState(LeadState.CIERRE_CON_VENTA);
             expect(lead.fecha_cierre).toBeInstanceOf(Date);
 
-            lead.changeState(LeadState.EN_PROSPECTO);
+            lead.changeState(LeadState.OFERTADO);
 
             expect(lead.fecha_cierre).toBeNull();
         });
@@ -120,6 +160,7 @@ describe('Leads module', () => {
             const originalOrg = lead.id_org;
             const originalResponsible = lead.id_encargado;
 
+            lead.changeState(LeadState.OFERTADO);
             lead.changeState(LeadState.CIERRE_CON_VENTA);
 
             expect(lead.id_org).toBe(originalOrg);

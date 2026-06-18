@@ -34,6 +34,7 @@ import { NotificationsController } from '@/modules/notifications/infrastructure/
 import { TemplatesController } from '@/modules/notifications/infrastructure/http/templates.controller';
 import { CreateReminderUseCase } from '@/modules/notifications/application/use-cases/create-reminder.use-case';
 import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-cases/create-follow-up.use-case';
+import { EditFollowUpUseCase } from '@/modules/notifications/application/use-cases/edit-follow-up.use-case';
 import { CancelNotificationUseCase } from '@/modules/notifications/application/use-cases/cancel-notification.use-case';
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
@@ -99,6 +100,7 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         },
         CreateReminderUseCase,
         CreateFollowUpUseCase,
+        EditFollowUpUseCase,
         CancelNotificationUseCase,
         ListNotificationsUseCase,
         ListActiveTemplatesUseCase,

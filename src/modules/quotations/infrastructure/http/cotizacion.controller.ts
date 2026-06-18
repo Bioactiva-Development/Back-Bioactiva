@@ -83,6 +83,7 @@ export class CotizacionController {
             query.page,
             query.limit,
             query.tipo,
+            query.idOrg,
         );
         const { data, total } = await this.listCotizacionesUseCase.execute(dto);
         return new PaginatedCotizacionResponseDto(
