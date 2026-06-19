@@ -9,6 +9,15 @@ import {
     SwaggerModule,
 } from '@nestjs/swagger';
 
+// La app puede desplegarse en servidores con cualquier zona horaria del SO.
+// Fijamos el proceso en UTC para que toda operación implícita con `Date`
+// (p. ej. `setHours`, comparaciones, `Date.now()`) sea determinista y coincida
+// con el almacenamiento en Prisma y el scheduling en BullMQ, que ya trabajan en
+// UTC. La hora civil para el usuario se deriva siempre de forma explícita con
+// `formatDateTimeInZone` según `APP_TIMEZONE` (ver AppTimeConfig), no de la zona
+// del proceso.
+process.env.TZ = 'UTC';
+
 async function bootstrap() {
     const logger = new Logger('Bootstrap');
 
