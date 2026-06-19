@@ -20,7 +20,6 @@ import {
     assertExternalAfterInternal,
     assertExternalDate,
     assertInternalDate,
-    ensureBusinessHour,
 } from '@/modules/notifications/domain/services/notification-schedule.policy';
 import { NotificationNotFoundException } from '@/modules/notifications/domain/exceptions/notification-not-found.exception';
 import { FollowUpNotEditableException } from '@/modules/notifications/domain/exceptions/follow-up-not-editable.exception';
@@ -86,8 +85,10 @@ export class EditFollowUpUseCase {
         }
 
         const now = new Date();
-        const internalDate = ensureBusinessHour(command.internal.fechaEnvio);
-        const externalDate = ensureBusinessHour(command.external.fechaEnvio);
+        // Se respeta la fecha/hora exacta elegida por el usuario; no se reajusta
+        // a un horario laboral. Solo se valida que sea coherente.
+        const internalDate = command.internal.fechaEnvio;
+        const externalDate = command.external.fechaEnvio;
         assertInternalDate(internalDate, context.fechaFin, now);
         assertExternalDate(externalDate, context.fechaFin, now);
         assertExternalAfterInternal(internalDate, externalDate);

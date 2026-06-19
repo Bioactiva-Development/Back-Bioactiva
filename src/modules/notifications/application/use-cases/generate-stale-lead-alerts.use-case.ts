@@ -9,6 +9,8 @@ import {
     type InAppNotificationRepositoryPort,
 } from '@/modules/notifications/domain/ports/in-app-notification-repository.port';
 import { InAppNotification } from '@/modules/notifications/domain/entities/in-app-notification';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import { formatDateTimeInZone } from '@/shared/infrastructure/datetime/format-in-zone';
 
 export const STALE_LEAD_THRESHOLD_DAYS = 30;
 
@@ -25,6 +27,7 @@ export class GenerateStaleLeadAlertsUseCase {
         private readonly staleLeadReader: StaleLeadReaderPort,
         @Inject(IN_APP_NOTIFICATION_REPOSITORY)
         private readonly inAppNotificationRepository: InAppNotificationRepositoryPort,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     async execute(): Promise<{ created: number }> {
@@ -55,7 +58,10 @@ export class GenerateStaleLeadAlertsUseCase {
                     idUsuario: lead.idEncargado,
                     idLead: lead.idLead,
                     titulo: 'Lead sin avance',
-                    mensaje: `El lead #${lead.idLead} lleva más de ${STALE_LEAD_THRESHOLD_DAYS} días sin cambio de estado y requiere revisión.`,
+                    mensaje: `El lead #${lead.idLead} no registra cambios de estado desde el ${formatDateTimeInZone(
+                        lead.ultimoCambioEstado,
+                        this.appTime.timeZone,
+                    )} (más de ${STALE_LEAD_THRESHOLD_DAYS} días) y requiere revisión.`,
                 }),
             );
 

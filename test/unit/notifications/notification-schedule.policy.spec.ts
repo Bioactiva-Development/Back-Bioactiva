@@ -2,31 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 import {
     assertExternalAfterInternal,
     assertInternalDate,
-    ensureBusinessHour,
 } from '@/modules/notifications/domain/services/notification-schedule.policy';
 import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
 
 describe('Notifications module', () => {
     describe('notification schedule policy', () => {
-        describe('ensureBusinessHour', () => {
-            it('keeps a time already within business hours', () => {
-                const date = new Date(2026, 5, 10, 14, 30, 0);
-                expect(ensureBusinessHour(date).getHours()).toBe(14);
-            });
-
-            it('moves an early time to 09:00', () => {
-                const date = new Date(2026, 5, 10, 6, 0, 0);
-                const adjusted = ensureBusinessHour(date);
-                expect(adjusted.getHours()).toBe(9);
-                expect(adjusted.getMinutes()).toBe(0);
-            });
-
-            it('moves a late time to 09:00', () => {
-                const date = new Date(2026, 5, 10, 21, 0, 0);
-                expect(ensureBusinessHour(date).getHours()).toBe(9);
-            });
-        });
-
         describe('assertInternalDate', () => {
             const now = new Date('2026-06-10T12:00:00.000Z');
             const fechaFin = new Date('2026-06-20T12:00:00.000Z');
