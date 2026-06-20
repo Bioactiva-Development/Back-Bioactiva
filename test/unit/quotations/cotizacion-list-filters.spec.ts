@@ -38,7 +38,13 @@ describe('Quotations module', () => {
             expect(prismaService.cotizacion.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: expect.objectContaining({
-                        lead: { idOrg: 'org-uuid-1' },
+                        // Se filtra por la organización del lead manteniendo el
+                        // soft-delete del lead y de su organización.
+                        lead: {
+                            deletedAt: null,
+                            idOrg: 'org-uuid-1',
+                            organizacion: { deletedAt: null },
+                        },
                         deletedAt: null,
                     }),
                 }),
