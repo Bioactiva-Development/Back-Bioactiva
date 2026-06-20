@@ -162,6 +162,9 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
     ): Prisma.CotizacionWhereInput {
         const where: Prisma.CotizacionWhereInput = {
             deletedAt: null,
+            // No mostrar cotizaciones cuyo lead u organización fueron
+            // eliminados (soft delete).
+            lead: { deletedAt: null, organizacion: { deletedAt: null } },
         };
 
         if (params?.idLead) {
@@ -170,8 +173,12 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
 
         if (params?.idOrg) {
             // La cotización no guarda la organización: se filtra por la del lead
-            // asociado a través de la relación.
-            where.lead = { idOrg: params.idOrg };
+            // asociado a través de la relación, manteniendo el soft-delete.
+            where.lead = {
+                deletedAt: null,
+                idOrg: params.idOrg,
+                organizacion: { deletedAt: null },
+            };
         }
 
         const estado = this.parseEstado(params?.estado);
