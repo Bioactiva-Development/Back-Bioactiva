@@ -85,6 +85,7 @@ describe('Notifications module', () => {
                     findFirst: jest.fn(),
                     findMany: jest.fn(),
                     findUniqueOrThrow: jest.fn(),
+                    count: jest.fn(),
                 },
                 seguimientoInstancia: {
                     create: jest.fn(),
@@ -297,6 +298,9 @@ describe('Notifications module', () => {
                 expect(arg.where.idLead).toBe(200);
                 expect(arg.where.idResponsable).toBe(300);
                 expect(arg.orderBy).toEqual({ createdAt: 'desc' });
+                // Sin page/limit explícitos cae en los valores por defecto.
+                expect(arg.skip).toBe(0);
+                expect(arg.take).toBe(10);
                 expect(result).toHaveLength(1);
             });
 
@@ -311,6 +315,42 @@ describe('Notifications module', () => {
                     mockPrisma.notificacionProgramada!.findMany as jest.Mock
                 ).mock.calls[0][0] as any;
                 expect(arg.where.estado).toBe(NotificationStatus.CANCELADA);
+            });
+
+            it('should apply skip/take from page and limit', async () => {
+                (
+                    mockPrisma.notificacionProgramada!.findMany as jest.Mock
+                ).mockResolvedValue([] as never);
+
+                await repository.list({ page: 3, limit: 5 });
+
+                const arg = (
+                    mockPrisma.notificacionProgramada!.findMany as jest.Mock
+                ).mock.calls[0][0] as any;
+                expect(arg.skip).toBe(10);
+                expect(arg.take).toBe(5);
+            });
+        });
+
+        describe('count', () => {
+            it('should count with the same where clause and default estados', async () => {
+                (
+                    mockPrisma.notificacionProgramada!.count as jest.Mock
+                ).mockResolvedValue(42 as never);
+
+                const total = await repository.count({ idLead: 200 });
+
+                const arg = (
+                    mockPrisma.notificacionProgramada!.count as jest.Mock
+                ).mock.calls[0][0] as any;
+                expect(arg.where.estado).toEqual({
+                    in: [
+                        NotificationStatus.PROGRAMADA,
+                        NotificationStatus.VENCIDA,
+                    ],
+                });
+                expect(arg.where.idLead).toBe(200);
+                expect(total).toBe(42);
             });
         });
     });

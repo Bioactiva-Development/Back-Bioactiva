@@ -18,18 +18,6 @@ export class HttpCreateCotizacionDto {
     @IsDateString()
     fechaCot!: string;
 
-    @ApiProperty({ example: 'Dr. Martinez' })
-    @IsString()
-    @IsNotEmpty()
-    @Length(1, 90)
-    dirigido!: string;
-
-    @ApiPropertyOptional({ example: 'TechCorp SA' })
-    @IsOptional()
-    @IsString()
-    @Length(1, 120)
-    cliente?: string | null;
-
     @ApiPropertyOptional({ example: 'Licencia Software Pro' })
     @IsOptional()
     @IsString()

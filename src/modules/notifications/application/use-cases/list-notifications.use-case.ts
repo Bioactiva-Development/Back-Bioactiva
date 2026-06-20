@@ -12,13 +12,21 @@ export class ListNotificationsUseCase {
         private readonly notificationRepository: NotificationRepositoryPort,
     ) {}
 
-    async execute(
-        query: ListNotificationsQuery,
-    ): Promise<ScheduledNotification[]> {
-        return this.notificationRepository.list({
+    async execute(query: ListNotificationsQuery): Promise<{
+        data: ScheduledNotification[];
+        total: number;
+    }> {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 10;
+        const filters = {
             estado: query.estado,
             idLead: query.idLead,
             idResponsable: query.idResponsable,
-        });
+        };
+        const [data, total] = await Promise.all([
+            this.notificationRepository.list({ ...filters, page, limit }),
+            this.notificationRepository.count(filters),
+        ]);
+        return { data, total };
     }
 }

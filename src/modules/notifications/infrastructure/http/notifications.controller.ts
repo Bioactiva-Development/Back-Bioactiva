@@ -27,6 +27,7 @@ import { HttpCreateFollowUpDto } from '@/modules/notifications/infrastructure/ht
 import { HttpEditFollowUpDto } from '@/modules/notifications/infrastructure/http/dto/edit-follow-up.dto.http';
 import { ListNotificationsQueryDto } from '@/modules/notifications/infrastructure/http/dto/list-notifications-query.dto.http';
 import { NotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/notification-response.dto';
+import { PaginatedNotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/paginated-notification-response.dto';
 import { InAppNotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/in-app-notification-response.dto';
 
 @ApiTags('notifications')
@@ -123,14 +124,21 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Listar notificaciones (Programadas o Vencidas)' })
     async list(
         @Query() query: ListNotificationsQueryDto,
-    ): Promise<NotificationResponseDto[]> {
-        const notifications = await this.listNotificationsUseCase.execute({
+    ): Promise<PaginatedNotificationResponseDto> {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 10;
+        const { data, total } = await this.listNotificationsUseCase.execute({
             estado: query.estado,
             idLead: query.idLead,
             idResponsable: query.idResponsable,
+            page,
+            limit,
         });
-        return notifications.map(
-            (notification) => new NotificationResponseDto(notification),
+        return new PaginatedNotificationResponseDto(
+            data.map((notification) => new NotificationResponseDto(notification)),
+            total,
+            page,
+            limit,
         );
     }
 

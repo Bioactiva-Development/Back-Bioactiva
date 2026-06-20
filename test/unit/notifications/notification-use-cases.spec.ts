@@ -93,24 +93,51 @@ describe('Notifications use cases', () => {
     });
 
     describe('ListNotificationsUseCase', () => {
-        it('maps the query fields to the repository filter', async () => {
-            const repo = { list: jest.fn() };
+        it('maps the query fields to the repository filter and returns data + total', async () => {
+            const repo = { list: jest.fn(), count: jest.fn() };
             const list = [{ id: 1 }];
             repo.list.mockResolvedValue(list);
+            repo.count.mockResolvedValue(7);
             const useCase = new ListNotificationsUseCase(repo as any);
 
             const result = await useCase.execute({
                 estado: NotificationStatus.PROGRAMADA,
                 idLead: 2,
                 idResponsable: 3,
+                page: 2,
+                limit: 5,
             });
 
             expect(repo.list).toHaveBeenCalledWith({
                 estado: NotificationStatus.PROGRAMADA,
                 idLead: 2,
                 idResponsable: 3,
+                page: 2,
+                limit: 5,
             });
-            expect(result).toBe(list);
+            expect(repo.count).toHaveBeenCalledWith({
+                estado: NotificationStatus.PROGRAMADA,
+                idLead: 2,
+                idResponsable: 3,
+            });
+            expect(result).toEqual({ data: list, total: 7 });
+        });
+
+        it('defaults to page 1 and limit 10 when not provided', async () => {
+            const repo = { list: jest.fn(), count: jest.fn() };
+            repo.list.mockResolvedValue([]);
+            repo.count.mockResolvedValue(0);
+            const useCase = new ListNotificationsUseCase(repo as any);
+
+            await useCase.execute({});
+
+            expect(repo.list).toHaveBeenCalledWith({
+                estado: undefined,
+                idLead: undefined,
+                idResponsable: undefined,
+                page: 1,
+                limit: 10,
+            });
         });
     });
 });

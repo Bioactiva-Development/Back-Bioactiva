@@ -74,8 +74,6 @@ describe('CotizacionController (optional-field branches)', () => {
         mocks.create.execute.mockResolvedValue(enriched);
         const httpDto: any = {
             fechaCot: '2026-06-01T00:00:00.000Z',
-            dirigido: 'Dr. Martinez',
-            cliente: 'TechCorp',
             producto: 'Producto X',
             nombreServicio: 'Desarrollo',
             monto: '5000.00',
@@ -88,8 +86,9 @@ describe('CotizacionController (optional-field branches)', () => {
 
         await controller.create(httpDto, { id: 3 } as any);
 
+        // cliente y dirigido ya no se reciben por el endpoint: se derivan del
+        // lead dentro del caso de uso.
         const passed = mocks.create.execute.mock.calls[0][0];
-        expect(passed.cliente).toBe('TechCorp');
         expect(passed.producto).toBe('Producto X');
         expect(passed.observacion).toBe('Una observación');
         expect(passed.linkPropuesta).toBe('https://x.com');
@@ -99,7 +98,6 @@ describe('CotizacionController (optional-field branches)', () => {
         mocks.create.execute.mockResolvedValue(enriched);
         const httpDto: any = {
             fechaCot: '2026-06-01T00:00:00.000Z',
-            dirigido: 'Dr. Martinez',
             nombreServicio: 'Desarrollo',
             monto: '5000.00',
             tipo: 'USD',
@@ -110,7 +108,6 @@ describe('CotizacionController (optional-field branches)', () => {
         await controller.create(httpDto, { id: 3 } as any);
 
         const passed = mocks.create.execute.mock.calls[0][0];
-        expect(passed.cliente).toBeNull();
         expect(passed.producto).toBeNull();
         expect(passed.observacion).toBeNull();
         expect(passed.linkPropuesta).toBeNull();
