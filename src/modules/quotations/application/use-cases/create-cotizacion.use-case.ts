@@ -32,12 +32,14 @@ export class CreateCotizacionUseCase {
     ) {}
 
     async execute(dto: CreateCotizacionDto) {
-        const lead = await this.leadRepository.findById(dto.idLead);
-        if (!lead) {
+        const leadWithRelations =
+            await this.leadRepository.findByIdWithRelations(dto.idLead);
+        if (!leadWithRelations) {
             throw new LeadNotFoundException(
                 `Lead con id ${dto.idLead} no encontrado`,
             );
         }
+        const { lead, organizationName, contactName } = leadWithRelations;
 
         const remitente = await this.userRepository.findById(dto.idRemitente);
         if (!remitente) {
@@ -76,11 +78,17 @@ export class CreateCotizacionUseCase {
             await this.leadRepository.save(lead);
         }
 
+        // "cliente" y "dirigido" se derivan del lead: el cliente es la
+        // organización del lead y el dirigido es su contacto asociado (null si
+        // el lead no tiene contacto). No se piden en el endpoint de creación.
+        const cliente = organizationName || null;
+        const dirigido = contactName;
+
         const cotizacion = new Cotizacion(
             null,
             dto.fechaCot,
-            dto.dirigido,
-            dto.cliente,
+            dirigido,
+            cliente,
             dto.producto,
             `${remitente.nombres} ${remitente.apellidos}`,
             dto.nombreServicio,

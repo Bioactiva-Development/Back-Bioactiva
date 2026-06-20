@@ -4,6 +4,7 @@ import { CreateCotizacionDto } from '@/modules/quotations/application/dto/create
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 import { CotizacionConflictException } from '@/modules/quotations/domain/exceptions/cotizacion-conflict.exception';
@@ -28,6 +29,19 @@ const buildLead = (estado: LeadState): Lead =>
         null,
     );
 
+const wrapLead = (
+    lead: Lead,
+    organizationName = 'TechCorp',
+    contactName: string | null = 'María Gómez',
+) => ({
+    lead,
+    organizationName,
+    encargadoNombre: '',
+    encargadoApellidos: '',
+    contactName,
+    activityAlert: ActivityAlertLevel.SIN_ACTIVIDADES,
+});
+
 describe('Quotations module', () => {
     describe('CreateCotizacionUseCase', () => {
         let useCase: CreateCotizacionUseCase;
@@ -37,8 +51,6 @@ describe('Quotations module', () => {
 
         const dto = new CreateCotizacionDto(
             new Date('2026-06-01T00:00:00.000Z'),
-            'Dr. Martinez',
-            'TechCorp',
             null,
             'Desarrollo',
             '5000.00',
@@ -56,7 +68,7 @@ describe('Quotations module', () => {
                 count: jest.fn<() => Promise<number>>().mockResolvedValue(0),
             };
             leadRepository = {
-                findById: jest.fn(),
+                findByIdWithRelations: jest.fn(),
                 hasPendingActivities: jest.fn(),
                 save: jest.fn(),
             };
@@ -69,7 +81,7 @@ describe('Quotations module', () => {
         });
 
         it('throws when the lead does not exist', async () => {
-            leadRepository.findById.mockResolvedValue(null);
+            leadRepository.findByIdWithRelations.mockResolvedValue(null);
 
             await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
                 LeadNotFoundException,
@@ -77,7 +89,9 @@ describe('Quotations module', () => {
         });
 
         it('throws when the remitente does not exist', async () => {
-            leadRepository.findById.mockResolvedValue({ id: 10 });
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(buildLead(LeadState.OFERTADO)),
+            );
             userRepository.findById.mockResolvedValue(null);
 
             await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
@@ -85,8 +99,10 @@ describe('Quotations module', () => {
             );
         });
 
-        it('creates a PENDIENTE cotizacion with the remitente full name', async () => {
-            leadRepository.findById.mockResolvedValue({ id: 10 });
+        it('maps cliente from the org and dirigido from the lead contact', async () => {
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(buildLead(LeadState.OFERTADO), 'TechCorp', 'María Gómez'),
+            );
             userRepository.findById.mockResolvedValue({
                 nombres: 'Carlos',
                 apellidos: 'López',
@@ -101,14 +117,36 @@ describe('Quotations module', () => {
                 cotizacionRepository.saveWithRelations.mock.calls[0][0];
             expect(created.estado).toBe(EstadoCot.PENDIENTE);
             expect(created.nombre_remitente).toBe('Carlos López');
+            expect(created.cliente).toBe('TechCorp');
+            expect(created.dirigido).toBe('María Gómez');
             expect(created.id_lead).toBe(10);
             expect(created.id_remitente).toBe(7);
             expect(created.id_author).toBe(3);
         });
 
+        it('leaves dirigido null when the lead has no contact and cliente null when the org name is empty', async () => {
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(buildLead(LeadState.OFERTADO), '', null),
+            );
+            userRepository.findById.mockResolvedValue({
+                nombres: 'Carlos',
+                apellidos: 'López',
+            });
+            cotizacionRepository.saveWithRelations.mockImplementation(
+                async (c: any) => ({ cotizacion: c }),
+            );
+
+            await useCase.execute(dto);
+
+            const created =
+                cotizacionRepository.saveWithRelations.mock.calls[0][0];
+            expect(created.dirigido).toBeNull();
+            expect(created.cliente).toBeNull();
+        });
+
         it('throws when the lead already has a cotizacion and does not create another', async () => {
-            leadRepository.findById.mockResolvedValue(
-                buildLead(LeadState.OFERTADO),
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(buildLead(LeadState.OFERTADO)),
             );
             userRepository.findById.mockResolvedValue({
                 nombres: 'Carlos',
@@ -131,7 +169,9 @@ describe('Quotations module', () => {
 
         it('promotes an EN_PROSPECTO lead to OFERTADO when creating the cotizacion', async () => {
             const lead = buildLead(LeadState.EN_PROSPECTO);
-            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(lead),
+            );
             leadRepository.hasPendingActivities.mockResolvedValue(false);
             userRepository.findById.mockResolvedValue({
                 nombres: 'Carlos',
@@ -153,7 +193,9 @@ describe('Quotations module', () => {
 
         it('throws when the EN_PROSPECTO lead has pending activities and does not create the cotizacion', async () => {
             const lead = buildLead(LeadState.EN_PROSPECTO);
-            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(lead),
+            );
             leadRepository.hasPendingActivities.mockResolvedValue(true);
             userRepository.findById.mockResolvedValue({
                 nombres: 'Carlos',
@@ -173,7 +215,9 @@ describe('Quotations module', () => {
 
         it('does not change the state nor check activities when the lead is already OFERTADO', async () => {
             const lead = buildLead(LeadState.OFERTADO);
-            leadRepository.findById.mockResolvedValue(lead);
+            leadRepository.findByIdWithRelations.mockResolvedValue(
+                wrapLead(lead),
+            );
             userRepository.findById.mockResolvedValue({
                 nombres: 'Carlos',
                 apellidos: 'López',

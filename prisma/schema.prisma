@@ -371,7 +371,7 @@ model Cotizacion {
   id Int @id @default(autoincrement())
 
   fechaCot DateTime
-  dirigido String @db.VarChar(90)
+  dirigido String? @db.VarChar(90)
   cliente String? @db.VarChar(120)
   producto String? @db.VarChar(120)
   nombreRemitente String @db.VarChar(120)

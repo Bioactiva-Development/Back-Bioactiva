@@ -90,7 +90,6 @@ describe('Quotations module', () => {
     describe('HttpCreateCotizacionDto (@Type transforms + validation)', () => {
         const validPayload = () => ({
             fechaCot: '2026-06-01T10:00:00.000Z',
-            dirigido: 'Dr. Martinez',
             nombreServicio: 'Desarrollo Customizado',
             monto: '5000.00',
             tipo: TipoMoneda.USD,

@@ -6,7 +6,7 @@ export class Cotizacion {
     constructor(
         public readonly id: number | null,
         public fecha_cot: Date,
-        public dirigido: string,
+        public dirigido: string | null,
         public cliente: string | null,
         public producto: string | null,
         public nombre_remitente: string,

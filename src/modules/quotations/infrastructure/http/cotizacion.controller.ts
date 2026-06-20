@@ -54,8 +54,6 @@ export class CotizacionController {
     ): Promise<CotizacionResponseDto> {
         const dto = new CreateCotizacionDto(
             new Date(httpDto.fechaCot),
-            httpDto.dirigido,
-            httpDto.cliente ?? null,
             httpDto.producto ?? null,
             httpDto.nombreServicio,
             httpDto.monto,
