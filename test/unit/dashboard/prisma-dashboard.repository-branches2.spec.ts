@@ -28,9 +28,9 @@ describe('Dashboard module — PrismaDashboardRepository branches2', () => {
         const metrics = await repository.getMetrics({} as any);
 
         expect(metrics.totalLeads).toBe(0);
-        expect(metrics.averageTicketAmount).toBe(0);
-        expect(metrics.closedRevenue).toBe(0);
-        expect(metrics.pipelineTotalAmount).toBe(0);
+        expect(metrics.averageTicketAmount).toEqual({ pen: 0, usd: 0 });
+        expect(metrics.closedRevenue).toEqual({ pen: 0, usd: 0 });
+        expect(metrics.pipelineTotalAmount).toEqual({ pen: 0, usd: 0 });
         expect(metrics.conversionRate).toBe(0);
         expect(metrics.avgClosingTimeDays).toBe(0);
         expect(metrics.stalledLeadPercentage).toBe(0);

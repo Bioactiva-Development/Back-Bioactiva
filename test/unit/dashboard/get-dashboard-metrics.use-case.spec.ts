@@ -6,14 +6,14 @@ describe('Dashboard module', () => {
     describe('GetDashboardMetricsUseCase', () => {
         const mockMetrics: DashboardMetrics = {
             totalLeads: 100,
-            averageTicketAmount: 5000,
+            averageTicketAmount: { pen: 5000, usd: 1300 },
             conversionRate: 25,
             avgClosingTimeDays: 30,
             proposalToCloseRate: 60,
             avgProposalStageDays: 15,
             avgActivitiesPerLead: 3.5,
-            pipelineTotalAmount: 200000,
-            closedRevenue: 45000,
+            pipelineTotalAmount: { pen: 200000, usd: 50000 },
+            closedRevenue: { pen: 45000, usd: 12000 },
             stalledLeadPercentage: 10,
             periodStart: new Date('2026-01-01'),
             periodEnd: new Date('2026-06-05'),

@@ -1,12 +1,28 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { DashboardMetrics } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
+import type {
+    DashboardMetrics,
+    MoneyByCurrency,
+} from '@/modules/dashboard/domain/ports/dashboard-repository.port';
+
+/** Forma Swagger de un monto separado por moneda. */
+export class MoneyByCurrencyDto {
+    @ApiProperty({ description: 'Monto en soles (PEN)' })
+    pen: number;
+
+    @ApiProperty({ description: 'Monto en dólares (USD)' })
+    usd: number;
+}
 
 export class DashboardResponseDto {
     @ApiProperty({ description: 'Total de leads en el período' })
     totalLeads: number;
 
-    @ApiProperty({ description: 'Valor promedio del ticket (cotizaciones cerradas con venta)' })
-    averageTicketAmount: number;
+    @ApiProperty({
+        type: MoneyByCurrencyDto,
+        description:
+            'Valor promedio del ticket (cotizaciones cerradas con venta), separado por moneda',
+    })
+    averageTicketAmount: MoneyByCurrency;
 
     @ApiProperty({ description: 'Tasa de conversión general (%)' })
     conversionRate: number;
@@ -23,11 +39,17 @@ export class DashboardResponseDto {
     @ApiProperty({ description: 'Promedio de actividades por lead' })
     avgActivitiesPerLead: number;
 
-    @ApiProperty({ description: 'Monto total del pipeline (leads abiertos)' })
-    pipelineTotalAmount: number;
+    @ApiProperty({
+        type: MoneyByCurrencyDto,
+        description: 'Monto total del pipeline (leads abiertos), separado por moneda',
+    })
+    pipelineTotalAmount: MoneyByCurrency;
 
-    @ApiProperty({ description: 'Ingresos totales cerrados' })
-    closedRevenue: number;
+    @ApiProperty({
+        type: MoneyByCurrencyDto,
+        description: 'Ingresos totales cerrados, separado por moneda',
+    })
+    closedRevenue: MoneyByCurrency;
 
     @ApiProperty({ description: '% de leads estancados (>30d sin cambio de estado)' })
     stalledLeadPercentage: number;
