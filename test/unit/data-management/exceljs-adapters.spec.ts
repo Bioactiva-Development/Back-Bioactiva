@@ -193,6 +193,53 @@ describe('Data-management Excel adapters', () => {
             );
         });
 
+        it('adds dropdowns, header notes and required highlighting for templates', async () => {
+            const buffer = await builder.build([
+                {
+                    name: 'Cotizaciones',
+                    columns: [
+                        {
+                            header: 'Monto',
+                            key: 'Monto',
+                            required: true,
+                            note: 'Solo números (ej: 15000.50).',
+                        },
+                        {
+                            header: 'Moneda',
+                            key: 'Moneda',
+                            dropdown: ['PEN', 'USD'],
+                        },
+                    ],
+                    rows: [],
+                },
+            ]);
+
+            const wb = new Workbook();
+            await wb.xlsx.load(buffer as unknown as ArrayBuffer);
+            const ws = wb.getWorksheet('Cotizaciones')!;
+
+            // Encabezado obligatorio resaltado y con nota de ayuda.
+            const montoHeader = ws.getRow(1).getCell(1);
+            expect((montoHeader.fill as { type?: string })?.type).toBe(
+                'pattern',
+            );
+            expect(montoHeader.note).toBeDefined();
+
+            // La cabecera queda congelada.
+            expect(ws.views?.[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
+
+            // La columna "Moneda" tiene validación de lista en las filas de datos.
+            const monedaCell = ws.getCell('B2');
+            expect((monedaCell.dataValidation as { type?: string })?.type).toBe(
+                'list',
+            );
+
+            // Los valores del desplegable viven en una hoja oculta "Listas".
+            const listas = wb.getWorksheet('Listas');
+            expect(listas).toBeDefined();
+            expect(listas!.state).toBe('veryHidden');
+        });
+
         it('should not highlight any row when highlightWhen is undefined', async () => {
             const buffer = await builder.build([
                 {

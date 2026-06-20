@@ -316,11 +316,14 @@ describe('Data-management read repository', () => {
                 expect(row.tieneAlertaActividad).toBe(false);
             });
 
-            it('should return empty array and apply only deletedAt filter with no filters', async () => {
+            it('should return empty array and exclude soft-deleted orgs with no filters', async () => {
                 mockPrisma.lead.findMany.mockResolvedValue([]);
                 const result = await repository.findLeads();
                 const where = mockPrisma.lead.findMany.mock.calls[0][0].where;
-                expect(where).toEqual({ deletedAt: null });
+                expect(where).toEqual({
+                    deletedAt: null,
+                    organizacion: { deletedAt: null },
+                });
                 expect(result).toHaveLength(0);
             });
         });
@@ -374,7 +377,10 @@ describe('Data-management read repository', () => {
                 const result = await repository.findCotizaciones();
                 const where = mockPrisma.cotizacion.findMany.mock.calls[0][0]
                     .where;
-                expect(where).toEqual({ deletedAt: null });
+                expect(where).toEqual({
+                    deletedAt: null,
+                    lead: { deletedAt: null, organizacion: { deletedAt: null } },
+                });
                 expect(result).toHaveLength(0);
             });
         });
