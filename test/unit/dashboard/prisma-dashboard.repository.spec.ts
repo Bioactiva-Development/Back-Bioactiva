@@ -52,9 +52,12 @@ describe('Dashboard module', () => {
                         stalled_count: '15',
                     },
                     {
-                        pipeline_total: '200000',
-                        closed_total: '45000',
-                        closed_avg_ticket: '2250',
+                        pipeline_pen: '200000',
+                        pipeline_usd: '50000',
+                        closed_pen: '45000',
+                        closed_usd: '12000',
+                        ticket_pen: '2250',
+                        ticket_usd: '600',
                     },
                 );
                 mockPrisma.actividad.count.mockResolvedValue(250);
@@ -62,14 +65,23 @@ describe('Dashboard module', () => {
                 const result = await repository.getMetrics(defaultQuery);
 
                 expect(result.totalLeads).toBe(100);
-                expect(result.averageTicketAmount).toBe(2250);
+                expect(result.averageTicketAmount).toEqual({
+                    pen: 2250,
+                    usd: 600,
+                });
                 expect(result.conversionRate).toBe(20);
                 expect(result.avgClosingTimeDays).toBe(30.5);
                 expect(result.proposalToCloseRate).toBeCloseTo(66.67, 1);
                 expect(result.avgProposalStageDays).toBe(15.2);
                 expect(result.avgActivitiesPerLead).toBe(2.5);
-                expect(result.pipelineTotalAmount).toBe(200000);
-                expect(result.closedRevenue).toBe(45000);
+                expect(result.pipelineTotalAmount).toEqual({
+                    pen: 200000,
+                    usd: 50000,
+                });
+                expect(result.closedRevenue).toEqual({
+                    pen: 45000,
+                    usd: 12000,
+                });
                 expect(result.stalledLeadPercentage).toBe(15);
                 expect(result.periodStart).toEqual(defaultQuery.startDate);
                 expect(result.periodEnd).toEqual(defaultQuery.endDate);
@@ -88,9 +100,12 @@ describe('Dashboard module', () => {
                         stalled_count: '0',
                     },
                     {
-                        pipeline_total: '0',
-                        closed_total: '0',
-                        closed_avg_ticket: '0',
+                        pipeline_pen: '0',
+                        pipeline_usd: '0',
+                        closed_pen: '0',
+                        closed_usd: '0',
+                        ticket_pen: '0',
+                        ticket_usd: '0',
                     },
                 );
                 mockPrisma.actividad.count.mockResolvedValue(0);
@@ -135,9 +150,12 @@ describe('Dashboard module', () => {
                         stalled_count: '0',
                     },
                     {
-                        pipeline_total: '0',
-                        closed_total: '0',
-                        closed_avg_ticket: '0',
+                        pipeline_pen: '0',
+                        pipeline_usd: '0',
+                        closed_pen: '0',
+                        closed_usd: '0',
+                        ticket_pen: '0',
+                        ticket_usd: '0',
                     },
                 );
                 mockPrisma.actividad.count.mockResolvedValue(0);
@@ -145,14 +163,14 @@ describe('Dashboard module', () => {
                 const result = await repository.getMetrics(defaultQuery);
 
                 expect(result.totalLeads).toBe(0);
-                expect(result.averageTicketAmount).toBe(0);
+                expect(result.averageTicketAmount).toEqual({ pen: 0, usd: 0 });
                 expect(result.conversionRate).toBe(0);
                 expect(result.avgClosingTimeDays).toBe(0);
                 expect(result.proposalToCloseRate).toBe(0);
                 expect(result.avgProposalStageDays).toBe(0);
                 expect(result.avgActivitiesPerLead).toBe(0);
-                expect(result.pipelineTotalAmount).toBe(0);
-                expect(result.closedRevenue).toBe(0);
+                expect(result.pipelineTotalAmount).toEqual({ pen: 0, usd: 0 });
+                expect(result.closedRevenue).toEqual({ pen: 0, usd: 0 });
                 expect(result.stalledLeadPercentage).toBe(0);
             });
         });
@@ -181,9 +199,12 @@ describe('Dashboard module', () => {
                         stalled_count: '2',
                     },
                     {
-                        pipeline_total: '0',
-                        closed_total: '0',
-                        closed_avg_ticket: '0',
+                        pipeline_pen: '0',
+                        pipeline_usd: '0',
+                        closed_pen: '0',
+                        closed_usd: '0',
+                        ticket_pen: '0',
+                        ticket_usd: '0',
                     },
                 );
                 mockPrisma.actividad.count.mockResolvedValue(0);
@@ -192,7 +213,7 @@ describe('Dashboard module', () => {
 
                 expect(result.conversionRate).toBe(0);
                 expect(result.proposalToCloseRate).toBe(0);
-                expect(result.averageTicketAmount).toBe(0);
+                expect(result.averageTicketAmount).toEqual({ pen: 0, usd: 0 });
             });
 
             it('should compute stalledLeadPercentage correctly', async () => {

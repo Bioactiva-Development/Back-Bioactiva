@@ -65,7 +65,7 @@ export class CreateReminderUseCase {
         }
 
         // El recordatorio se programa N minutos antes de que finalice la
-        // actividad (máx. 2 horas antes). No se ajusta a horario laboral: debe
+        // actividad (sin tope máximo). No se ajusta a horario laboral: debe
         // dispararse exactamente con la antelación pedida respecto a la fechaFin.
         const fechaEnvio = computeReminderSendAt(
             context.fechaFin,

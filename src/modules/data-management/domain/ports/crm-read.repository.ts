@@ -67,7 +67,7 @@ export interface CotizacionExportRow {
     id: number;
     idLead: number;
     fechaCot: Date;
-    dirigido: string;
+    dirigido: string | null;
     cliente: string | null;
     producto: string | null;
     nombreServicio: string;

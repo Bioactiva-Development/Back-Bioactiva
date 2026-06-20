@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { CreateCotizacionForOfferedLeadHandler } from '@/modules/quotations/application/handlers/create-cotizacion-for-offered-lead.handler';
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 
@@ -13,12 +14,12 @@ describe('Quotations module', () => {
         let organizationRepository: any;
         let configService: any;
 
-        const buildLead = () =>
+        const buildLead = (estado: LeadState = LeadState.OFERTADO) =>
             new Lead(
                 7,
                 'org-1',
                 null,
-                LeadState.OFERTADO,
+                estado,
                 'Consultoría I+D',
                 null,
                 null,
@@ -31,9 +32,32 @@ describe('Quotations module', () => {
                 new Date(),
             );
 
+        const buildCotizacion = (estado: EstadoCot) =>
+            new Cotizacion(
+                55,
+                new Date(),
+                'TechCorp',
+                'TechCorp SA',
+                null,
+                'Ana Paredes',
+                'Consultoría I+D',
+                '0.00',
+                TipoMoneda.PEN,
+                estado,
+                null,
+                null,
+                7,
+                3,
+                9,
+                new Date(),
+                new Date(),
+                null,
+            );
+
         beforeEach(() => {
             cotizacionRepository = {
-                count: jest.fn(),
+                findByLead: jest.fn(),
+                save: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
             userRepository = { findById: jest.fn() };
@@ -50,7 +74,7 @@ describe('Quotations module', () => {
 
         it('should create a PENDIENTE draft prefilled from the lead and organization', async () => {
             configService.get.mockReturnValue(undefined); // habilitado por defecto
-            cotizacionRepository.count.mockResolvedValue(0);
+            cotizacionRepository.findByLead.mockResolvedValue(null);
             userRepository.findById.mockResolvedValue({
                 nombres: 'Ana',
                 apellidos: 'Paredes',
@@ -63,9 +87,7 @@ describe('Quotations module', () => {
 
             await handler.handle(buildLead());
 
-            expect(cotizacionRepository.count).toHaveBeenCalledWith({
-                idLead: 7,
-            });
+            expect(cotizacionRepository.findByLead).toHaveBeenCalledWith(7);
             const created =
                 cotizacionRepository.saveWithRelations.mock.calls[0][0];
             expect(created.estado).toBe(EstadoCot.PENDIENTE);
@@ -80,31 +102,91 @@ describe('Quotations module', () => {
             expect(created.cliente).toBe('TechCorp SA');
         });
 
-        it('should skip creation when disabled by config flag', async () => {
+        it('should skip draft creation when disabled by config flag', async () => {
             configService.get.mockReturnValue('false');
+            cotizacionRepository.findByLead.mockResolvedValue(null);
 
             await handler.handle(buildLead());
 
-            expect(cotizacionRepository.count).not.toHaveBeenCalled();
+            expect(
+                cotizacionRepository.saveWithRelations,
+            ).not.toHaveBeenCalled();
+            expect(cotizacionRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should not create a draft when the lead is not OFERTADO and has no cotización', async () => {
+            configService.get.mockReturnValue('true');
+            cotizacionRepository.findByLead.mockResolvedValue(null);
+
+            await handler.handle(buildLead(LeadState.CIERRE_SIN_VENTA));
+
+            expect(
+                cotizacionRepository.saveWithRelations,
+            ).not.toHaveBeenCalled();
+            expect(cotizacionRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should accept the existing cotización when the lead closes with sale', async () => {
+            const existing = buildCotizacion(EstadoCot.ENVIADA);
+            cotizacionRepository.findByLead.mockResolvedValue(existing);
+            cotizacionRepository.save.mockResolvedValue(existing);
+
+            await handler.handle(buildLead(LeadState.CIERRE_CON_VENTA));
+
+            expect(existing.estado).toBe(EstadoCot.ACEPTADA);
+            expect(cotizacionRepository.save).toHaveBeenCalledWith(existing);
             expect(
                 cotizacionRepository.saveWithRelations,
             ).not.toHaveBeenCalled();
         });
 
-        it('should not create a duplicate when the lead already has quotations', async () => {
-            configService.get.mockReturnValue('true');
-            cotizacionRepository.count.mockResolvedValue(2);
+        it('should reject the existing cotización when the lead closes without sale', async () => {
+            const existing = buildCotizacion(EstadoCot.PENDIENTE);
+            cotizacionRepository.findByLead.mockResolvedValue(existing);
+            cotizacionRepository.save.mockResolvedValue(existing);
 
-            await handler.handle(buildLead());
+            await handler.handle(buildLead(LeadState.CIERRE_SIN_VENTA));
 
+            expect(existing.estado).toBe(EstadoCot.RECHAZADA);
+            expect(cotizacionRepository.save).toHaveBeenCalledWith(existing);
+        });
+
+        it('should reopen the existing cotización to PENDIENTE when the lead returns to OFERTADO', async () => {
+            const existing = buildCotizacion(EstadoCot.ACEPTADA);
+            cotizacionRepository.findByLead.mockResolvedValue(existing);
+            cotizacionRepository.save.mockResolvedValue(existing);
+
+            await handler.handle(buildLead(LeadState.OFERTADO));
+
+            expect(existing.estado).toBe(EstadoCot.PENDIENTE);
+            expect(cotizacionRepository.save).toHaveBeenCalledWith(existing);
+            // No se genera un borrador nuevo si ya hay cotización.
             expect(
                 cotizacionRepository.saveWithRelations,
             ).not.toHaveBeenCalled();
+        });
+
+        it('should not persist when the existing cotización already matches the lead state', async () => {
+            const existing = buildCotizacion(EstadoCot.ACEPTADA);
+            cotizacionRepository.findByLead.mockResolvedValue(existing);
+
+            await handler.handle(buildLead(LeadState.CIERRE_CON_VENTA));
+
+            expect(cotizacionRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('should do nothing when the lead has no id', async () => {
+            const lead = buildLead();
+            (lead as any).id = null;
+
+            await handler.handle(lead);
+
+            expect(cotizacionRepository.findByLead).not.toHaveBeenCalled();
         });
 
         it('should swallow errors so the lead status change is not affected', async () => {
             configService.get.mockReturnValue('true');
-            cotizacionRepository.count.mockResolvedValue(0);
+            cotizacionRepository.findByLead.mockResolvedValue(null);
             userRepository.findById.mockResolvedValue(null);
             organizationRepository.findById.mockResolvedValue(null);
             cotizacionRepository.saveWithRelations.mockRejectedValue(

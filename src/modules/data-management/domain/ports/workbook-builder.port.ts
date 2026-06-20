@@ -6,6 +6,19 @@ export interface SheetColumn {
     header: string;
     key: string;
     width?: number;
+    /**
+     * Texto de ayuda que se adjunta como comentario a la celda del encabezado
+     * (se ve al pasar el cursor). Útil para ejemplos e indicaciones en plantillas.
+     */
+    note?: string;
+    /** Resalta el encabezado para señalar que la columna es obligatoria. */
+    required?: boolean;
+    /**
+     * Valores permitidos: genera una lista desplegable (validación de datos) en
+     * las filas de la columna. La validación es de tipo aviso, no bloqueante:
+     * el usuario puede escribir equivalentes que el importador igual reconoce.
+     */
+    dropdown?: string[];
 }
 
 /** Definición de una hoja: nombre, columnas y filas (objetos planos por `key`). */

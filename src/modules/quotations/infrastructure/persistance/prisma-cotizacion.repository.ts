@@ -105,6 +105,17 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
         }
     }
 
+    async findByLead(leadId: number): Promise<Cotizacion | null> {
+        try {
+            const record = await this.prisma.cotizacion.findFirst({
+                where: { idLead: leadId, deletedAt: null },
+            });
+            return record ? CotizacionMapper.toDomain(record) : null;
+        } catch (error) {
+            this.handlePrismaError(error);
+        }
+    }
+
     async findByIdWithRelations(
         id: number,
     ): Promise<CotizacionWithRelations | null> {
@@ -151,10 +162,23 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
     ): Prisma.CotizacionWhereInput {
         const where: Prisma.CotizacionWhereInput = {
             deletedAt: null,
+            // No mostrar cotizaciones cuyo lead u organización fueron
+            // eliminados (soft delete).
+            lead: { deletedAt: null, organizacion: { deletedAt: null } },
         };
 
         if (params?.idLead) {
             where.idLead = params.idLead;
+        }
+
+        if (params?.idOrg) {
+            // La cotización no guarda la organización: se filtra por la del lead
+            // asociado a través de la relación, manteniendo el soft-delete.
+            where.lead = {
+                deletedAt: null,
+                idOrg: params.idOrg,
+                organizacion: { deletedAt: null },
+            };
         }
 
         const estado = this.parseEstado(params?.estado);

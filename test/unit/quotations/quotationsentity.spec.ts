@@ -4,6 +4,7 @@ import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 import { InvalidCotizacionTransitionException } from '@/modules/quotations/domain/exceptions/invalid-cotizacion-transition.exception';
+import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 describe('Cotizacion entity domain rules', () => {
     const createdAt = new Date('2024-01-01T00:00:00.000Z');
@@ -126,6 +127,63 @@ describe('Cotizacion entity domain rules', () => {
             expect(() => cot.reject()).toThrow(
                 InvalidCotizacionTransitionException,
             );
+        });
+    });
+
+    describe('syncWithLeadState()', () => {
+        it('maps CIERRE_CON_VENTA to ACEPTADA', () => {
+            const cot = buildCotizacion(EstadoCot.ENVIADA);
+            const changed = cot.syncWithLeadState(LeadState.CIERRE_CON_VENTA);
+
+            expect(changed).toBe(true);
+            expect(cot.estado).toBe(EstadoCot.ACEPTADA);
+            expect(cot.updated_at.getTime()).toBeGreaterThan(
+                createdAt.getTime(),
+            );
+        });
+
+        it('maps CIERRE_SIN_VENTA to RECHAZADA', () => {
+            const cot = buildCotizacion(EstadoCot.PENDIENTE);
+            const changed = cot.syncWithLeadState(LeadState.CIERRE_SIN_VENTA);
+
+            expect(changed).toBe(true);
+            expect(cot.estado).toBe(EstadoCot.RECHAZADA);
+        });
+
+        it('reopens to PENDIENTE when the lead returns to OFERTADO', () => {
+            const cot = buildCotizacion(EstadoCot.ACEPTADA);
+            const changed = cot.syncWithLeadState(LeadState.OFERTADO);
+
+            expect(changed).toBe(true);
+            expect(cot.estado).toBe(EstadoCot.PENDIENTE);
+        });
+
+        it('crosses directly from ACEPTADA to RECHAZADA (no guard)', () => {
+            const cot = buildCotizacion(EstadoCot.ACEPTADA);
+            const changed = cot.syncWithLeadState(LeadState.CIERRE_SIN_VENTA);
+
+            expect(changed).toBe(true);
+            expect(cot.estado).toBe(EstadoCot.RECHAZADA);
+        });
+
+        it('returns false and does not touch the state when already matching', () => {
+            const cot = buildCotizacion(EstadoCot.ACEPTADA);
+            const before = cot.updated_at;
+
+            const changed = cot.syncWithLeadState(LeadState.CIERRE_CON_VENTA);
+
+            expect(changed).toBe(false);
+            expect(cot.estado).toBe(EstadoCot.ACEPTADA);
+            expect(cot.updated_at).toBe(before);
+        });
+
+        it('returns false for EN_PROSPECTO (no mapping)', () => {
+            const cot = buildCotizacion(EstadoCot.PENDIENTE);
+
+            const changed = cot.syncWithLeadState(LeadState.EN_PROSPECTO);
+
+            expect(changed).toBe(false);
+            expect(cot.estado).toBe(EstadoCot.PENDIENTE);
         });
     });
 

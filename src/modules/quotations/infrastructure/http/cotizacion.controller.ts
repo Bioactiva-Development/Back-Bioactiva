@@ -54,8 +54,6 @@ export class CotizacionController {
     ): Promise<CotizacionResponseDto> {
         const dto = new CreateCotizacionDto(
             new Date(httpDto.fechaCot),
-            httpDto.dirigido,
-            httpDto.cliente ?? null,
             httpDto.producto ?? null,
             httpDto.nombreServicio,
             httpDto.monto,
@@ -83,6 +81,7 @@ export class CotizacionController {
             query.page,
             query.limit,
             query.tipo,
+            query.idOrg,
         );
         const { data, total } = await this.listCotizacionesUseCase.execute(dto);
         return new PaginatedCotizacionResponseDto(

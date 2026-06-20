@@ -4,4 +4,6 @@ export interface ListNotificationsQuery {
     estado?: NotificationStatus;
     idLead?: number;
     idResponsable?: number;
+    page?: number;
+    limit?: number;
 }

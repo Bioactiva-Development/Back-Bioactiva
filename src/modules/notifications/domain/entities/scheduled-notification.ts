@@ -22,10 +22,10 @@ export interface FollowUpInstanceInput {
 
 /**
  * Notificación programada (CU007). Un RECORDATORIO solo envía el correo interno
- * al responsable (campos planos asunto/cuerpo internos). Un SEGUIMIENTO agrupa
- * de 1 a 3 instancias escalonadas ({@link FollowUpInstance}), cada una con su
- * correo interno y externo; el destinatario del cliente (`correo_cliente`) es el
- * mismo para todas las instancias. La entidad gestiona sus transiciones de estado.
+ * al responsable (campos planos asunto/cuerpo internos). Un SEGUIMIENTO tiene
+ * exactamente una instancia ({@link FollowUpInstance}) con su correo interno y
+ * externo; el destinatario del cliente (`correo_cliente`) es común. La entidad
+ * gestiona sus transiciones de estado.
  */
 export class ScheduledNotification {
     constructor(
@@ -119,6 +119,32 @@ export class ScheduledNotification {
 
     assignInternalJob(jobId: string): void {
         this.job_id_interno = jobId;
+        this.updated_at = new Date();
+    }
+
+    /**
+     * La única instancia del seguimiento, o null si no es un seguimiento o no
+     * tiene instancias.
+     */
+    singleInstance(): FollowUpInstance | null {
+        return this.isFollowUp() ? (this.instancias[0] ?? null) : null;
+    }
+
+    /**
+     * Un seguimiento solo puede editarse mientras sigue PROGRAMADA y su única
+     * instancia no ha enviado ninguno de sus dos correos.
+     */
+    isFollowUpEditable(): boolean {
+        const instance = this.singleInstance();
+        return (
+            this.estado === NotificationStatus.PROGRAMADA &&
+            instance !== null &&
+            instance.isFullyPending()
+        );
+    }
+
+    updateClientEmail(email: string): void {
+        this.correo_cliente = email;
         this.updated_at = new Date();
     }
 

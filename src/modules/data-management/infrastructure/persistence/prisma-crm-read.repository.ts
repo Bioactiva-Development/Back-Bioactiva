@@ -187,7 +187,11 @@ export class PrismaCrmReadRepository implements ICrmReadRepository {
     }): Promise<LeadExportRow[]> {
         const f = opts?.filters ?? {};
         const now = new Date();
-        const where: Prisma.LeadWhereInput = { deletedAt: null };
+        // No exportar leads cuya organización fue eliminada (soft delete).
+        const where: Prisma.LeadWhereInput = {
+            deletedAt: null,
+            organizacion: { deletedAt: null },
+        };
         if (f.estado) {
             where.estado = f.estado as LeadState;
         }
@@ -196,6 +200,7 @@ export class PrismaCrmReadRepository implements ICrmReadRepository {
         }
         if (f.organizacion) {
             where.organizacion = {
+                deletedAt: null,
                 OR: [
                     { nombre: contains(f.organizacion) },
                     { nombreComercial: contains(f.organizacion) },
@@ -272,7 +277,12 @@ export class PrismaCrmReadRepository implements ICrmReadRepository {
         filters?: CotizacionExportFilters;
     }): Promise<CotizacionExportRow[]> {
         const f = opts?.filters ?? {};
-        const where: Prisma.CotizacionWhereInput = { deletedAt: null };
+        // No exportar cotizaciones cuyo lead u organización fueron eliminados
+        // (soft delete).
+        const where: Prisma.CotizacionWhereInput = {
+            deletedAt: null,
+            lead: { deletedAt: null, organizacion: { deletedAt: null } },
+        };
         if (f.cliente) {
             where.cliente = contains(f.cliente);
         }

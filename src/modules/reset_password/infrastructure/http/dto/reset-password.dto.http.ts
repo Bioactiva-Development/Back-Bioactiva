@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { IsStrongPassword } from '@/shared/infrastructure/validators/is-strong-password.validator';
 
 export class ResetPasswordDto {
     constructor(token: string, password: string, confirmPassword: string) {
@@ -12,7 +13,7 @@ export class ResetPasswordDto {
 
     @IsNotEmpty({ message: 'La contraseña es obligatoria' })
     @IsString()
-    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+    @IsStrongPassword()
     password: string;
 
     @IsNotEmpty({ message: 'La confirmación de la contraseña es obligatoria' })

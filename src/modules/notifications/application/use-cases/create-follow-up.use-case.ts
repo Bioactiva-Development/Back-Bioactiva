@@ -25,7 +25,6 @@ import {
     assertInstanceCount,
     assertInstancesChained,
     assertInternalDate,
-    ensureBusinessHour,
 } from '@/modules/notifications/domain/services/notification-schedule.policy';
 import { LeadHasNoActiveActivityException } from '@/modules/notifications/domain/exceptions/lead-has-no-active-activity.exception';
 import { DuplicateNotificationException } from '@/modules/notifications/domain/exceptions/duplicate-notification.exception';
@@ -81,12 +80,10 @@ export class CreateFollowUpUseCase {
             await this.assertTemplateExists(instancia.internal.idTemplate);
             await this.assertTemplateExists(instancia.external.idTemplate);
 
-            const internalDate = ensureBusinessHour(
-                instancia.internal.fechaEnvio,
-            );
-            const externalDate = ensureBusinessHour(
-                instancia.external.fechaEnvio,
-            );
+            // Se respeta la fecha/hora exacta elegida por el usuario; no se
+            // reajusta a un horario laboral. Solo se valida que sea coherente.
+            const internalDate = instancia.internal.fechaEnvio;
+            const externalDate = instancia.external.fechaEnvio;
             assertInternalDate(internalDate, context.fechaFin, now);
             assertExternalDate(externalDate, context.fechaFin, now);
             assertExternalAfterInternal(internalDate, externalDate);

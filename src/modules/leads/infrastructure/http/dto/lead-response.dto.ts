@@ -59,9 +59,9 @@ export class LeadResponseDto {
 
     @ApiProperty({
         enum: ActivityAlertLevel,
-        example: ActivityAlertLevel.VERDE,
+        example: ActivityAlertLevel.PENDIENTE,
         description:
-            'Semáforo de actividades del lead: VERDE (al día), AMARILLO (pendientes por vencer) o ROJO (pendientes vencidas).',
+            'Semáforo de actividades del lead: SIN_ACTIVIDADES (sin pendientes), PENDIENTE, EN_RIESGO (alguna pendiente pasó la mitad de su tiempo disponible) o POR_VENCER (alguna vence en ≤4 días o ya está vencida).',
     })
     activityAlert: ActivityAlertLevel;
 

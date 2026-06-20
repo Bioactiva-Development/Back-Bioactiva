@@ -1,18 +1,15 @@
 import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
 
-export const BUSINESS_HOUR_START = 9;
-export const BUSINESS_HOUR_END = 18;
-
 /**
  * El recordatorio se programa como un contador de minutos ANTES de que finalice
- * la actividad (`fechaFin`). El tope es 2 horas antes; el mínimo, 1 minuto.
+ * la actividad (`fechaFin`). El mínimo es 1 minuto; no hay tope máximo, salvo el
+ * implícito de que el envío resultante no caiga en el pasado.
  */
-export const MAX_REMINDER_MINUTES = 120;
 export const MIN_REMINDER_MINUTES = 1;
 
 /**
  * Calcula el instante de envío del recordatorio: `fechaFin - minutosAntes`.
- * Valida que `minutosAntes` esté en [1, 120] y que el resultado sea futuro
+ * Valida que `minutosAntes` sea un entero >= 1 y que el resultado sea futuro
  * (la actividad no debe finalizar tan pronto que el recordatorio caiga en el
  * pasado).
  */
@@ -21,13 +18,9 @@ export function computeReminderSendAt(
     minutosAntes: number,
     now: Date,
 ): Date {
-    if (
-        !Number.isInteger(minutosAntes) ||
-        minutosAntes < MIN_REMINDER_MINUTES ||
-        minutosAntes > MAX_REMINDER_MINUTES
-    ) {
+    if (!Number.isInteger(minutosAntes) || minutosAntes < MIN_REMINDER_MINUTES) {
         throw new InvalidScheduleDateException(
-            `El recordatorio debe programarse entre ${MIN_REMINDER_MINUTES} y ${MAX_REMINDER_MINUTES} minutos antes del fin de la actividad.`,
+            `El recordatorio debe programarse al menos ${MIN_REMINDER_MINUTES} minuto antes del fin de la actividad.`,
         );
     }
     const sendAt = new Date(
@@ -39,20 +32,6 @@ export function computeReminderSendAt(
         );
     }
     return sendAt;
-}
-
-/**
- * CU007: si el envío cae fuera del horario laboral [09:00, 18:00), se reprograma
- * a las 09:00 del mismo día. Usa la hora local del servidor.
- */
-export function ensureBusinessHour(date: Date): Date {
-    const hour = date.getHours();
-    if (hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END) {
-        return date;
-    }
-    const adjusted = new Date(date);
-    adjusted.setHours(BUSINESS_HOUR_START, 0, 0, 0);
-    return adjusted;
 }
 
 export function assertInternalDate(
@@ -101,13 +80,13 @@ export function assertExternalAfterInternal(
 }
 
 export const MIN_FOLLOW_UP_INSTANCES = 1;
-export const MAX_FOLLOW_UP_INSTANCES = 3;
+export const MAX_FOLLOW_UP_INSTANCES = 1;
 
-/** Un seguimiento debe tener entre 1 y 3 instancias. */
+/** Un seguimiento debe tener exactamente una instancia. */
 export function assertInstanceCount(count: number): void {
     if (count < MIN_FOLLOW_UP_INSTANCES || count > MAX_FOLLOW_UP_INSTANCES) {
         throw new InvalidScheduleDateException(
-            `Un seguimiento debe tener entre ${MIN_FOLLOW_UP_INSTANCES} y ${MAX_FOLLOW_UP_INSTANCES} instancias.`,
+            'Un seguimiento debe tener exactamente una instancia.',
         );
     }
 }

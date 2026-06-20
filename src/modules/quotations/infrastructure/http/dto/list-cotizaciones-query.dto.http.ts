@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, Min, IsDateString } from 'class-validator';
+import {
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    Min,
+    IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
@@ -12,6 +19,14 @@ export class ListCotizacionesQueryDto {
     @IsInt()
     @Min(1)
     idLead?: number;
+
+    @ApiPropertyOptional({
+        description: 'Filtrar por ID de organización (a través del lead)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsOptional()
+    @IsString()
+    idOrg?: string;
 
     @ApiPropertyOptional({ enum: EstadoCot })
     @IsOptional()

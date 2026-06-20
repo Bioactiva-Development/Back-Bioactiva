@@ -1,5 +1,29 @@
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { InvalidLeadResponsibleException } from '@/modules/leads/domain/exceptions/invalid-lead-responsible.exception';
+import { InvalidLeadTransitionException } from '@/modules/leads/domain/exceptions/invalid-lead-transition.exception';
+
+/**
+ * Transiciones válidas del ciclo de vida de un Lead. EN_PROSPECTO es la fase
+ * inicial: solo puede avanzar a OFERTADO y, una vez que el lead sale de ella,
+ * ya no puede volver. Los tres estados posteriores (OFERTADO, CIERRE_CON_VENTA
+ * y CIERRE_SIN_VENTA) son intercambiables entre sí. Permanecer en el mismo
+ * estado siempre es válido (no-op).
+ */
+const ALLOWED_TRANSITIONS: Record<LeadState, LeadState[]> = {
+    [LeadState.EN_PROSPECTO]: [LeadState.OFERTADO],
+    [LeadState.OFERTADO]: [
+        LeadState.CIERRE_CON_VENTA,
+        LeadState.CIERRE_SIN_VENTA,
+    ],
+    [LeadState.CIERRE_CON_VENTA]: [
+        LeadState.OFERTADO,
+        LeadState.CIERRE_SIN_VENTA,
+    ],
+    [LeadState.CIERRE_SIN_VENTA]: [
+        LeadState.OFERTADO,
+        LeadState.CIERRE_CON_VENTA,
+    ],
+};
 
 export class Lead {
     constructor(
@@ -20,7 +44,23 @@ export class Lead {
         public fecha_cierre: Date | null = null,
     ) {}
 
+    /**
+     * ¿La transición del estado actual a `estado` es válida? Permanecer en el
+     * mismo estado se considera válido (no-op).
+     */
+    canTransitionTo(estado: LeadState): boolean {
+        return (
+            estado === this.estado ||
+            ALLOWED_TRANSITIONS[this.estado].includes(estado)
+        );
+    }
+
     changeState(estado: LeadState) {
+        if (!this.canTransitionTo(estado)) {
+            throw new InvalidLeadTransitionException(
+                `No se puede cambiar el estado del lead de ${this.estado} a ${estado}`,
+            );
+        }
         if (estado === LeadState.CIERRE_CON_VENTA) {
             // Se sella la fecha de cierre al concretar la venta.
             this.fecha_cierre = new Date();

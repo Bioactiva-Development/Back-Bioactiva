@@ -7,6 +7,8 @@ export interface ListNotificationsFilter {
     estado?: NotificationStatus;
     idLead?: number;
     idResponsable?: number;
+    page?: number;
+    limit?: number;
 }
 
 export interface NotificationRepositoryPort {
@@ -21,4 +23,7 @@ export interface NotificationRepositoryPort {
         instanciaId: number,
     ): Promise<ScheduledNotification | null>;
     list(filter: ListNotificationsFilter): Promise<ScheduledNotification[]>;
+    count(
+        filter: Omit<ListNotificationsFilter, 'page' | 'limit'>,
+    ): Promise<number>;
 }

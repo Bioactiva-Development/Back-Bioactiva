@@ -4,6 +4,7 @@ import {
     type DashboardMetrics,
     type DashboardRepositoryPort,
     type MetricsQuery,
+    type MoneyByCurrency,
 } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
 
 const CIERRE_CON_VENTA = 'CIERRE_CON_VENTA';
@@ -53,6 +54,7 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                 totalLeads > 0 ? activityCount / totalLeads : 0,
             pipelineTotalAmount: quotationAgg.pipelineTotal,
             closedRevenue: quotationAgg.closedTotal,
+            // averageTicket/pipelineTotal/closedTotal ya vienen separados PEN/USD.
             stalledLeadPercentage:
                 totalLeads > 0
                     ? (leadAgg.stalledCount / totalLeads) * 100
@@ -111,7 +113,9 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                       AND l.estado NOT IN ($1, $2)
                 ) AS stalled_count
             FROM "Lead" l
+            INNER JOIN "Organizacion" o ON o.id = l."idOrg"
             WHERE l."deletedAt" IS NULL
+              AND o."deletedAt" IS NULL
               AND l."createdAt" >= $4
               AND l."createdAt" <= $5
               ${encargadoClause}
@@ -144,9 +148,9 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         endDate: Date,
         idEncargado: number | undefined,
     ): Promise<{
-        pipelineTotal: number;
-        closedTotal: number;
-        averageTicket: number;
+        pipelineTotal: MoneyByCurrency;
+        closedTotal: MoneyByCurrency;
+        averageTicket: MoneyByCurrency;
     }> {
         const params: unknown[] = [
             CIERRE_CON_VENTA,
@@ -158,6 +162,8 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
             ? ` AND l."idEncargado" = $${params.push(idEncargado)}`
             : '';
 
+        // Cada métrica se desdobla por moneda (c.tipo): PEN y USD nunca se
+        // suman entre sí porque representan divisas distintas.
         const rows: any[] = await this.prisma.$queryRawUnsafe(
             `
             SELECT
@@ -165,20 +171,43 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                     WHERE l.estado NOT IN ($1, $2)
                       AND l."createdAt" >= $3
                       AND l."createdAt" <= $4
-                ), 0) AS pipeline_total,
+                      AND c.tipo = 'PEN'
+                ), 0) AS pipeline_pen,
+                COALESCE(SUM(c.monto) FILTER (
+                    WHERE l.estado NOT IN ($1, $2)
+                      AND l."createdAt" >= $3
+                      AND l."createdAt" <= $4
+                      AND c.tipo = 'USD'
+                ), 0) AS pipeline_usd,
                 COALESCE(SUM(c.monto) FILTER (
                     WHERE l.estado = $1
                       AND c."createdAt" >= $3
                       AND c."createdAt" <= $4
-                ), 0) AS closed_total,
+                      AND c.tipo = 'PEN'
+                ), 0) AS closed_pen,
+                COALESCE(SUM(c.monto) FILTER (
+                    WHERE l.estado = $1
+                      AND c."createdAt" >= $3
+                      AND c."createdAt" <= $4
+                      AND c.tipo = 'USD'
+                ), 0) AS closed_usd,
                 COALESCE(AVG(c.monto) FILTER (
                     WHERE l.estado = $1
                       AND c."createdAt" >= $3
                       AND c."createdAt" <= $4
-                ), 0) AS closed_avg_ticket
+                      AND c.tipo = 'PEN'
+                ), 0) AS ticket_pen,
+                COALESCE(AVG(c.monto) FILTER (
+                    WHERE l.estado = $1
+                      AND c."createdAt" >= $3
+                      AND c."createdAt" <= $4
+                      AND c.tipo = 'USD'
+                ), 0) AS ticket_usd
             FROM "Cotizacion" c
             INNER JOIN "Lead" l ON l.id = c."idLead"
+            INNER JOIN "Organizacion" o ON o.id = l."idOrg"
             WHERE l."deletedAt" IS NULL
+              AND o."deletedAt" IS NULL
               AND c."deletedAt" IS NULL
               ${encargadoClause}
         `,
@@ -187,9 +216,18 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
 
         const row = rows[0] ?? {};
         return {
-            pipelineTotal: Number(row.pipeline_total ?? 0),
-            closedTotal: Number(row.closed_total ?? 0),
-            averageTicket: Number(row.closed_avg_ticket ?? 0),
+            pipelineTotal: {
+                pen: Number(row.pipeline_pen ?? 0),
+                usd: Number(row.pipeline_usd ?? 0),
+            },
+            closedTotal: {
+                pen: Number(row.closed_pen ?? 0),
+                usd: Number(row.closed_usd ?? 0),
+            },
+            averageTicket: {
+                pen: Number(row.ticket_pen ?? 0),
+                usd: Number(row.ticket_usd ?? 0),
+            },
         };
     }
 
@@ -205,10 +243,13 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         const leadFilter: {
             createdAt: { gte: Date; lte: Date };
             deletedAt: null;
+            organizacion: { deletedAt: null };
             idEncargado?: number;
         } = {
             createdAt: { gte: startDate, lte: endDate },
             deletedAt: null,
+            // No contar actividades de leads cuya organización fue eliminada.
+            organizacion: { deletedAt: null },
         };
         if (idEncargado) {
             leadFilter.idEncargado = idEncargado;

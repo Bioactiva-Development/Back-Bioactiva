@@ -95,6 +95,7 @@ export class LeadController {
             query.alertaActividad,
             query.fechaDesde ? new Date(query.fechaDesde) : undefined,
             query.fechaHasta ? new Date(query.fechaHasta) : undefined,
+            query.sector,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));
@@ -134,8 +135,6 @@ export class LeadController {
         @Body() httpDto: HttpUpdateLeadDto,
     ): Promise<LeadResponseDto> {
         const updateDto = new UpdateLeadDto(
-            httpDto.idOrg,
-            httpDto.idContacto,
             httpDto.servicioInteres,
             httpDto.comentarios,
             httpDto.desafioOportunidad,
@@ -157,7 +156,7 @@ export class LeadController {
     @ApiResponse({
         status: 409,
         description:
-            'El lead tiene actividades pendientes; deben resolverse antes de cambiar de estado',
+            'Transición de estado inválida (p. ej. volver a EN_PROSPECTO) o el lead tiene actividades pendientes que deben resolverse antes de cambiar de estado',
     })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,

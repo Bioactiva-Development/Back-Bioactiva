@@ -4,24 +4,6 @@ import { Type } from 'class-transformer';
 
 export class HttpUpdateLeadDto {
     @ApiPropertyOptional({
-        example: '123e4567-e89b-12d3-a456-426614174000',
-        description: 'UUID de la organización',
-    })
-    @IsOptional()
-    @IsString()
-    idOrg?: string;
-
-    @ApiPropertyOptional({
-        example: 1,
-        description: 'ID del contacto asociado (opcional)',
-    })
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    idContacto?: number | null;
-
-    @ApiPropertyOptional({
         example: 'Consultoría en transformación digital',
         description: 'Servicio de interés del lead',
     })

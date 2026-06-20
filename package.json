@@ -111,5 +111,15 @@
             "html"
         ]
     },
+    "pnpm": {
+        "overrides": {
+            "fast-uri": ">=3.1.2",
+            "hono": ">=4.12.21",
+            "@hono/node-server": ">=1.19.13",
+            "qs": ">=6.15.2",
+            "multer": ">=2.2.0",
+            "form-data": ">=4.0.6"
+        }
+    },
     "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f"
 }

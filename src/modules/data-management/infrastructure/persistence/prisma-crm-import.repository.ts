@@ -89,12 +89,14 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                             row: org.rowNumber,
                             message: 'La organización ya existe; omitida.',
                         });
-                        // Registrar claves para que contactos/leads la resuelvan.
+                        // Registrar claves para que contactos/leads la resuelvan
+                        // por RUC, nombre comercial o razón social.
                         if (org.ruc) orgIdByRuc.set(org.ruc, dupId);
                         orgIdByComercial.set(
                             normalizeCell(org.nombreComercial),
                             dupId,
                         );
+                        orgIdByNombre.set(normalizeCell(org.nombre), dupId);
                         continue;
                     }
 
@@ -137,6 +139,29 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                     orgIdByNombre.set(normalizeCell(org.nombre), created.id);
                 }
 
+                // Resuelve la organización de un contacto/lead por RUC (si lo
+                // tiene) y, como respaldo, por nombre: coincide tanto contra el
+                // nombre comercial como contra la razón social (única). Así el
+                // vínculo funciona aunque la organización no tenga RUC.
+                const resolveOrgId = (
+                    ruc: string | null,
+                    nombre: string | null,
+                ): string | undefined => {
+                    if (ruc) {
+                        const byRuc = orgIdByRuc.get(ruc);
+                        if (byRuc) {
+                            return byRuc;
+                        }
+                    }
+                    if (nombre) {
+                        const key = normalizeCell(nombre);
+                        return (
+                            orgIdByComercial.get(key) ?? orgIdByNombre.get(key)
+                        );
+                    }
+                    return undefined;
+                };
+
                 // ---- Contactos ----
                 const contactIdByCorreo = new Map<string, number>();
                 const existingContacts = await tx.contacto.findMany({
@@ -156,12 +181,10 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         });
                         continue;
                     }
-                    const orgId =
-                        (c.orgRuc && orgIdByRuc.get(c.orgRuc)) ||
-                        (c.orgNombreComercial &&
-                            orgIdByComercial.get(
-                                normalizeCell(c.orgNombreComercial),
-                            ));
+                    const orgId = resolveOrgId(
+                        c.orgRuc,
+                        c.orgNombreComercial,
+                    );
                     if (!orgId) {
                         summary.skipped.push({
                             sheet: 'Contactos',
@@ -193,12 +216,10 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 // ---- Leads (+ Actividad pendiente) ----
                 const leadIdByExcelId = new Map<string, number>();
                 for (const l of plan.leads) {
-                    const orgId =
-                        (l.orgRuc && orgIdByRuc.get(l.orgRuc)) ||
-                        (l.orgNombreComercial &&
-                            orgIdByComercial.get(
-                                normalizeCell(l.orgNombreComercial),
-                            ));
+                    const orgId = resolveOrgId(
+                        l.orgRuc,
+                        l.orgNombreComercial,
+                    );
                     if (!orgId) {
                         summary.skipped.push({
                             sheet: 'Leads',

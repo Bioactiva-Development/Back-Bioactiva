@@ -122,20 +122,20 @@ describe('ContactController', () => {
         expect(result.meta.total).toBe(1);
     });
 
-    it('should forward organization filter to the use case', async () => {
+    it('should forward search filter to the use case', async () => {
         getAllContactsUseCase.execute.mockResolvedValue({
             data: [enrichedContact],
             total: 1,
         });
 
         await controller.findAll({
-            idOrganization: 'org-1',
+            search: 'Juan',
             page: 1,
             limit: 10,
         } as any);
 
         expect(getAllContactsUseCase.execute).toHaveBeenCalledWith(
-            expect.objectContaining({ idOrganization: 'org-1' }),
+            expect.objectContaining({ search: 'Juan' }),
         );
     });
 
