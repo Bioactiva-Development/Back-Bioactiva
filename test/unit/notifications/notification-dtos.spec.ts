@@ -178,7 +178,7 @@ describe('Notifications DTOs', () => {
         it('rejects out-of-range minutosAntes and empty strings', async () => {
             const dto = plainToInstance(HttpCreateReminderDto, {
                 idLead: 0,
-                minutosAntes: 99999,
+                minutosAntes: 0,
                 asunto: '',
                 cuerpo: '',
             });

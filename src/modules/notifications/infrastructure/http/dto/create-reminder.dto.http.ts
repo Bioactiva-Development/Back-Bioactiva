@@ -6,10 +6,8 @@ import {
     IsOptional,
     IsString,
     Length,
-    Max,
     Min,
 } from 'class-validator';
-import { MAX_REMINDER_MINUTES } from '@/modules/notifications/domain/services/notification-schedule.policy';
 
 export class HttpCreateReminderDto {
     @ApiProperty({
@@ -25,14 +23,12 @@ export class HttpCreateReminderDto {
     @ApiProperty({
         example: 15,
         minimum: 1,
-        maximum: MAX_REMINDER_MINUTES,
         description:
-            'Minutos antes de que finalice la actividad en que el encargado recibe el recordatorio (1–120; máx. 2 horas antes).',
+            'Minutos antes de que finalice la actividad en que el encargado recibe el recordatorio (mínimo 1; el envío resultante debe ser futuro).',
     })
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    @Max(MAX_REMINDER_MINUTES)
     minutosAntes!: number;
 
     @ApiProperty({

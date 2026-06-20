@@ -2,14 +2,14 @@ import { InvalidScheduleDateException } from '@/modules/notifications/domain/exc
 
 /**
  * El recordatorio se programa como un contador de minutos ANTES de que finalice
- * la actividad (`fechaFin`). El tope es 2 horas antes; el mínimo, 1 minuto.
+ * la actividad (`fechaFin`). El mínimo es 1 minuto; no hay tope máximo, salvo el
+ * implícito de que el envío resultante no caiga en el pasado.
  */
-export const MAX_REMINDER_MINUTES = 120;
 export const MIN_REMINDER_MINUTES = 1;
 
 /**
  * Calcula el instante de envío del recordatorio: `fechaFin - minutosAntes`.
- * Valida que `minutosAntes` esté en [1, 120] y que el resultado sea futuro
+ * Valida que `minutosAntes` sea un entero >= 1 y que el resultado sea futuro
  * (la actividad no debe finalizar tan pronto que el recordatorio caiga en el
  * pasado).
  */
@@ -18,13 +18,9 @@ export function computeReminderSendAt(
     minutosAntes: number,
     now: Date,
 ): Date {
-    if (
-        !Number.isInteger(minutosAntes) ||
-        minutosAntes < MIN_REMINDER_MINUTES ||
-        minutosAntes > MAX_REMINDER_MINUTES
-    ) {
+    if (!Number.isInteger(minutosAntes) || minutosAntes < MIN_REMINDER_MINUTES) {
         throw new InvalidScheduleDateException(
-            `El recordatorio debe programarse entre ${MIN_REMINDER_MINUTES} y ${MAX_REMINDER_MINUTES} minutos antes del fin de la actividad.`,
+            `El recordatorio debe programarse al menos ${MIN_REMINDER_MINUTES} minuto antes del fin de la actividad.`,
         );
     }
     const sendAt = new Date(

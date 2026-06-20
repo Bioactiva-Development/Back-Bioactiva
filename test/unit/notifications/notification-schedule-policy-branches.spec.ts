@@ -5,7 +5,6 @@ import {
     assertInstanceCount,
     assertInstancesChained,
     MIN_REMINDER_MINUTES,
-    MAX_REMINDER_MINUTES,
 } from '@/modules/notifications/domain/services/notification-schedule.policy';
 import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
 
@@ -22,12 +21,17 @@ describe('Notifications module', () => {
                 );
             });
 
-            it('accepts the minimum and maximum bounds', () => {
+            it('accepts the minimum bound', () => {
                 expect(() =>
                     computeReminderSendAt(fechaFin, MIN_REMINDER_MINUTES, now),
                 ).not.toThrow();
+            });
+
+            it('accepts large antelaciones with no upper bound', () => {
+                // 8 días antes; el único límite es que el envío no caiga en el pasado.
+                const farFin = new Date('2026-06-30T15:00:00.000Z');
                 expect(() =>
-                    computeReminderSendAt(fechaFin, MAX_REMINDER_MINUTES, now),
+                    computeReminderSendAt(farFin, 11_520, now),
                 ).not.toThrow();
             });
 
@@ -42,16 +46,6 @@ describe('Notifications module', () => {
                     computeReminderSendAt(
                         fechaFin,
                         MIN_REMINDER_MINUTES - 1,
-                        now,
-                    ),
-                ).toThrow(InvalidScheduleDateException);
-            });
-
-            it('rejects more than the maximum minutes', () => {
-                expect(() =>
-                    computeReminderSendAt(
-                        fechaFin,
-                        MAX_REMINDER_MINUTES + 1,
                         now,
                     ),
                 ).toThrow(InvalidScheduleDateException);
