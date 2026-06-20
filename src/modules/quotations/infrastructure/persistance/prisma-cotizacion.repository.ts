@@ -105,6 +105,17 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
         }
     }
 
+    async findByLead(leadId: number): Promise<Cotizacion | null> {
+        try {
+            const record = await this.prisma.cotizacion.findFirst({
+                where: { idLead: leadId, deletedAt: null },
+            });
+            return record ? CotizacionMapper.toDomain(record) : null;
+        } catch (error) {
+            this.handlePrismaError(error);
+        }
+    }
+
     async findByIdWithRelations(
         id: number,
     ): Promise<CotizacionWithRelations | null> {

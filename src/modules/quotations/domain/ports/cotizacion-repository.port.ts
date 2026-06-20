@@ -28,6 +28,8 @@ export interface ListCotizacionesParams {
 export interface CotizacionRepositoryPort {
     findById(id: number): Promise<Cotizacion | null>;
     findByIdWithRelations(id: number): Promise<CotizacionWithRelations | null>;
+    /** Cotización (única) vinculada a un lead, o null si no tiene. */
+    findByLead(leadId: number): Promise<Cotizacion | null>;
     save(cotizacion: Cotizacion): Promise<Cotizacion>;
     saveWithRelations(cotizacion: Cotizacion): Promise<CotizacionWithRelations>;
     acceptAndUpdateLead(

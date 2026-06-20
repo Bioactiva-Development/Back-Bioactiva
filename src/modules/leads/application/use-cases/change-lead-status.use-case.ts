@@ -8,7 +8,6 @@ import {
     type OfferedLeadHandlerPort,
 } from '@/modules/leads/domain/ports/offered-lead-handler.port';
 import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead-status.dto';
-import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 import { InvalidLeadTransitionException } from '@/modules/leads/domain/exceptions/invalid-lead-transition.exception';
@@ -27,7 +26,6 @@ export class ChangeLeadStatusUseCase {
             throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
         }
 
-        const wasOffered = lead.estado === LeadState.OFERTADO;
         const isStateChange = dto.estado !== lead.estado;
 
         // Valida la transición antes que cualquier otra regla (sin mutar el
@@ -56,10 +54,11 @@ export class ChangeLeadStatusUseCase {
 
         const saved = await this.leadRepository.saveWithRelations(lead);
 
-        // Solo en la transición real hacia OFERTADO (no si ya estaba ofertado) se
-        // notifica al contexto de cotizaciones para que genere el borrador
-        // vinculado al lead.
-        if (dto.estado === LeadState.OFERTADO && !wasOffered) {
+        // Ante un cambio real de estado se notifica al contexto de cotizaciones
+        // para mantener la cotización vinculada en sincronía con el lead: al
+        // ofertar genera el borrador y en los cierres/reapertura refleja el
+        // estado correspondiente (best-effort, no rompe el cambio del lead).
+        if (isStateChange) {
             await this.offeredLeadHandler.handle(lead);
         }
 

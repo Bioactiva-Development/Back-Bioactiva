@@ -78,7 +78,7 @@ describe('Leads module', () => {
             expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
         });
 
-        it('should NOT notify the handler for non-OFERTADO transitions', async () => {
+        it('should notify the handler on closure transitions to sync the cotización', async () => {
             const lead = buildLead(LeadState.OFERTADO);
             leadRepository.findById.mockResolvedValue(lead);
             leadRepository.saveWithRelations.mockResolvedValue(lead);
@@ -88,7 +88,7 @@ describe('Leads module', () => {
                 new ChangeLeadStatusDto(LeadState.CIERRE_CON_VENTA),
             );
 
-            expect(offeredLeadHandler.handle).not.toHaveBeenCalled();
+            expect(offeredLeadHandler.handle).toHaveBeenCalledWith(lead);
         });
 
         it('should move freely between the post-prospecto states', async () => {

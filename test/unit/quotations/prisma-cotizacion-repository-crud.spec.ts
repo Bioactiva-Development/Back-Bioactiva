@@ -126,6 +126,34 @@ describe('Quotations module', () => {
             });
         });
 
+        describe('findByLead', () => {
+            it('returns the mapped quotation linked to the lead', async () => {
+                prismaService.cotizacion.findFirst.mockResolvedValue(
+                    baseRecord(),
+                );
+
+                const result = await repository.findByLead(10);
+
+                expect(prismaService.cotizacion.findFirst).toHaveBeenCalledWith({
+                    where: { idLead: 10, deletedAt: null },
+                });
+                expect(result).toBeInstanceOf(Cotizacion);
+            });
+
+            it('returns null when the lead has no quotation', async () => {
+                prismaService.cotizacion.findFirst.mockResolvedValue(null);
+
+                expect(await repository.findByLead(10)).toBeNull();
+            });
+
+            it('re-throws unknown errors via handlePrismaError', async () => {
+                const err = createPrismaError('P2000', 'too long');
+                prismaService.cotizacion.findFirst.mockRejectedValue(err);
+
+                await expect(repository.findByLead(10)).rejects.toBe(err);
+            });
+        });
+
         describe('findByIdWithRelations', () => {
             it('returns the enriched relation view when found', async () => {
                 prismaService.cotizacion.findFirst.mockResolvedValue(

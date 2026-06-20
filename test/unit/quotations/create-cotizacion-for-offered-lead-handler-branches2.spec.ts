@@ -35,7 +35,8 @@ describe('Quotations module — CreateCotizacionForOfferedLeadHandler branches2'
 
     beforeEach(() => {
         cotizacionRepository = {
-            count: jest.fn(),
+            findByLead: jest.fn(),
+            save: jest.fn(),
             saveWithRelations: jest.fn(),
         };
         userRepository = { findById: jest.fn() };
@@ -52,8 +53,8 @@ describe('Quotations module — CreateCotizacionForOfferedLeadHandler branches2'
 
     it('swallows a non-Error rejection (String(error) branch)', async () => {
         configService.get.mockReturnValue(undefined); // habilitado
-        // count lanza un valor no-Error -> entra al catch con String(error).
-        cotizacionRepository.count.mockImplementation(() => {
+        // findByLead lanza un valor no-Error -> entra al catch con String(error).
+        cotizacionRepository.findByLead.mockImplementation(() => {
             throw 'fallo-no-error';
         });
 

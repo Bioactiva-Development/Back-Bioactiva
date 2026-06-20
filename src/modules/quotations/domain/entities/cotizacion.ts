@@ -1,6 +1,18 @@
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
 import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 import { InvalidCotizacionTransitionException } from '@/modules/quotations/domain/exceptions/invalid-cotizacion-transition.exception';
+import { LeadState } from '@/modules/leads/domain/enums/lead-state';
+
+/**
+ * Mapeo 1:1 entre el estado del lead y el de su cotización. Solo cubre los
+ * estados del lead que tienen un reflejo en la cotización; EN_PROSPECTO no
+ * aparece porque en esa fase el lead aún no tiene cotización.
+ */
+const COTIZACION_ESTADO_POR_LEAD: Partial<Record<LeadState, EstadoCot>> = {
+    [LeadState.OFERTADO]: EstadoCot.PENDIENTE,
+    [LeadState.CIERRE_CON_VENTA]: EstadoCot.ACEPTADA,
+    [LeadState.CIERRE_SIN_VENTA]: EstadoCot.RECHAZADA,
+};
 
 export class Cotizacion {
     constructor(
@@ -58,6 +70,24 @@ export class Cotizacion {
         }
         this.estado = EstadoCot.RECHAZADA;
         this.updated_at = new Date();
+    }
+
+    /**
+     * Sincroniza el estado de la cotización con el del lead vinculado cuando el
+     * cambio se origina en el lead (PATCH /leads/{id}/status), que es la fuente
+     * de verdad en esa dirección. A diferencia de send()/accept()/reject(), no
+     * aplica los guards de transición: el lead ya validó su propia transición y
+     * aquí solo se refleja el mapeo 1:1 (incluida la reapertura a PENDIENTE al
+     * volver el lead a OFERTADO). Devuelve true si hubo un cambio efectivo.
+     */
+    syncWithLeadState(leadState: LeadState): boolean {
+        const mapped = COTIZACION_ESTADO_POR_LEAD[leadState];
+        if (mapped === undefined || mapped === this.estado) {
+            return false;
+        }
+        this.estado = mapped;
+        this.updated_at = new Date();
+        return true;
     }
 
     markAsDeleted() {
