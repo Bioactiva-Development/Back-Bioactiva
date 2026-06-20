@@ -1,8 +1,5 @@
 import { InvalidScheduleDateException } from '@/modules/notifications/domain/exceptions/invalid-schedule-date.exception';
 
-export const BUSINESS_HOUR_START = 9;
-export const BUSINESS_HOUR_END = 18;
-
 /**
  * El recordatorio se programa como un contador de minutos ANTES de que finalice
  * la actividad (`fechaFin`). El tope es 2 horas antes; el mínimo, 1 minuto.
@@ -39,20 +36,6 @@ export function computeReminderSendAt(
         );
     }
     return sendAt;
-}
-
-/**
- * CU007: si el envío cae fuera del horario laboral [09:00, 18:00), se reprograma
- * a las 09:00 del mismo día. Usa la hora local del servidor.
- */
-export function ensureBusinessHour(date: Date): Date {
-    const hour = date.getHours();
-    if (hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END) {
-        return date;
-    }
-    const adjusted = new Date(date);
-    adjusted.setHours(BUSINESS_HOUR_START, 0, 0, 0);
-    return adjusted;
 }
 
 export function assertInternalDate(

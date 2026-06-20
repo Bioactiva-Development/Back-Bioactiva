@@ -21,16 +21,39 @@ export class ResendMailProvider {
         return ResendMailProvider.instance;
     }
 
+    // El SDK de Resend NO lanza ante un fallo de la API: resuelve con
+    // `{ data, error }`. Si no se inspecciona `error`, un rechazo (dominio no
+    // verificado, destinatario inválido, token sin permisos) se traga en
+    // silencio y el envío parece exitoso. Aquí se valida y se lanza para que el
+    // job de la cola falle con el motivo real en vez de marcarse "completado".
+    private static async dispatch(input: {
+        to: string;
+        subject: string;
+        html: string;
+    }): Promise<void> {
+        const resend = ResendMailProvider.getInstance();
+
+        const { error } = await resend.emails.send({
+            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+            to: input.to,
+            subject: input.subject,
+            html: input.html,
+        });
+
+        if (error) {
+            throw new Error(
+                `Resend rechazó el envío a ${input.to}: ${error.message}`,
+            );
+        }
+    }
+
     async sendInvitationEmail(input: {
         correo: string;
         token: string;
         rol: UserRole;
         invitedBy: number;
     }): Promise<void> {
-        const resend = ResendMailProvider.getInstance();
-
-        await resend.emails.send({
-            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+        await ResendMailProvider.dispatch({
             to: input.correo,
             subject: 'Invitación a Back Bioactiva',
             html: renderInvitationEmailTemplate(input),
@@ -41,10 +64,7 @@ export class ResendMailProvider {
         correo: string;
         token: string;
     }): Promise<void> {
-        const resend = ResendMailProvider.getInstance();
-
-        await resend.emails.send({
-            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+        await ResendMailProvider.dispatch({
             to: input.correo,
             subject: 'Restablecer contraseña - Bioactiva',
             html: renderResetPasswordEmailTemplate(input),
@@ -56,13 +76,6 @@ export class ResendMailProvider {
         subject: string;
         html: string;
     }): Promise<void> {
-        const resend = ResendMailProvider.getInstance();
-
-        await resend.emails.send({
-            from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
-            to: input.to,
-            subject: input.subject,
-            html: input.html,
-        });
+        await ResendMailProvider.dispatch(input);
     }
 }

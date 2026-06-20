@@ -6,6 +6,7 @@ describe('Notifications module', () => {
         let useCase: GenerateStaleLeadAlertsUseCase;
         let staleLeadReader: any;
         let inAppRepository: any;
+        const appTime = { timeZone: 'America/Lima' } as any;
 
         const staleLeads = [
             {
@@ -37,6 +38,7 @@ describe('Notifications module', () => {
             useCase = new GenerateStaleLeadAlertsUseCase(
                 staleLeadReader,
                 inAppRepository,
+                appTime,
             );
         });
 
@@ -50,6 +52,9 @@ describe('Notifications module', () => {
             expect(alerts).toHaveLength(2);
             expect(alerts[0].id_usuario).toBe(10);
             expect(alerts[0].id_lead).toBe(1);
+            // El mensaje incluye la fecha del último cambio en hora Lima:
+            // 2026-01-01T00:00:00Z (UTC) → 31/12/2025, 19:00 (UTC-5).
+            expect(alerts[0].mensaje).toContain('31/12/2025, 19:00');
         });
 
         it('skips leads already alerted within the window', async () => {

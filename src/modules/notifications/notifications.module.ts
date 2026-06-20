@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '@/modules/common/prisma/prisma.module';
 import { MailModule } from '@/modules/common/mail/mail.module';
 import { RedisModule } from '@/modules/common/redis/redis.module';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import { FOLLOW_UP_CANCELER } from '@/modules/activities/domain/ports/follow-up-canceler.port';
 import { NOTIFICATION_REPOSITORY } from '@/modules/notifications/domain/ports/notification-repository.port';
 import { NOTIFICATION_SCHEDULER } from '@/modules/notifications/domain/ports/notification-scheduler.port';
@@ -61,6 +62,7 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
     ],
     controllers: [NotificationsController, TemplatesController],
     providers: [
+        AppTimeConfig,
         PrismaNotificationRepository,
         {
             provide: NOTIFICATION_REPOSITORY,
