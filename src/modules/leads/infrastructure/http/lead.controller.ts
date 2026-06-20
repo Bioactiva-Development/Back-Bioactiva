@@ -135,8 +135,6 @@ export class LeadController {
         @Body() httpDto: HttpUpdateLeadDto,
     ): Promise<LeadResponseDto> {
         const updateDto = new UpdateLeadDto(
-            httpDto.idOrg,
-            httpDto.idContacto,
             httpDto.servicioInteres,
             httpDto.comentarios,
             httpDto.desafioOportunidad,

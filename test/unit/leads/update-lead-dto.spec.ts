@@ -5,15 +5,12 @@ import { HttpUpdateLeadDto } from '@/modules/leads/infrastructure/http/dto/updat
 
 describe('Leads module', () => {
     describe('HttpUpdateLeadDto (Type transforms)', () => {
-        it('coerces numeric string idContacto and idEncargado to numbers', async () => {
+        it('coerces numeric string idEncargado to a number', async () => {
             const dto = plainToInstance(HttpUpdateLeadDto, {
-                idContacto: '13',
                 idEncargado: '4',
             });
 
-            expect(dto.idContacto).toBe(13);
             expect(dto.idEncargado).toBe(4);
-            expect(typeof dto.idContacto).toBe('number');
             expect(typeof dto.idEncargado).toBe('number');
 
             const errors = await validate(dto);
@@ -27,14 +24,14 @@ describe('Leads module', () => {
             expect(errors).toHaveLength(0);
         });
 
-        it('rejects an idContacto below the minimum', async () => {
+        it('rejects an idEncargado below the minimum', async () => {
             const dto = plainToInstance(HttpUpdateLeadDto, {
-                idContacto: '0',
+                idEncargado: '0',
             });
 
             const errors = await validate(dto);
             expect(
-                errors.some((error) => error.property === 'idContacto'),
+                errors.some((error) => error.property === 'idEncargado'),
             ).toBe(true);
         });
     });
