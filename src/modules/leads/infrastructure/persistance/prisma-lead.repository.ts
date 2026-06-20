@@ -342,7 +342,10 @@ export class PrismaLeadRepository implements LeadRepository {
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                // Primero los leads con movimiento más reciente. id desc desempata
+                // de forma determinista cuando comparten ultimoCambioEstado
+                // (p. ej. importaciones masivas con la misma fecha).
+                orderBy: [{ ultimoCambioEstado: 'desc' }, { id: 'desc' }],
                 include: {
                     organizacion: { select: { nombre: true } },
                     encargado: { select: { nombres: true, apellidos: true } },
