@@ -56,7 +56,7 @@ export class GenerateTemplateUseCase {
                     note: 'Obligatorio. Razón social completa (ej: Bioactiva Perú S.A.C.).',
                 }),
                 col('RUC', {
-                    note: 'Recomendado. 11 dígitos (ej: 20123456789). Es la mejor forma de vincular contactos y leads a esta organización.',
+                    note: 'Opcional. 11 dígitos (ej: 20123456789). Si lo tienes, es la forma más segura de vincular contactos y leads; si no, se vinculan por el nombre de la organización.',
                 }),
                 col('Contacto vigente', {
                     note: 'Opcional. Informativo.',
@@ -103,11 +103,11 @@ export class GenerateTemplateUseCase {
                 col('Apellidos'),
                 col('Nombres y apellidos'),
                 col('Organización abreviado', {
-                    note: 'Para vincular el contacto a su organización por nombre. Debe coincidir con "Organización" de la hoja Organizaciones (o usa el RUC).',
+                    note: 'Vincula el contacto a su organización por nombre. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando la organización no tiene RUC.',
                 }),
                 col('Organización extendido'),
                 col('RUC', {
-                    note: 'Para vincular el contacto a su organización por RUC (recomendado). Debe existir en la hoja Organizaciones o en el CRM.',
+                    note: 'Opcional. Vincula el contacto por RUC si la organización lo tiene; si no, se usa el nombre de la organización. La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
                 }),
                 col('Tamaño de la organización'),
                 col('Tipo de organización'),
@@ -136,10 +136,10 @@ export class GenerateTemplateUseCase {
                     note: 'Identificador que TÚ asignas a este lead (ej: L-001). Repítelo en la hoja Cotizaciones, columna "ID de lead", para vincular sus cotizaciones.',
                 }),
                 col('RUC // ID Contacto', {
-                    note: 'RUC de la organización de este lead (ej: 20123456789). Sirve para vincularlo con la hoja Organizaciones. Si no hay RUC, usa la columna "Organización".',
+                    note: 'Opcional. RUC de la organización del lead (ej: 20123456789). Sirve para vincularlo con la hoja Organizaciones. Si no hay RUC, el vínculo se hace por la columna "Organización".',
                 }),
                 col('Organización', {
-                    note: 'Nombre de la organización del lead. Debe coincidir con "Organización" de la hoja Organizaciones (o usa el RUC).',
+                    note: 'Nombre de la organización del lead. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando no hay RUC.',
                 }),
                 col('Tipo'),
                 col('Sector'),
@@ -239,7 +239,7 @@ export class GenerateTemplateUseCase {
             '3. En las columnas con lista desplegable, elige un valor. También se aceptan equivalentes (p. ej. "soles" = PEN, "En proceso" = estado del lead).',
             '4. Pasa el cursor sobre cada encabezado (esquina con triángulo rojo) para ver la ayuda y ejemplos.',
             '5. VINCULAR COTIZACIONES CON LEADS: el valor de "ID de lead" (hoja Cotizaciones) debe ser igual al de "ID Lead" (hoja Leads). Si no coinciden, la cotización no se importa.',
-            '6. VINCULAR ORGANIZACIÓN: contactos y leads se asocian a su organización por RUC (recomendado) o por el nombre exacto de la organización. La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
+            '6. VINCULAR ORGANIZACIÓN: contactos y leads se asocian a su organización por RUC (si lo tiene) o por el nombre de la organización. El RUC es OPCIONAL: si no lo tienes, basta el nombre, que puede ser el nombre comercial ("Organización") o la razón social ("Nombre completo"). La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
             '7. Fechas en formato AAAA-MM-DD (ej: 2026-01-15). Montos solo con números (ej: 15000.50).',
             '8. En el CRM, primero usa "Validar" para revisar errores y luego "Importar".',
             '',

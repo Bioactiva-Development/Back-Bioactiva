@@ -306,6 +306,27 @@ describe('Data-management import repository', () => {
                 expect(data.idOrganizacion).toBe('org-1');
             });
 
+            it('should resolve org by razon social (nombre) when there is no ruc', async () => {
+                tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
+                tx.contacto.create.mockResolvedValue({ id: 11 });
+                const plan = emptyPlan();
+                plan.organizaciones = [{ ...baseOrg, ruc: null }];
+                plan.contactos = [
+                    {
+                        ...contact,
+                        orgRuc: null,
+                        // El usuario escribió la razón social ("Altomayo"), no el
+                        // nombre comercial ("Altomayo SAC").
+                        orgNombreComercial: 'Altomayo',
+                    },
+                ];
+
+                await repository.commit(plan, ctx);
+                expect(
+                    tx.contacto.create.mock.calls[0][0].data.idOrganizacion,
+                ).toBe('org-1');
+            });
+
             it('should skip a contact whose correo already exists', async () => {
                 tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
                 tx.contacto.findMany.mockResolvedValue([
@@ -538,6 +559,25 @@ describe('Data-management import repository', () => {
                 // createdAt null => no se incluyen createdAt/ultimoCambioEstado
                 expect('createdAt' in data).toBe(false);
                 expect('ultimoCambioEstado' in data).toBe(false);
+            });
+
+            it('should resolve lead org by razon social when there is no ruc', async () => {
+                tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
+                tx.lead.create.mockResolvedValue({ id: 100 });
+                const plan = emptyPlan();
+                plan.organizaciones = [{ ...baseOrg, ruc: null }];
+                plan.leads = [
+                    {
+                        ...lead,
+                        orgRuc: null,
+                        // Razón social ("Altomayo"), no el comercial.
+                        orgNombreComercial: 'Altomayo',
+                    },
+                ];
+
+                const summary = await repository.commit(plan, ctx);
+                expect(summary.inserted.leads).toBe(1);
+                expect(tx.lead.create.mock.calls[0][0].data.idOrg).toBe('org-1');
             });
         });
 
