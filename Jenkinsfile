@@ -26,7 +26,14 @@ pipeline {
 
             steps {
                 sh '''
-                    corepack enable
+                    # corepack enable necesita escribir el shim de pnpm; en
+                    # /usr/local/bin requiere root (EACCES como usuario de
+                    # Jenkins). Se instala en el workspace y se agrega al PATH
+                    # para no correr el contenedor como root ni dejar archivos
+                    # con dueño root que rompan el checkout del siguiente build.
+                    export COREPACK_HOME="$WORKSPACE/.corepack"
+                    corepack enable --install-directory "$WORKSPACE/.pnpm-bin"
+                    export PATH="$WORKSPACE/.pnpm-bin:$PATH"
                     pnpm install --frozen-lockfile
                     pnpm run test:cov
                 '''
