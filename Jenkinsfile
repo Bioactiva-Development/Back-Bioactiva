@@ -32,6 +32,7 @@ pipeline {
                     # para no correr el contenedor como root ni dejar archivos
                     # con dueño root que rompan el checkout del siguiente build.
                     export COREPACK_HOME="$WORKSPACE/.corepack"
+                    mkdir -p "$WORKSPACE/.pnpm-bin" "$COREPACK_HOME"
                     corepack enable --install-directory "$WORKSPACE/.pnpm-bin"
                     export PATH="$WORKSPACE/.pnpm-bin:$PATH"
                     pnpm install --frozen-lockfile
