@@ -91,21 +91,39 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
     async list(
         filter: ListNotificationsFilter,
     ): Promise<ScheduledNotification[]> {
+        const page = filter.page ?? 1;
+        const limit = filter.limit ?? 10;
         const records = await this.prisma.notificacionProgramada.findMany({
-            where: {
-                // Las canceladas nunca se muestran en el historial (CU007).
-                estado: filter.estado ?? {
-                    in: [
-                        NotificationStatus.PROGRAMADA,
-                        NotificationStatus.VENCIDA,
-                    ],
-                },
-                idLead: filter.idLead,
-                idResponsable: filter.idResponsable,
-            },
+            where: this.buildWhere(filter),
             include: includeInstancias,
             orderBy: { createdAt: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
         });
         return records.map((record) => NotificationMapper.toDomain(record));
+    }
+
+    async count(
+        filter: Omit<ListNotificationsFilter, 'page' | 'limit'>,
+    ): Promise<number> {
+        return this.prisma.notificacionProgramada.count({
+            where: this.buildWhere(filter),
+        });
+    }
+
+    private buildWhere(
+        filter: Omit<ListNotificationsFilter, 'page' | 'limit'>,
+    ) {
+        return {
+            // Las canceladas nunca se muestran en el historial (CU007).
+            estado: filter.estado ?? {
+                in: [
+                    NotificationStatus.PROGRAMADA,
+                    NotificationStatus.VENCIDA,
+                ],
+            },
+            idLead: filter.idLead,
+            idResponsable: filter.idResponsable,
+        };
     }
 }

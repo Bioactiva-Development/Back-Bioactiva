@@ -25,4 +25,18 @@ export class ListNotificationsQueryDto {
     @IsInt()
     @Min(1)
     idResponsable?: number;
+
+    @ApiPropertyOptional({ description: 'Número de página', default: 1 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    page?: number = 1;
+
+    @ApiPropertyOptional({ description: 'Elementos por página', default: 10 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    limit?: number = 10;
 }

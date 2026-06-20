@@ -98,8 +98,11 @@ describe('Notifications module', () => {
             expect(result.idResponsable).toBe(3);
         });
 
-        it('lists notifications filtered by estado', async () => {
-            listNotifications.execute.mockResolvedValue([sampleReminder()]);
+        it('lists notifications filtered by estado with pagination metadata', async () => {
+            listNotifications.execute.mockResolvedValue({
+                data: [sampleReminder()],
+                total: 1,
+            });
 
             const result = await controller.list({
                 estado: NotificationStatus.PROGRAMADA,
@@ -109,9 +112,40 @@ describe('Notifications module', () => {
                 estado: NotificationStatus.PROGRAMADA,
                 idLead: undefined,
                 idResponsable: undefined,
+                page: 1,
+                limit: 10,
             });
-            expect(result).toHaveLength(1);
-            expect(result[0]).toBeInstanceOf(NotificationResponseDto);
+            expect(result.data).toHaveLength(1);
+            expect(result.data[0]).toBeInstanceOf(NotificationResponseDto);
+            expect(result.meta).toEqual({
+                page: 1,
+                limit: 10,
+                total: 1,
+                totalPages: 1,
+            });
+        });
+
+        it('forwards explicit page and limit', async () => {
+            listNotifications.execute.mockResolvedValue({
+                data: [],
+                total: 30,
+            });
+
+            const result = await controller.list({ page: 2, limit: 5 });
+
+            expect(listNotifications.execute).toHaveBeenCalledWith({
+                estado: undefined,
+                idLead: undefined,
+                idResponsable: undefined,
+                page: 2,
+                limit: 5,
+            });
+            expect(result.meta).toEqual({
+                page: 2,
+                limit: 5,
+                total: 30,
+                totalPages: 6,
+            });
         });
 
         it('cancels a notification by id', async () => {
