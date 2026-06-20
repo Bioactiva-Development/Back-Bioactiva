@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { IsStrongPassword } from '@/shared/infrastructure/validators/is-strong-password.validator';
 
 export class AcceptInvitationDto {
     constructor(
@@ -30,6 +31,7 @@ export class AcceptInvitationDto {
     })
     @IsString()
     @IsNotEmpty()
+    @IsStrongPassword()
     password: string;
 
     @ApiProperty({
