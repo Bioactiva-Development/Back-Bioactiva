@@ -90,8 +90,12 @@ export class AuthController {
 
         response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
             httpOnly: true,
+            // En prod el front y la API están en sitios distintos: la cookie
+            // debe viajar cross-site (SameSite=None), lo que obliga a
+            // Secure=true (HTTPS). En dev (mismo host localhost, HTTP) se
+            // mantiene Lax + no-secure. Requiere NODE_ENV=production en prod.
             secure: isProduction,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
             path: '/auth/refresh',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

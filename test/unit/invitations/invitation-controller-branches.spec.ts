@@ -89,7 +89,8 @@ describe('InvitationController (branches)', () => {
         );
     });
 
-    it('acceptInvitation sets a secure cookie in production', async () => {
+    it('acceptInvitation sets a secure + SameSite=None cookie in production', async () => {
+        const previous = process.env.NODE_ENV;
         process.env.NODE_ENV = 'production';
         acceptInvitationUseCase.execute.mockResolvedValue({
             accessToken: 'access-token',
@@ -99,23 +100,58 @@ describe('InvitationController (branches)', () => {
         });
         const response = { cookie: jest.fn() } as any;
 
-        await controller.acceptInvitation(
-            {
-                token: 'token',
-                password: 'pass123',
-                confirmPassword: 'pass123',
-                nombres: 'Juan',
-                apellidos: 'Perez',
-            },
-            response,
-        );
+        try {
+            await controller.acceptInvitation(
+                {
+                    token: 'token',
+                    password: 'pass123',
+                    confirmPassword: 'pass123',
+                    nombres: 'Juan',
+                    apellidos: 'Perez',
+                },
+                response,
+            );
 
-        expect(response.cookie).toHaveBeenCalledWith(
-            expect.any(String),
-            'refresh-token',
-            expect.objectContaining({ secure: true }),
-        );
+            expect(response.cookie).toHaveBeenCalledWith(
+                expect.any(String),
+                'refresh-token',
+                expect.objectContaining({ secure: true, sameSite: 'none' }),
+            );
+        } finally {
+            process.env.NODE_ENV = previous;
+        }
+    });
 
-        delete process.env.NODE_ENV;
+    it('acceptInvitation uses Lax + non-secure cookie outside production', async () => {
+        const previous = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'development';
+        acceptInvitationUseCase.execute.mockResolvedValue({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            accessTokenExpiresIn: 900,
+            refreshTokenExpiresIn: 604800,
+        });
+        const response = { cookie: jest.fn() } as any;
+
+        try {
+            await controller.acceptInvitation(
+                {
+                    token: 'token',
+                    password: 'pass123',
+                    confirmPassword: 'pass123',
+                    nombres: 'Juan',
+                    apellidos: 'Perez',
+                },
+                response,
+            );
+
+            expect(response.cookie).toHaveBeenCalledWith(
+                expect.any(String),
+                'refresh-token',
+                expect.objectContaining({ secure: false, sameSite: 'lax' }),
+            );
+        } finally {
+            process.env.NODE_ENV = previous;
+        }
     });
 });

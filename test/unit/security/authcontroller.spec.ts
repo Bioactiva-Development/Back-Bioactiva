@@ -172,23 +172,56 @@ describe('Security module', () => {
                 ).rejects.toThrow(NotAuthorizedException);
             });
 
-            it('should set secure cookie flag in production environment', async () => {
+            it('should set secure + SameSite=None cookie in production (cross-site)', async () => {
+                const previous = process.env.NODE_ENV;
                 process.env.NODE_ENV = 'production';
                 const tokenPair = buildTokenPair();
                 refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
 
-                await controller.refresh(responseMock, 'valid-refresh-token');
+                try {
+                    await controller.refresh(
+                        responseMock,
+                        'valid-refresh-token',
+                    );
 
-                expect(responseMock.cookie).toHaveBeenCalledWith(
-                    'refreshToken',
-                    'refresh-token-value',
-                    expect.objectContaining({
-                        secure: true,
-                        httpOnly: true,
-                    }),
-                );
+                    expect(responseMock.cookie).toHaveBeenCalledWith(
+                        'refreshToken',
+                        'refresh-token-value',
+                        expect.objectContaining({
+                            secure: true,
+                            sameSite: 'none',
+                            httpOnly: true,
+                        }),
+                    );
+                } finally {
+                    process.env.NODE_ENV = previous;
+                }
+            });
 
-                delete process.env.NODE_ENV;
+            it('should use Lax + non-secure cookie outside production (same-site dev)', async () => {
+                const previous = process.env.NODE_ENV;
+                process.env.NODE_ENV = 'development';
+                const tokenPair = buildTokenPair();
+                refreshSessionUseCase.execute.mockResolvedValue(tokenPair);
+
+                try {
+                    await controller.refresh(
+                        responseMock,
+                        'valid-refresh-token',
+                    );
+
+                    expect(responseMock.cookie).toHaveBeenCalledWith(
+                        'refreshToken',
+                        'refresh-token-value',
+                        expect.objectContaining({
+                            secure: false,
+                            sameSite: 'lax',
+                            httpOnly: true,
+                        }),
+                    );
+                } finally {
+                    process.env.NODE_ENV = previous;
+                }
             });
         });
 
