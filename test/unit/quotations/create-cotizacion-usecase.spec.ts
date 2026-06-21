@@ -65,6 +65,7 @@ describe('Quotations module', () => {
         beforeEach(() => {
             cotizacionRepository = {
                 saveWithRelations: jest.fn(),
+                createAndPromoteLead: jest.fn(),
                 count: jest.fn<() => Promise<number>>().mockResolvedValue(0),
             };
             leadRepository = {
@@ -167,7 +168,7 @@ describe('Quotations module', () => {
             expect(leadRepository.save).not.toHaveBeenCalled();
         });
 
-        it('promotes an EN_PROSPECTO lead to OFERTADO when creating the cotizacion', async () => {
+        it('promotes an EN_PROSPECTO lead to OFERTADO atomically when creating the cotizacion', async () => {
             const lead = buildLead(LeadState.EN_PROSPECTO);
             leadRepository.findByIdWithRelations.mockResolvedValue(
                 wrapLead(lead),
@@ -177,18 +178,27 @@ describe('Quotations module', () => {
                 nombres: 'Carlos',
                 apellidos: 'López',
             });
-            cotizacionRepository.saveWithRelations.mockImplementation(
+            cotizacionRepository.createAndPromoteLead.mockImplementation(
                 async (c: any) => ({ cotizacion: c }),
             );
 
             await useCase.execute(dto);
 
             expect(leadRepository.hasPendingActivities).toHaveBeenCalledWith(10);
-            expect(lead.estado).toBe(LeadState.OFERTADO);
-            expect(leadRepository.save).toHaveBeenCalledWith(lead);
-            expect(cotizacionRepository.saveWithRelations).toHaveBeenCalledTimes(
-                1,
-            );
+            // La creación + promoción se delegan al método atómico del repo;
+            // no se hace un save() del lead por separado.
+            expect(leadRepository.save).not.toHaveBeenCalled();
+            expect(
+                cotizacionRepository.saveWithRelations,
+            ).not.toHaveBeenCalled();
+            expect(
+                cotizacionRepository.createAndPromoteLead,
+            ).toHaveBeenCalledTimes(1);
+            const [cotizacion, leadId, leadState] =
+                cotizacionRepository.createAndPromoteLead.mock.calls[0];
+            expect(cotizacion.id_lead).toBe(10);
+            expect(leadId).toBe(10);
+            expect(leadState).toBe(LeadState.OFERTADO);
         });
 
         it('throws when the EN_PROSPECTO lead has pending activities and does not create the cotizacion', async () => {
@@ -208,6 +218,9 @@ describe('Quotations module', () => {
 
             expect(lead.estado).toBe(LeadState.EN_PROSPECTO);
             expect(leadRepository.save).not.toHaveBeenCalled();
+            expect(
+                cotizacionRepository.createAndPromoteLead,
+            ).not.toHaveBeenCalled();
             expect(
                 cotizacionRepository.saveWithRelations,
             ).not.toHaveBeenCalled();
@@ -232,6 +245,9 @@ describe('Quotations module', () => {
                 leadRepository.hasPendingActivities,
             ).not.toHaveBeenCalled();
             expect(leadRepository.save).not.toHaveBeenCalled();
+            expect(
+                cotizacionRepository.createAndPromoteLead,
+            ).not.toHaveBeenCalled();
             expect(lead.estado).toBe(LeadState.OFERTADO);
             expect(cotizacionRepository.saveWithRelations).toHaveBeenCalledTimes(
                 1,

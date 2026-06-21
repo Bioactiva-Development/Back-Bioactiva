@@ -32,6 +32,15 @@ export interface CotizacionRepositoryPort {
     findByLead(leadId: number): Promise<Cotizacion | null>;
     save(cotizacion: Cotizacion): Promise<Cotizacion>;
     saveWithRelations(cotizacion: Cotizacion): Promise<CotizacionWithRelations>;
+    /**
+     * Crea la cotización y promueve el estado del lead asociado de forma
+     * atómica (una sola transacción): o se persisten ambos cambios o ninguno.
+     */
+    createAndPromoteLead(
+        cotizacion: Cotizacion,
+        leadId: number,
+        leadState: LeadState,
+    ): Promise<CotizacionWithRelations>;
     acceptAndUpdateLead(
         cotizacionId: number,
         leadId: number,

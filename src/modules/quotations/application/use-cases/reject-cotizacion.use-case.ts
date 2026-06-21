@@ -9,6 +9,7 @@ import {
 } from '@/modules/leads/domain/ports/lead-repository.port';
 import { CotizacionNotFoundException } from '@/modules/quotations/domain/exceptions/cotizacion-not-found.exception';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 
 export class RejectCotizacionUseCase {
@@ -34,6 +35,17 @@ export class RejectCotizacionUseCase {
         if (!lead) {
             throw new LeadNotFoundException(
                 `Lead con id ${cotizacion.id_lead} no encontrado`,
+            );
+        }
+
+        // Rechazar la cotización cierra el lead (CIERRE_SIN_VENTA): es un cambio
+        // de estado, por lo que el lead no debe tener actividades pendientes.
+        const hasPending = await this.leadRepository.hasPendingActivities(
+            lead.id!,
+        );
+        if (hasPending) {
+            throw new LeadHasPendingActivitiesException(
+                `No se puede rechazar la cotización porque el lead ${lead.id} tiene actividades pendientes`,
             );
         }
 

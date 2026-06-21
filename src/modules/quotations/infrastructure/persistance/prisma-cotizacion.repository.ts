@@ -254,6 +254,58 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
         }
     }
 
+    async createAndPromoteLead(
+        cotizacion: Cotizacion,
+        leadId: number,
+        leadState: LeadState,
+    ): Promise<CotizacionWithRelations> {
+        const data = CotizacionMapper.toPersistence(cotizacion);
+        try {
+            // Se actualiza el lead primero y luego se crea la cotización con sus
+            // relaciones, de modo que el leadEstado incluido refleje ya el nuevo
+            // estado. Ambas operaciones van en una sola transacción.
+            const [, created] = await this.prisma.$transaction([
+                this.prisma.lead.update({
+                    where: { id: leadId },
+                    data: {
+                        estado: LeadMapper.mapStateToPrisma(leadState),
+                        updatedAt: new Date(),
+                        ultimoCambioEstado: new Date(),
+                        // Promover a OFERTADO no sella fecha de cierre; solo los
+                        // cierres con venta lo hacen (ver updateEstadoAndLead).
+                        fechaCierre:
+                            leadState === LeadState.CIERRE_CON_VENTA
+                                ? new Date()
+                                : undefined,
+                    },
+                }),
+                this.prisma.cotizacion.create({
+                    data,
+                    include: {
+                        lead: {
+                            select: {
+                                servicioInteres: true,
+                                estado: true,
+                                contacto: {
+                                    select: { nombres: true, apellidos: true },
+                                },
+                            },
+                        },
+                        remitente: {
+                            select: { nombres: true, apellidos: true },
+                        },
+                    },
+                }),
+            ]);
+            return this.mapToCotizacionWithRelations(created);
+        } catch (error) {
+            this.handlePrismaError(error, {
+                operation: 'createAndPromoteLead',
+                cotizacionId: null,
+            });
+        }
+    }
+
     async acceptAndUpdateLead(
         cotizacionId: number,
         leadId: number,
