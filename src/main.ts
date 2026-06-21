@@ -25,23 +25,41 @@ async function bootstrap() {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
 
+    // CSP estricta para toda la API: sin 'unsafe-inline' en script-src (la API
+    // solo devuelve JSON, no ejecuta scripts propios). Así CSP Evaluator no marca
+    // el riesgo alto de scripts inline en las respuestas reales del backend.
+    const strictCspDirectives = {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+    };
+
     app.use(
         helmet({
-            contentSecurityPolicy: {
-                directives: {
-                    defaultSrc: ["'self'"],
-                    // Swagger UI requiere estilos/scripts inline para renderizar
-                    scriptSrc: ["'self'", "'unsafe-inline'"],
-                    styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
-                    imgSrc: ["'self'", 'data:', 'https:'],
-                    fontSrc: ["'self'", 'https:', 'data:'],
-                    connectSrc: ["'self'"],
-                    objectSrc: ["'none'"],
-                    frameAncestors: ["'none'"],
-                },
-            },
-            //testing 2
+            contentSecurityPolicy: { directives: strictCspDirectives },
             crossOriginResourcePolicy: { policy: 'cross-origin' },
+        }),
+    );
+
+    // Swagger UI sí necesita scripts/estilos inline para renderizar. Se relaja la
+    // CSP SOLO en sus rutas (y debe registrarse antes de SwaggerModule.setup para
+    // que corra antes del handler de la ruta). El resto de la API queda estricta.
+    app.use(
+        ['/swagger', '/swagger-json'],
+        helmet.contentSecurityPolicy({
+            directives: {
+                ...strictCspDirectives,
+                scriptSrc: ["'self'", "'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+                imgSrc: ["'self'", 'data:', 'https:'],
+                fontSrc: ["'self'", 'https:', 'data:'],
+            },
         }),
     );
 
