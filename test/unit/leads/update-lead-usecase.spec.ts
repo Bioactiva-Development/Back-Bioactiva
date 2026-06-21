@@ -4,15 +4,11 @@ import { UpdateLeadDto } from '@/modules/leads/application/dto/update-lead.dto';
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
-import { User } from '@/modules/users/domain/entities/user';
-import { UserRole } from '@/shared/domain/enums/rol';
-import { UserState } from '@/modules/users/domain/enums/estado';
 
 describe('Leads module', () => {
     describe('UpdateLeadUseCase', () => {
         let useCase: UpdateLeadUseCase;
         let leadRepository: any;
-        let userRepository: any;
 
         const validOrgId = 'org-123';
         const validContactId = 10;
@@ -42,11 +38,7 @@ describe('Leads module', () => {
                 saveWithRelations: jest.fn(),
             };
 
-            userRepository = {
-                findById: jest.fn(),
-            };
-
-            useCase = new UpdateLeadUseCase(leadRepository, userRepository);
+            useCase = new UpdateLeadUseCase(leadRepository);
         });
 
         it('should update lead fields', async () => {
@@ -59,7 +51,6 @@ describe('Leads module', () => {
                 'Nuevo comentario',
                 'Nuevo desafío',
                 'Web',
-                undefined,
             );
             await useCase.execute(1, dto);
 
@@ -72,34 +63,15 @@ describe('Leads module', () => {
             );
         });
 
-        it('should update encargado when provided', async () => {
+        it('should not change the encargado (no longer supported)', async () => {
             const existingLead = buildLead();
             leadRepository.findById.mockResolvedValue(existingLead);
-            userRepository.findById.mockResolvedValue(
-                new User(
-                    10,
-                    'Nuevo',
-                    'Encargado',
-                    'nuevo@example.com',
-                    'hash',
-                    new Date(),
-                    UserRole.TRABAJADOR,
-                    UserState.ACTIVO,
-                    new Date(),
-                ),
-            );
             leadRepository.saveWithRelations.mockResolvedValue(existingLead);
 
-            const dto = new UpdateLeadDto(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                10,
-            );
+            const dto = new UpdateLeadDto('Nuevo servicio');
             await useCase.execute(1, dto);
 
-            expect(existingLead.id_encargado).toBe(10);
+            expect(existingLead.id_encargado).toBe(validEncargadoId);
         });
 
         it('should not modify organization or contact', async () => {
@@ -119,23 +91,6 @@ describe('Leads module', () => {
 
             const dto = new UpdateLeadDto();
             await expect(useCase.execute(999, dto)).rejects.toThrow(
-                LeadNotFoundException,
-            );
-        });
-
-        it('should throw when new encargado does not exist', async () => {
-            const existingLead = buildLead();
-            leadRepository.findById.mockResolvedValue(existingLead);
-            userRepository.findById.mockResolvedValue(null);
-
-            const dto = new UpdateLeadDto(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                999,
-            );
-            await expect(useCase.execute(1, dto)).rejects.toThrow(
                 LeadNotFoundException,
             );
         });

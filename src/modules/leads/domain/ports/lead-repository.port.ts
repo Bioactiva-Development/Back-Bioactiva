@@ -27,6 +27,8 @@ export interface ListLeadsParams {
      * filtra. Valores: SIN_ACTIVIDADES, PENDIENTE, EN_RIESGO, POR_VENCER.
      */
     alertaActividad?: ActivityAlertLevel;
+    /** Si es true, solo leads con al menos una actividad PENDIENTE no eliminada. */
+    conActividadesPendientes?: boolean;
     page?: number;
     limit?: number;
 }

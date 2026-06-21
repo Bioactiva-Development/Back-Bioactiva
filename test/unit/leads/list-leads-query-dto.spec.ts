@@ -23,6 +23,32 @@ describe('Leads module', () => {
             expect(errors).toHaveLength(0);
         });
 
+        it('coerces the "true" string of misLeads and conActividadesPendientes to booleans', async () => {
+            const dto = plainToInstance(ListLeadsQueryDto, {
+                misLeads: 'true',
+                conActividadesPendientes: 'true',
+            });
+
+            expect(dto.misLeads).toBe(true);
+            expect(dto.conActividadesPendientes).toBe(true);
+
+            const errors = await validate(dto);
+            expect(errors).toHaveLength(0);
+        });
+
+        it('coerces non-"true" values of the boolean filters to false', async () => {
+            const dto = plainToInstance(ListLeadsQueryDto, {
+                misLeads: 'false',
+                conActividadesPendientes: 'nope',
+            });
+
+            expect(dto.misLeads).toBe(false);
+            expect(dto.conActividadesPendientes).toBe(false);
+
+            const errors = await validate(dto);
+            expect(errors).toHaveLength(0);
+        });
+
         it('applies the default page and limit when omitted', async () => {
             const dto = plainToInstance(ListLeadsQueryDto, {});
 

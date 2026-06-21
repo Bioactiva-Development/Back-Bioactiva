@@ -523,6 +523,41 @@ describe('Leads module', () => {
                     }),
                 );
             });
+
+            it('should filter conActividadesPendientes as leads with at least one pending activity', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({ conActividadesPendientes: true });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            actividades: {
+                                some: { deletedAt: null, estado: 'PENDIENTE' },
+                            },
+                        }),
+                    }),
+                );
+            });
+
+            it('lets alertaActividad take precedence over conActividadesPendientes', async () => {
+                prismaService.lead.findMany.mockResolvedValue([]);
+
+                await repository.list({
+                    conActividadesPendientes: true,
+                    alertaActividad: ActivityAlertLevel.SIN_ACTIVIDADES,
+                });
+
+                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            actividades: {
+                                none: { deletedAt: null, estado: 'PENDIENTE' },
+                            },
+                        }),
+                    }),
+                );
+            });
         });
 
         describe('Prisma error mapping', () => {

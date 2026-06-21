@@ -30,7 +30,10 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
 
         const updated = await this.prisma.organizacion.update({
             where: { id: organization.id },
-            data: rawData,
+            // toPersistence omite deletedAt (el soft-delete se gestiona aparte),
+            // pero al reutilizar un registro por RUC necesitamos poder
+            // restaurarlo (deletedAt = null), así que se escribe explícitamente.
+            data: { ...rawData, deletedAt: organization.deletedAt },
         });
         return OrganizationMapper.toDomain(updated);
     }
