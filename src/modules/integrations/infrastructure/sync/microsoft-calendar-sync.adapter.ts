@@ -14,6 +14,7 @@ import {
     type MicrosoftProviderPort,
 } from '@/modules/integrations/domain/ports/microsoft-provider.port';
 import { MicrosoftGraphRequestException } from '@/modules/integrations/domain/exceptions/microsoft-graph-request.exception';
+import { MicrosoftRefreshTokenInvalidException } from '@/modules/integrations/domain/exceptions/microsoft-refresh-token-invalid.exception';
 
 @Injectable()
 export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
@@ -79,9 +80,22 @@ export class MicrosoftCalendarSyncAdapter implements CalendarSyncPort {
             );
         }
 
-        const tokens = await this.microsoftProvider.refreshAccessToken(
-            integration.refreshToken,
-        );
+        let tokens;
+        try {
+            tokens = await this.microsoftProvider.refreshAccessToken(
+                integration.refreshToken,
+            );
+        } catch (error) {
+            // Si el refresh token caducó o fue revocado, la integración quedó
+            // inservible: la marcamos como desconectada para que el estado en BD
+            // refleje la realidad y el front pida reconectar, en vez de seguir
+            // fallando en silencio en cada sincronización.
+            if (error instanceof MicrosoftRefreshTokenInvalidException) {
+                integration.disconnect();
+                await this.integrationRepository.save(integration);
+            }
+            throw error;
+        }
 
         if (
             tokens.refreshToken &&
