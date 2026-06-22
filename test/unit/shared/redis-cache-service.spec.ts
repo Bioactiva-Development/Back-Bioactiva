@@ -45,6 +45,14 @@ describe('Common module', () => {
             expect(mockOn).toHaveBeenCalledWith('error', expect.any(Function));
         });
 
+        it('logs without throwing when the error listener fires', () => {
+            const handler = mockOn.mock.calls.find(
+                (call) => call[0] === 'error',
+            )?.[1] as (error: Error) => void;
+
+            expect(() => handler(new Error('ECONNREFUSED'))).not.toThrow();
+        });
+
         it('parses a stored JSON value on get', async () => {
             mockGet.mockResolvedValue(JSON.stringify({ ruc: '20123456789' }));
 
@@ -65,6 +73,12 @@ describe('Common module', () => {
             await expect(service.get('x')).resolves.toBeNull();
         });
 
+        it('returns null when Redis throws a non-Error value on get', async () => {
+            mockGet.mockRejectedValue('weird');
+
+            await expect(service.get('x')).resolves.toBeNull();
+        });
+
         it('serializes the value with an EX ttl on set', async () => {
             mockSet.mockResolvedValue('OK');
 
@@ -80,6 +94,14 @@ describe('Common module', () => {
 
         it('swallows errors on set', async () => {
             mockSet.mockRejectedValue(new Error('down'));
+
+            await expect(
+                service.set('k', { a: 1 }, 60),
+            ).resolves.toBeUndefined();
+        });
+
+        it('swallows non-Error throwables on set', async () => {
+            mockSet.mockRejectedValue('weird');
 
             await expect(
                 service.set('k', { a: 1 }, 60),
