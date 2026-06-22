@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsBoolean,
     IsDateString,
     IsEnum,
     IsInt,
@@ -8,7 +9,7 @@ import {
     Min,
     Length,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
@@ -83,6 +84,26 @@ export class ListLeadsQueryDto {
     @IsOptional()
     @IsEnum(ActivityAlertLevel)
     alertaActividad?: ActivityAlertLevel;
+
+    @ApiPropertyOptional({
+        description:
+            'Si es true, devuelve solo los leads cuyo encargado es el usuario autenticado.',
+        example: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    misLeads?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Si es true, devuelve solo los leads que tienen al menos una actividad pendiente.',
+        example: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    conActividadesPendientes?: boolean;
 
     @ApiPropertyOptional({
         description: 'Número de página',

@@ -65,7 +65,8 @@ export class CreateCotizacionUseCase {
         // pendientes: deben resolverse (completarse o cancelarse) primero. Si ya
         // está en OFERTADO (u otro estado posterior) solo se registra la
         // cotización sin tocar el estado.
-        if (lead.estado === LeadState.EN_PROSPECTO) {
+        const shouldPromote = lead.estado === LeadState.EN_PROSPECTO;
+        if (shouldPromote) {
             const hasPending = await this.leadRepository.hasPendingActivities(
                 dto.idLead,
             );
@@ -74,8 +75,6 @@ export class CreateCotizacionUseCase {
                     `No se puede crear la cotización porque el lead ${dto.idLead} tiene actividades pendientes`,
                 );
             }
-            lead.changeState(LeadState.OFERTADO);
-            await this.leadRepository.save(lead);
         }
 
         // "cliente" y "dirigido" se derivan del lead: el cliente es la
@@ -104,6 +103,17 @@ export class CreateCotizacionUseCase {
             new Date(),
             null,
         );
+
+        // Al promover, la creación de la cotización y el cambio de estado del
+        // lead se persisten de forma atómica para evitar dejar el lead en
+        // OFERTADO sin cotización si algo falla a mitad de camino.
+        if (shouldPromote) {
+            return await this.cotizacionRepository.createAndPromoteLead(
+                cotizacion,
+                lead.id!,
+                LeadState.OFERTADO,
+            );
+        }
 
         return await this.cotizacionRepository.saveWithRelations(cotizacion);
     }

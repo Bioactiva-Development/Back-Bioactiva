@@ -74,9 +74,32 @@ describe('LeadController', () => {
 
     it('findAll returns a paginated response', async () => {
         mocks.list.execute.mockResolvedValue({ data: [enriched], total: 1 });
-        const result = await controller.findAll({ page: 1, limit: 10 } as any);
+        const result = await controller.findAll(
+            { page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
         expect(result.data).toHaveLength(1);
         expect(result.meta.total).toBe(1);
+    });
+
+    it('findAll maps misLeads to the authenticated user id as encargado', async () => {
+        mocks.list.execute.mockResolvedValue({ data: [], total: 0 });
+        await controller.findAll(
+            { misLeads: true, page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
+        expect(mocks.list.execute.mock.calls[0][0].idEncargado).toBe(9);
+    });
+
+    it('findAll forwards conActividadesPendientes', async () => {
+        mocks.list.execute.mockResolvedValue({ data: [], total: 0 });
+        await controller.findAll(
+            { conActividadesPendientes: true, page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
+        expect(
+            mocks.list.execute.mock.calls[0][0].conActividadesPendientes,
+        ).toBe(true);
     });
 
     it('findOne delegates to the get use case', async () => {

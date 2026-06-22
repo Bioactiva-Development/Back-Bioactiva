@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.interceptor';
 import { GlobalExceptionFilter } from '@/shared/infrastructure/filters/global-exception.filter';
 import { PrismaModule } from '@/modules/common/prisma/prisma.module';
+import { CacheModule } from '@/modules/common/cache/cache.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from '@/modules/users/user.module';
@@ -24,6 +25,7 @@ import { DataManagementModule } from '@/modules/data-management/data-management.
 @Module({
     imports: [
         PrismaModule,
+        CacheModule,
         AuthModule,
         UsersModule,
         OrganizationsModule,

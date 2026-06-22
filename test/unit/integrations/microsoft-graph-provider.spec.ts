@@ -17,6 +17,7 @@ jest.mock('@azure/msal-node', () => ({
 import { MicrosoftGraphProvider } from '@/modules/integrations/infrastructure/provider/microsoft-graph-provider';
 import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/config/microsoft-auth.config';
 import { MicrosoftOAuthFailedException } from '@/modules/integrations/domain/exceptions/microsoft-oauth-failed.exception';
+import { MicrosoftRefreshTokenInvalidException } from '@/modules/integrations/domain/exceptions/microsoft-refresh-token-invalid.exception';
 import { MicrosoftGraphRequestException } from '@/modules/integrations/domain/exceptions/microsoft-graph-request.exception';
 
 /**
@@ -223,6 +224,27 @@ describe('Integrations module', () => {
                 await expect(
                     provider.refreshAccessToken('rt-old'),
                 ).rejects.toThrow('Error al refrescar token');
+            });
+
+            it('maps invalid_grant to MicrosoftRefreshTokenInvalidException', async () => {
+                mockAcquireTokenByRefreshToken.mockRejectedValue({
+                    errorCode: 'invalid_grant',
+                    errorMessage: 'AADSTS700082: token expired',
+                });
+
+                await expect(
+                    provider.refreshAccessToken('rt-old'),
+                ).rejects.toBeInstanceOf(MicrosoftRefreshTokenInvalidException);
+            });
+
+            it('maps an AADSTS revocation message to MicrosoftRefreshTokenInvalidException', async () => {
+                mockAcquireTokenByRefreshToken.mockRejectedValue(
+                    new Error('AADSTS50173: credentials changed'),
+                );
+
+                await expect(
+                    provider.refreshAccessToken('rt-old'),
+                ).rejects.toBeInstanceOf(MicrosoftRefreshTokenInvalidException);
             });
 
             it('handles non-Error throwables with "Unknown error"', async () => {

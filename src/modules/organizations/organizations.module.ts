@@ -3,6 +3,7 @@ import { ContactsModule } from '@/modules/contacts/contacts.module';
 import { OrganizationController } from './infrastructure/http/organization.controller';
 import { PrismaOrganizationRepository } from './infrastructure/persistance/prisma-organization.repository';
 import { SunatWebScraperAdapter } from './infrastructure/service/sunat-web-scraper.adapter';
+import { CachedSunatService } from './infrastructure/service/cached-sunat.service';
 import { ORGANIZATION_REPOSITORY } from './domain/ports/organization.repository';
 import { SUNAT_SERVICE } from './domain/ports/sunat.service';
 import { CreateOrganizationUseCase } from './application/use-cases/create-organization.use-case';
@@ -18,13 +19,16 @@ import { DeleteOrganizationUseCase } from './application/use-cases/delete-organi
     providers: [
         PrismaOrganizationRepository,
         SunatWebScraperAdapter,
+        CachedSunatService,
         {
             provide: ORGANIZATION_REPOSITORY,
             useExisting: PrismaOrganizationRepository,
         },
         {
+            // El scraper queda envuelto por la cache de Redis; los consumidores
+            // de SUNAT_SERVICE pegan a la cache antes que al microservicio.
             provide: SUNAT_SERVICE,
-            useExisting: SunatWebScraperAdapter,
+            useExisting: CachedSunatService,
         },
         CreateOrganizationUseCase,
         UpdateOrganizationUseCase,

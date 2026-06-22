@@ -177,8 +177,11 @@ export class InvitationController {
 
         response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
             httpOnly: true,
+            // Misma política que el login: en prod el front es cross-site, así
+            // que la cookie necesita SameSite=None + Secure (HTTPS). En dev se
+            // mantiene Lax + no-secure. Requiere NODE_ENV=production en prod.
             secure: isProduction,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
             path: '/auth/refresh',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

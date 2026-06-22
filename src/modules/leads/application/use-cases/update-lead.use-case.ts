@@ -3,10 +3,6 @@ import {
     LEAD_REPOSITORY,
     type LeadRepository,
 } from '@/modules/leads/domain/ports/lead-repository.port';
-import {
-    USER_REPOSITORY,
-    type UserRepositoryPort,
-} from '@/modules/users/domain/ports/user-repository.port';
 import { UpdateLeadDto } from '@/modules/leads/application/dto/update-lead.dto';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
 
@@ -14,8 +10,6 @@ export class UpdateLeadUseCase {
     constructor(
         @Inject(LEAD_REPOSITORY)
         private readonly leadRepository: LeadRepository,
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: UserRepositoryPort,
     ) {}
 
     async execute(id: number, dto: UpdateLeadDto) {
@@ -24,17 +18,7 @@ export class UpdateLeadUseCase {
             throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
         }
 
-        if (dto.idEncargado !== undefined) {
-            const encargado = await this.userRepository.findById(
-                dto.idEncargado,
-            );
-            if (!encargado) {
-                throw new LeadNotFoundException(
-                    `Encargado con id ${dto.idEncargado} no encontrado`,
-                );
-            }
-            lead.id_encargado = dto.idEncargado;
-        }
+        // El encargado de un lead no se puede cambiar mediante actualización.
 
         if (dto.servicioInteres !== undefined) {
             lead.servicio_interes = dto.servicioInteres;

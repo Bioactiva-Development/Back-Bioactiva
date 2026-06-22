@@ -207,6 +207,16 @@ export class PrismaLeadRepository implements LeadRepository {
             }
             where.createdAt = createdAt;
         }
+        if (params?.conActividadesPendientes) {
+            where.actividades = {
+                some: {
+                    deletedAt: null,
+                    estado: PrismaEstadoActividad.PENDIENTE,
+                },
+            };
+        }
+        // alertaActividad es más específico: si llega, sobrescribe el filtro
+        // anterior de actividades pendientes.
         await this.applyActivityAlertFilter(where, params?.alertaActividad, now);
 
         return where;

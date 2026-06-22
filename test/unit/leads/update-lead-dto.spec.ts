@@ -4,19 +4,7 @@ import { validate } from 'class-validator';
 import { HttpUpdateLeadDto } from '@/modules/leads/infrastructure/http/dto/update-lead.dto.http';
 
 describe('Leads module', () => {
-    describe('HttpUpdateLeadDto (Type transforms)', () => {
-        it('coerces numeric string idEncargado to a number', async () => {
-            const dto = plainToInstance(HttpUpdateLeadDto, {
-                idEncargado: '4',
-            });
-
-            expect(dto.idEncargado).toBe(4);
-            expect(typeof dto.idEncargado).toBe('number');
-
-            const errors = await validate(dto);
-            expect(errors).toHaveLength(0);
-        });
-
+    describe('HttpUpdateLeadDto', () => {
         it('accepts an empty payload because every field is optional', async () => {
             const dto = plainToInstance(HttpUpdateLeadDto, {});
 
@@ -24,15 +12,16 @@ describe('Leads module', () => {
             expect(errors).toHaveLength(0);
         });
 
-        it('rejects an idEncargado below the minimum', async () => {
+        it('accepts the editable fields', async () => {
             const dto = plainToInstance(HttpUpdateLeadDto, {
-                idEncargado: '0',
+                servicioInteres: 'Consultoría',
+                comentarios: 'Comentario',
+                desafioOportunidad: 'Desafío',
+                canalCaptacion: 'Web',
             });
 
             const errors = await validate(dto);
-            expect(
-                errors.some((error) => error.property === 'idEncargado'),
-            ).toBe(true);
+            expect(errors).toHaveLength(0);
         });
     });
 });

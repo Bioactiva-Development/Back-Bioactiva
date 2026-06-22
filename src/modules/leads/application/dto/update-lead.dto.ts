@@ -4,6 +4,5 @@ export class UpdateLeadDto {
         public readonly comentarios?: string | null,
         public readonly desafioOportunidad?: string | null,
         public readonly canalCaptacion?: string | null,
-        public readonly idEncargado?: number,
     ) {}
 }

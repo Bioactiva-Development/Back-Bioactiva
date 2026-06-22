@@ -1,6 +1,5 @@
-import { IsOptional, IsString, IsInt, Length, Min } from 'class-validator';
+import { IsOptional, IsString, Length } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 
 export class HttpUpdateLeadDto {
     @ApiPropertyOptional({
@@ -38,14 +37,4 @@ export class HttpUpdateLeadDto {
     @IsString()
     @Length(1, 60)
     canalCaptacion?: string | null;
-
-    @ApiPropertyOptional({
-        example: 1,
-        description: 'ID del usuario encargado del lead',
-    })
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    idEncargado?: number;
 }

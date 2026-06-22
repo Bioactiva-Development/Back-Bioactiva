@@ -84,11 +84,17 @@ export class LeadController {
     })
     async findAll(
         @Query() query: ListLeadsQueryDto,
+        @CurrentUser() user: User,
     ): Promise<PaginatedLeadResponseDto> {
+        // "misLeads" reutiliza el filtro existente por encargado, forzándolo al
+        // usuario autenticado.
+        const idEncargado = query.misLeads
+            ? (user.id ?? undefined)
+            : query.idEncargado;
         const dto = new ListLeadsDto(
             query.estado,
             query.idOrg,
-            query.idEncargado,
+            idEncargado,
             query.search,
             query.page,
             query.limit,
@@ -96,6 +102,7 @@ export class LeadController {
             query.fechaDesde ? new Date(query.fechaDesde) : undefined,
             query.fechaHasta ? new Date(query.fechaHasta) : undefined,
             query.sector,
+            query.conActividadesPendientes,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));
@@ -139,7 +146,6 @@ export class LeadController {
             httpDto.comentarios,
             httpDto.desafioOportunidad,
             httpDto.canalCaptacion,
-            httpDto.idEncargado,
         );
         const result = await this.updateLeadUseCase.execute(id, updateDto);
         return new LeadResponseDto(result);

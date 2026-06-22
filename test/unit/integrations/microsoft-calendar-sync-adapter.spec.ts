@@ -1,6 +1,8 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { MicrosoftCalendarSyncAdapter } from '@/modules/integrations/infrastructure/sync/microsoft-calendar-sync.adapter';
 import { MicrosoftGraphRequestException } from '@/modules/integrations/domain/exceptions/microsoft-graph-request.exception';
+import { MicrosoftOAuthFailedException } from '@/modules/integrations/domain/exceptions/microsoft-oauth-failed.exception';
+import { MicrosoftRefreshTokenInvalidException } from '@/modules/integrations/domain/exceptions/microsoft-refresh-token-invalid.exception';
 
 /**
  * MicrosoftCalendarSyncAdapter
@@ -156,6 +158,53 @@ describe('Integrations module', () => {
                 expect(
                     microsoftProvider.createCalendarEvent,
                 ).not.toHaveBeenCalled();
+            });
+        });
+
+        describe('getAccessToken refresh failures', () => {
+            it('disconnects the integration when the refresh token is invalid', async () => {
+                const integration = {
+                    ...connectedIntegration(),
+                    disconnect: jest.fn(),
+                };
+                integrationRepository.findByUserId.mockResolvedValue(
+                    integration,
+                );
+                microsoftProvider.refreshAccessToken.mockRejectedValue(
+                    new MicrosoftRefreshTokenInvalidException('expired'),
+                );
+
+                await expect(
+                    adapter.createCalendarEvent(1, eventInput),
+                ).rejects.toBeInstanceOf(MicrosoftRefreshTokenInvalidException);
+
+                expect(integration.disconnect).toHaveBeenCalledTimes(1);
+                expect(integrationRepository.save).toHaveBeenCalledWith(
+                    integration,
+                );
+                expect(
+                    microsoftProvider.createCalendarEvent,
+                ).not.toHaveBeenCalled();
+            });
+
+            it('does NOT disconnect on a transient OAuth failure', async () => {
+                const integration = {
+                    ...connectedIntegration(),
+                    disconnect: jest.fn(),
+                };
+                integrationRepository.findByUserId.mockResolvedValue(
+                    integration,
+                );
+                microsoftProvider.refreshAccessToken.mockRejectedValue(
+                    new MicrosoftOAuthFailedException('network blip'),
+                );
+
+                await expect(
+                    adapter.createCalendarEvent(1, eventInput),
+                ).rejects.toBeInstanceOf(MicrosoftOAuthFailedException);
+
+                expect(integration.disconnect).not.toHaveBeenCalled();
+                expect(integrationRepository.save).not.toHaveBeenCalled();
             });
         });
     });
