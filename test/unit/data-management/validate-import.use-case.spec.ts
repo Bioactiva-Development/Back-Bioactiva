@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { ValidateImportUseCase } from '@/modules/data-management/application/use-cases/validate-import.use-case';
 import { ImportPlannerService } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import { ImportValidation } from '@/modules/data-management/application/dto/import-types';
 
 describe('Data management module', () => {
@@ -23,7 +24,9 @@ describe('Data management module', () => {
 
         beforeEach(() => {
             excelReader = { read: jest.fn() };
-            planner = new ImportPlannerService();
+            planner = new ImportPlannerService({
+                timeZone: 'America/Lima',
+            } as unknown as AppTimeConfig);
             useCase = new ValidateImportUseCase(excelReader, planner);
         });
 

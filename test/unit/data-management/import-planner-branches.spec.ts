@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { ImportPlannerService } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import {
     ParsedRow,
     ParsedWorkbook,
@@ -11,7 +12,9 @@ import {
  */
 describe('Data management module', () => {
     describe('ImportPlannerService — ramas de error y avisos', () => {
-        const planner = new ImportPlannerService();
+        const planner = new ImportPlannerService({
+            timeZone: 'America/Lima',
+        } as unknown as AppTimeConfig);
 
         const wb = (sheets: Record<string, ParsedRow[]>): ParsedWorkbook =>
             sheets;

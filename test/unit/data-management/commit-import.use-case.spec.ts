@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { CommitImportUseCase } from '@/modules/data-management/application/use-cases/commit-import.use-case';
 import { ImportPlannerService } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import {
     ImportPlan,
     ImportSummary,
@@ -49,7 +50,9 @@ describe('Data management module', () => {
 
         beforeEach(() => {
             excelReader = { read: jest.fn() };
-            planner = new ImportPlannerService();
+            planner = new ImportPlannerService({
+                timeZone: 'America/Lima',
+            } as unknown as AppTimeConfig);
             importRepository = { commit: jest.fn() };
             useCase = new CommitImportUseCase(
                 excelReader,

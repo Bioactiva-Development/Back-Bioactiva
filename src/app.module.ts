@@ -21,9 +21,11 @@ import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { ResetModule } from '@/modules/reset/reset.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { DataManagementModule } from '@/modules/data-management/data-management.module';
+import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
 
 @Module({
     imports: [
+        AppTimeModule,
         PrismaModule,
         CacheModule,
         AuthModule,

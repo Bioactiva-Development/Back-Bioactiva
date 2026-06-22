@@ -23,6 +23,8 @@ import {
     LeadInput,
     CotizacionInput,
 } from '@/modules/data-management/application/dto/import-types';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import { startOfDayInZone } from '@/shared/infrastructure/datetime/range-in-zone';
 
 /** Nombres de hoja esperados (se buscan sin distinguir mayúsculas/acentos). */
 const SHEET_ALIASES: Record<string, string[]> = {
@@ -32,12 +34,26 @@ const SHEET_ALIASES: Record<string, string[]> = {
     cotizaciones: ['cotizaciones', 'cotizacion', 'cotizaciones', 'quotations'],
 };
 
+/** Convierte una celda (`unknown`) a texto sin disparar `no-base-to-string`. */
+function cellToString(v: unknown): string {
+    if (typeof v === 'string') {
+        return v;
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+        return String(v);
+    }
+    if (v instanceof Date) {
+        return v.toISOString();
+    }
+    return '';
+}
+
 function str(row: ParsedRow, key: string): string | null {
     const v = row[key];
     if (v === null || v === undefined) {
         return null;
     }
-    const s = String(v).trim();
+    const s = cellToString(v).trim();
     return s === '' ? null : s;
 }
 
@@ -49,7 +65,7 @@ function digits(value: string | null): string | null {
     return d === '' ? null : d;
 }
 
-function dateVal(row: ParsedRow, key: string): Date | null {
+function dateVal(row: ParsedRow, key: string, timeZone: string): Date | null {
     const v = row[key];
     if (v === null || v === undefined || v === '') {
         return null;
@@ -57,7 +73,10 @@ function dateVal(row: ParsedRow, key: string): Date | null {
     if (v instanceof Date) {
         return v;
     }
-    const parsed = new Date(String(v));
+    // Una celda de texto solo-fecha ("2026-06-22") se interpreta como ese día
+    // civil en la zona de negocio, no como medianoche UTC (que se guardaría con
+    // un día de desfase). Los valores con hora se respetan como instante.
+    const parsed = startOfDayInZone(cellToString(v).trim(), timeZone);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -82,6 +101,8 @@ export function generateCodigoCliente(
 
 @Injectable()
 export class ImportPlannerService {
+    constructor(private readonly appTime: AppTimeConfig) {}
+
     /** Parsea y valida el libro, construyendo un plan de inserción (sin tocar la BD). */
     plan(workbook: ParsedWorkbook): {
         plan: ImportPlan;
@@ -333,7 +354,11 @@ export class ImportPlannerService {
             const actividad = proxNombre
                 ? {
                       nombre: proxNombre,
-                      fecha: dateVal(row, 'fecha de proxima actividad'),
+                      fecha: dateVal(
+                          row,
+                          'fecha de proxima actividad',
+                          this.appTime.timeZone,
+                      ),
                       tipo: 'OTRO', // sin columna de tipo en el Excel (acordado)
                   }
                 : null;
@@ -346,8 +371,16 @@ export class ImportPlannerService {
                 comentarios: str(row, 'comentarios'),
                 desafioOportunidad: str(row, 'desafio u oportunidad'),
                 canalCaptacion: str(row, 'canal de captacion'),
-                createdAt: dateVal(row, 'fecha de creacion'),
-                fechaCierre: dateVal(row, 'fecha de cierre'),
+                createdAt: dateVal(
+                    row,
+                    'fecha de creacion',
+                    this.appTime.timeZone,
+                ),
+                fechaCierre: dateVal(
+                    row,
+                    'fecha de cierre',
+                    this.appTime.timeZone,
+                ),
                 orgRuc: digits(str(row, 'ruc // id contacto')),
                 orgNombreComercial: str(row, 'organizacion'),
                 contactoCorreo: str(row, 'correo electronico'),
@@ -443,7 +476,11 @@ export class ImportPlannerService {
             out.push({
                 rowNumber,
                 excelLeadId,
-                fechaCot: dateVal(row, 'fecha de cotizacion'),
+                fechaCot: dateVal(
+                    row,
+                    'fecha de cotizacion',
+                    this.appTime.timeZone,
+                ),
                 dirigido,
                 cliente: str(row, 'cliente'),
                 producto: str(row, 'producto'),

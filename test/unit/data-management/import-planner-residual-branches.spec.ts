@@ -3,6 +3,7 @@ import {
     ImportPlannerService,
     generateCodigoCliente,
 } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import {
     ParsedRow,
     ParsedWorkbook,
@@ -16,7 +17,9 @@ import {
  */
 describe('Data management module', () => {
     describe('ImportPlannerService — ramas residuales', () => {
-        const planner = new ImportPlannerService();
+        const planner = new ImportPlannerService({
+            timeZone: 'America/Lima',
+        } as unknown as AppTimeConfig);
         const wb = (sheets: Record<string, ParsedRow[]>): ParsedWorkbook =>
             sheets;
         const errorsFor = (sheet: string, validation: { errors: any[] }) =>

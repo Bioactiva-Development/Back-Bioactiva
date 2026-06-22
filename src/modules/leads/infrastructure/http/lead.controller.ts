@@ -35,6 +35,11 @@ import { CreateLeadDto } from '@/modules/leads/application/dto/create-lead.dto';
 import { UpdateLeadDto } from '@/modules/leads/application/dto/update-lead.dto';
 import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead-status.dto';
 import { ListLeadsDto } from '@/modules/leads/application/dto/list-leads.dto';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import {
+    startOfDayInZone,
+    endOfDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 @ApiTags('leads')
 @ApiBearerAuth()
@@ -48,6 +53,7 @@ export class LeadController {
         private readonly updateLeadUseCase: UpdateLeadUseCase,
         private readonly changeLeadStatusUseCase: ChangeLeadStatusUseCase,
         private readonly deleteLeadUseCase: DeleteLeadUseCase,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     @Post()
@@ -99,8 +105,12 @@ export class LeadController {
             query.page,
             query.limit,
             query.alertaActividad,
-            query.fechaDesde ? new Date(query.fechaDesde) : undefined,
-            query.fechaHasta ? new Date(query.fechaHasta) : undefined,
+            query.fechaDesde
+                ? startOfDayInZone(query.fechaDesde, this.appTime.timeZone)
+                : undefined,
+            query.fechaHasta
+                ? endOfDayInZone(query.fechaHasta, this.appTime.timeZone)
+                : undefined,
             query.sector,
             query.conActividadesPendientes,
         );

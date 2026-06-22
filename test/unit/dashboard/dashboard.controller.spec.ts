@@ -4,6 +4,7 @@ import { DashboardController } from '@/modules/dashboard/infrastructure/http/das
 import { GetDashboardMetricsUseCase } from '@/modules/dashboard/application/use-cases/get-dashboard-metrics.use-case';
 import { DashboardQueryDto } from '@/modules/dashboard/infrastructure/http/dtos/dashboard-query.dto';
 import type { DashboardMetrics } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('Dashboard module', () => {
     describe('DashboardController', () => {
@@ -34,6 +35,10 @@ describe('Dashboard module', () => {
                     {
                         provide: GetDashboardMetricsUseCase,
                         useValue: getDashboardMetricsUseCase,
+                    },
+                    {
+                        provide: AppTimeConfig,
+                        useValue: { timeZone: 'America/Lima' },
                     },
                 ],
             }).compile();

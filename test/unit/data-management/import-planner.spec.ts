@@ -5,10 +5,13 @@ import {
     ImportPlannerService,
     generateCodigoCliente,
 } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('Importación CRM — reader + planner sobre el archivo de referencia', () => {
     const reader = new ExceljsReader();
-    const planner = new ImportPlannerService();
+    const planner = new ImportPlannerService({
+        timeZone: 'America/Lima',
+    } as unknown as AppTimeConfig);
     const filePath = join(
         process.cwd(),
         'docs',
