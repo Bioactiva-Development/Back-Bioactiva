@@ -63,7 +63,7 @@ export class CachedSunatService implements ISunatService {
     }
 
     async getByRazonSocial(razonSocial: string): Promise<SunatCompanyInfo[]> {
-        const normalized = razonSocial.trim().toLowerCase().replace(/\s+/g, ' ');
+        const normalized = razonSocial.trim().toLowerCase().replaceAll(/\s+/g, ' ');
         if (!normalized) {
             return this.delegate.getByRazonSocial(razonSocial);
         }

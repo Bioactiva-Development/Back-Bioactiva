@@ -46,20 +46,10 @@ function zoneOffsetMs(timeZone: string, instant: Date): number {
     return Math.round((wallAsUtc - instant.getTime()) / 60000) * 60000;
 }
 
-/**
- * Devuelve el instante UTC que corresponde a una hora de pared concreta
- * (`y-mo-d hh:mi:ss.ms`) en la zona indicada.
- */
-function wallTimeToUtc(
-    y: number,
-    mo: number,
-    d: number,
-    hh: number,
-    mi: number,
-    ss: number,
-    ms: number,
-    timeZone: string,
-): Date {
+type WallTimeParts = [y: number, mo: number, d: number, hh: number, mi: number, ss: number, ms: number];
+
+function wallTimeToUtc(parts: WallTimeParts, timeZone: string): Date {
+    const [y, mo, d, hh, mi, ss, ms] = parts;
     const guess = Date.UTC(y, mo - 1, d, hh, mi, ss, ms);
     const offset = zoneOffsetMs(timeZone, new Date(guess));
     return new Date(guess - offset);
@@ -100,7 +90,7 @@ function civilDateParts(
 export function startOfDayInZone(input: string, timeZone: string): Date {
     if (DATE_ONLY_RE.test(input)) {
         const [y, mo, d] = input.split('-').map(Number);
-        return wallTimeToUtc(y, mo, d, 0, 0, 0, 0, timeZone);
+        return wallTimeToUtc([y, mo, d, 0, 0, 0, 0], timeZone);
     }
     return new Date(input);
 }
@@ -114,7 +104,7 @@ export function startOfDayInZone(input: string, timeZone: string): Date {
 export function endOfDayInZone(input: string, timeZone: string): Date {
     if (DATE_ONLY_RE.test(input)) {
         const [y, mo, d] = input.split('-').map(Number);
-        return wallTimeToUtc(y, mo, d, 23, 59, 59, 999, timeZone);
+        return wallTimeToUtc([y, mo, d, 23, 59, 59, 999], timeZone);
     }
     return new Date(input);
 }
@@ -125,7 +115,7 @@ export function endOfDayInZone(input: string, timeZone: string): Date {
  */
 export function startOfCurrentDayInZone(instant: Date, timeZone: string): Date {
     const { year, month, day } = civilDateParts(instant, timeZone);
-    return wallTimeToUtc(year, month, day, 0, 0, 0, 0, timeZone);
+    return wallTimeToUtc([year, month, day, 0, 0, 0, 0], timeZone);
 }
 
 /**
@@ -140,13 +130,7 @@ export function exactTimeInZone(instant: Date, timeZone: string): Date {
         timeZone,
     );
     return wallTimeToUtc(
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        second,
-        instant.getMilliseconds(),
+        [year, month, day, hour, minute, second, instant.getMilliseconds()],
         timeZone,
     );
 }

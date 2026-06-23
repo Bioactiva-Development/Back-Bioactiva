@@ -74,7 +74,7 @@ function resolveFilterEnum(
     if (viaSyn) {
         return viaSyn;
     }
-    const upper = raw.trim().toUpperCase().replace(/\s+/g, '_');
+    const upper = raw.trim().toUpperCase().replaceAll(/\s+/g, '_');
     return upper in labelMap ? upper : undefined;
 }
 

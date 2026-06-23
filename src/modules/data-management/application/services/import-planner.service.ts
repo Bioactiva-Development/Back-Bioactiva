@@ -61,7 +61,7 @@ function digits(value: string | null): string | null {
     if (!value) {
         return null;
     }
-    const d = value.replace(/\D/g, '');
+    const d = value.replaceAll(/\D/g, '');
     return d === '' ? null : d;
 }
 
@@ -91,10 +91,10 @@ export function generateCodigoCliente(
 ): string {
     const slug =
         normalizeCell(nombreComercial)
-            .replace(/[^a-z0-9]/g, '')
+            .replaceAll(/[^a-z0-9]/g, '')
             .toUpperCase()
             .slice(0, 8) || 'ORG';
-    const tail = ruc ? ruc.replace(/\D/g, '').slice(-6) : '';
+    const tail = ruc ? ruc.replaceAll(/\D/g, '').slice(-6) : '';
     const code = tail ? `${slug}-${tail}` : slug;
     return code.slice(0, 20);
 }
@@ -160,6 +160,10 @@ export class ImportPlannerService {
         return typeof row.__rowNumber === 'number' ? row.__rowNumber : 0;
     }
 
+    private isEmptyOrgRow(row: ParsedRow): boolean {
+        return !str(row, 'organizacion') && !str(row, 'nombre completo') && !str(row, 'ruc');
+    }
+
     private planOrganizaciones(
         rows: ParsedRow[],
         errors: RowIssue[],
@@ -174,8 +178,7 @@ export class ImportPlannerService {
             const sectorRaw = str(row, 'sector');
 
             const sheet = 'Organizaciones';
-            // Fila sin contenido de negocio (solo "N°" u otra celda residual): se omite.
-            if (!nombreComercial && !nombre && !str(row, 'ruc')) {
+            if (this.isEmptyOrgRow(row)) {
                 continue;
             }
             if (!nombreComercial) {
@@ -250,6 +253,43 @@ export class ImportPlannerService {
         return out;
     }
 
+    private resolveVocativo(
+        raw: string | null,
+        sheet: string,
+        rowNumber: number,
+        errors: RowIssue[],
+    ): string | null | false {
+        if (!raw) {
+            return null;
+        }
+        const resolved = resolveEnum(VOCATIVO_SYNONYMS, raw) ?? null;
+        if (!resolved) {
+            errors.push({ sheet, row: rowNumber, message: `Vocativo no reconocido: "${raw}".` });
+            return false;
+        }
+        return resolved;
+    }
+
+    private parseMonto(
+        montoRaw: string | null,
+        sheet: string,
+        rowNumber: number,
+        errors: RowIssue[],
+    ): string | false {
+        const monto = montoRaw
+            ? montoRaw.replaceAll(/[^\d.,]/g, '').replace(',', '.')
+            : null;
+        if (!monto || Number.isNaN(Number(monto))) {
+            errors.push({
+                sheet,
+                row: rowNumber,
+                message: `Monto inválido: "${montoRaw ?? ''}".`,
+            });
+            return false;
+        }
+        return monto;
+    }
+
     private planContactos(
         rows: ParsedRow[],
         errors: RowIssue[],
@@ -281,18 +321,11 @@ export class ImportPlannerService {
                 continue;
             }
             const vocativoRaw = str(row, 'vocativo');
-            let vocativo: string | null = null;
-            if (vocativoRaw) {
-                vocativo = resolveEnum(VOCATIVO_SYNONYMS, vocativoRaw) ?? null;
-                if (!vocativo) {
-                    errors.push({
-                        sheet,
-                        row: rowNumber,
-                        message: `Vocativo no reconocido: "${vocativoRaw}".`,
-                    });
-                    continue;
-                }
+            const vocativoResult = this.resolveVocativo(vocativoRaw, sheet, rowNumber, errors);
+            if (vocativoResult === false) {
+                continue;
             }
+            const vocativo = vocativoResult;
             const orgNombreComercial = str(row, 'organizacion abreviado');
             if (!orgNombreComercial) {
                 errors.push({
@@ -304,7 +337,7 @@ export class ImportPlannerService {
             }
             const telefonoRaw = str(row, 'telefono');
             if (telefonoRaw !== null) {
-                const stripped = telefonoRaw.replace(/[\s\-().]/g, '');
+                const stripped = telefonoRaw.replaceAll(/[\s\-().]/g, '');
                 if (!/^\+\d{7,15}$/.test(stripped)) {
                     errors.push({
                         sheet,
@@ -421,94 +454,114 @@ export class ImportPlannerService {
         errors: RowIssue[],
         warnings: RowIssue[],
     ): void {
-        const cotByLeadId = new Map<string, CotizacionInput[]>();
-        for (const cot of cotizaciones) {
-            if (cot.excelLeadId) {
-                const key = String(cot.excelLeadId).trim();
-                if (!cotByLeadId.has(key)) {
-                    cotByLeadId.set(key, []);
-                }
-                cotByLeadId.get(key)!.push(cot);
-            }
-        }
+        const cotByLeadId = this.buildCotsByLeadId(cotizaciones);
 
         for (const lead of leads) {
             const leadKey = lead.excelLeadId
                 ? String(lead.excelLeadId).trim()
                 : null;
             const cots = leadKey ? (cotByLeadId.get(leadKey) ?? []) : [];
-            const sheet = 'Leads';
 
             switch (lead.estado) {
                 case 'EN_PROSPECTO':
-                    if (cots.length > 0) {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en EN_PROSPECTO no puede tener cotizaciones (encontradas: ${cots.length}).`,
-                        });
-                    }
+                    this.validateProspectoLead(lead, cots, errors);
                     break;
-
                 case 'OFERTADO':
-                    if (cots.length > 1) {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en OFERTADO solo puede tener 1 cotización (encontradas: ${cots.length}).`,
-                        });
-                    } else if (cots.length === 1) {
-                        const est = cots[0].estado;
-                        if (!['PENDIENTE', 'ENVIADA'].includes(est)) {
-                            errors.push({
-                                sheet,
-                                row: lead.rowNumber,
-                                message: `Lead en OFERTADO: la cotización debe estar en PENDIENTE o ENVIADA (estado actual: "${est}").`,
-                            });
-                        }
-                    } else {
-                        lead.autoCreateCotizacion = true;
-                        warnings.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message:
-                                'Lead OFERTADO sin cotización: se creará automáticamente una provisional en estado PENDIENTE.',
-                        });
-                    }
+                    this.validateOfertadoLead(lead, cots, errors, warnings);
                     break;
-
                 case 'CIERRE_CON_VENTA':
-                    if (cots.length !== 1) {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en CIERRE_CON_VENTA debe tener exactamente 1 cotización en ACEPTADA (encontradas: ${cots.length}).`,
-                        });
-                    } else if (cots[0].estado !== 'ACEPTADA') {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en CIERRE_CON_VENTA: la cotización debe estar en ACEPTADA (estado actual: "${cots[0].estado}").`,
-                        });
-                    }
+                    this.validateCierreLead(lead, cots, errors, 'ACEPTADA', 'CIERRE_CON_VENTA');
                     break;
-
                 case 'CIERRE_SIN_VENTA':
-                    if (cots.length !== 1) {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en CIERRE_SIN_VENTA debe tener exactamente 1 cotización en RECHAZADA (encontradas: ${cots.length}).`,
-                        });
-                    } else if (cots[0].estado !== 'RECHAZADA') {
-                        errors.push({
-                            sheet,
-                            row: lead.rowNumber,
-                            message: `Lead en CIERRE_SIN_VENTA: la cotización debe estar en RECHAZADA (estado actual: "${cots[0].estado}").`,
-                        });
-                    }
+                    this.validateCierreLead(lead, cots, errors, 'RECHAZADA', 'CIERRE_SIN_VENTA');
                     break;
             }
+        }
+    }
+
+    private buildCotsByLeadId(
+        cotizaciones: CotizacionInput[],
+    ): Map<string, CotizacionInput[]> {
+        const map = new Map<string, CotizacionInput[]>();
+        for (const cot of cotizaciones) {
+            if (cot.excelLeadId) {
+                const key = String(cot.excelLeadId).trim();
+                if (!map.has(key)) {
+                    map.set(key, []);
+                }
+                map.get(key)!.push(cot);
+            }
+        }
+        return map;
+    }
+
+    private validateProspectoLead(
+        lead: LeadInput,
+        cots: CotizacionInput[],
+        errors: RowIssue[],
+    ): void {
+        if (cots.length > 0) {
+            errors.push({
+                sheet: 'Leads',
+                row: lead.rowNumber,
+                message: `Lead en EN_PROSPECTO no puede tener cotizaciones (encontradas: ${cots.length}).`,
+            });
+        }
+    }
+
+    private validateOfertadoLead(
+        lead: LeadInput,
+        cots: CotizacionInput[],
+        errors: RowIssue[],
+        warnings: RowIssue[],
+    ): void {
+        const sheet = 'Leads';
+        if (cots.length > 1) {
+            errors.push({
+                sheet,
+                row: lead.rowNumber,
+                message: `Lead en OFERTADO solo puede tener 1 cotización (encontradas: ${cots.length}).`,
+            });
+        } else if (cots.length === 1) {
+            const est = cots[0].estado;
+            if (!['PENDIENTE', 'ENVIADA'].includes(est)) {
+                errors.push({
+                    sheet,
+                    row: lead.rowNumber,
+                    message: `Lead en OFERTADO: la cotización debe estar en PENDIENTE o ENVIADA (estado actual: "${est}").`,
+                });
+            }
+        } else {
+            lead.autoCreateCotizacion = true;
+            warnings.push({
+                sheet,
+                row: lead.rowNumber,
+                message:
+                    'Lead OFERTADO sin cotización: se creará automáticamente una provisional en estado PENDIENTE.',
+            });
+        }
+    }
+
+    private validateCierreLead(
+        lead: LeadInput,
+        cots: CotizacionInput[],
+        errors: RowIssue[],
+        expectedEstado: string,
+        tipoEstadoLead: string,
+    ): void {
+        const sheet = 'Leads';
+        if (cots.length !== 1) {
+            errors.push({
+                sheet,
+                row: lead.rowNumber,
+                message: `Lead en ${tipoEstadoLead} debe tener exactamente 1 cotización en ${expectedEstado} (encontradas: ${cots.length}).`,
+            });
+        } else if (cots[0].estado !== expectedEstado) {
+            errors.push({
+                sheet,
+                row: lead.rowNumber,
+                message: `Lead en ${tipoEstadoLead}: la cotización debe estar en ${expectedEstado} (estado actual: "${cots[0].estado}").`,
+            });
         }
     }
 
@@ -546,15 +599,8 @@ export class ImportPlannerService {
                 });
                 continue;
             }
-            const monto = montoRaw
-                ? montoRaw.replace(/[^\d.,]/g, '').replace(',', '.')
-                : null;
-            if (!monto || Number.isNaN(Number(monto))) {
-                errors.push({
-                    sheet,
-                    row: rowNumber,
-                    message: `Monto inválido: "${montoRaw ?? ''}".`,
-                });
+            const monto = this.parseMonto(montoRaw, sheet, rowNumber, errors);
+            if (monto === false) {
                 continue;
             }
             const tipo = resolveEnum(TIPO_MONEDA_SYNONYMS, monedaRaw);
