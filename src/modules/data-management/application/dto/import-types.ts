@@ -64,17 +64,16 @@ export interface LeadInput {
 export interface CotizacionInput {
     rowNumber: number;
     excelLeadId: string | null;
-    fechaCot: Date | null;
-    dirigido: string;
-    cliente: string | null;
+    /** Obligatoria desde la plantilla. */
+    fechaCot: Date;
     producto: string | null;
     nombreServicio: string;
     monto: string;
     tipo: string;
     estado: string;
-    nombreRemitente: string;
     observacion: string | null;
     linkPropuesta: string | null;
+    // cliente, dirigido y nombreRemitente se derivan del lead en el repositorio.
 }
 
 export interface ImportPlan {

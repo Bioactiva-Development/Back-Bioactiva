@@ -110,18 +110,18 @@ export class GenerateTemplateUseCase {
                 }),
                 col('Apellidos'),
                 col('Organización abreviado', {
+                    required: true,
                     dropdownFormula: 'Organizaciones!$B$2:$B$301',
-                    note: 'Selecciona de la lista (se autocompleta con lo que hayas llenado en la hoja Organizaciones). También puedes escribir el nombre comercial o la razón social directamente.',
-                }),
-                col('RUC', {
-                    note: 'Opcional. Vincula el contacto por RUC si la organización lo tiene; si no, se usa el nombre de la organización. La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
+                    note: 'Obligatorio. Selecciona de la lista (los nombres comerciales de la hoja Organizaciones). La organización debe existir en esa hoja o en el CRM.',
                 }),
                 col('Correo electrónico 1', {
                     required: true,
                     note: 'Obligatorio. Es la clave única del contacto: si ya existe ese correo, la fila se omite.',
                 }),
                 col('Correo electrónico 2'),
-                col('Teléfono'),
+                col('Teléfono', {
+                    note: 'Opcional. Formato internacional: empieza con + y el código de país, seguido del número (ej: +51987654321).',
+                }),
                 col('Cargo'),
                 col('Comentarios'),
             ],
@@ -135,18 +135,16 @@ export class GenerateTemplateUseCase {
             columns: [
                 col('N°', { width: 6, note: 'Opcional: numeración libre.' }),
                 col('ID Lead', {
-                    note: 'Identificador que TÚ asignas a este lead (ej: L-001). Repítelo en la hoja Cotizaciones, columna "ID de lead", para vincular sus cotizaciones.',
-                }),
-                col('RUC // ID Contacto', {
-                    note: 'Opcional. RUC de la organización del lead (ej: 20123456789). Sirve para vincularlo con la hoja Organizaciones. Si no hay RUC, el vínculo se hace por la columna "Organización".',
+                    note: 'Identificador referencial que TÚ asignas (ej: L-001). Se usa para vincular cotizaciones: repítelo en la hoja Cotizaciones, columna "ID de lead". No se guarda en el CRM.',
                 }),
                 col('Organización', {
+                    required: true,
                     dropdownFormula: 'Organizaciones!$B$2:$B$301',
-                    note: 'Selecciona de la lista (se autocompleta con lo que hayas llenado en la hoja Organizaciones). También puedes escribir el nombre comercial o la razón social directamente.',
+                    note: 'Obligatorio. Selecciona el nombre comercial de la lista (hoja Organizaciones). La organización debe estar en esa hoja o existir en el CRM.',
                 }),
-                col('Correo electrónico', {
-                    dropdownFormula: 'Contactos!$G$2:$G$301',
-                    note: 'Selecciona de la lista (se autocompleta con los correos de la hoja Contactos). El contacto debe existir en esa hoja para vincularse.',
+                col('Contacto', {
+                    dropdownFormula: 'Contactos!$F$2:$F$301',
+                    note: 'Opcional. Selecciona el correo del contacto vinculado a este lead (hoja Contactos). Debe pertenecer a la organización del lead.',
                 }),
                 col('Estado', {
                     required: true,
@@ -173,15 +171,6 @@ export class GenerateTemplateUseCase {
                           }),
                 }),
                 col('Canal de captación'),
-                col('Próxima actividad', {
-                    note: 'Opcional. Si lo llenas, se crea una actividad pendiente para el lead.',
-                }),
-                col('Fecha de próxima actividad', {
-                    note: 'Formato AAAA-MM-DD (ej: 2026-01-20).',
-                }),
-                col('Fecha de Cierre', {
-                    note: 'Opcional. Formato AAAA-MM-DD (ej: 2026-02-10).',
-                }),
             ],
             rows: [],
         };
@@ -195,16 +184,12 @@ export class GenerateTemplateUseCase {
                 col('ID de lead', {
                     required: true,
                     dropdownFormula: 'Leads!$B$2:$B$301',
-                    note: 'Obligatorio. Selecciona de la lista (se autocompleta con los IDs de la hoja Leads). Si no coincide con ningún ID Lead, la cotización se omite.',
-                }),
-                col('Dirigido a', {
-                    required: true,
-                    note: 'Obligatorio. Persona o área a la que se dirige la cotización.',
+                    note: 'Obligatorio. Selecciona de la lista el ID Lead de la hoja Leads. Si no coincide con ningún lead del archivo, la cotización se omite.',
                 }),
                 col('Fecha de cotización', {
-                    note: 'Opcional. Formato AAAA-MM-DD (ej: 2026-01-15).',
+                    required: true,
+                    note: 'Obligatorio. Formato AAAA-MM-DD (ej: 2026-01-15).',
                 }),
-                col('Cliente'),
                 col('Producto'),
                 col('Nombre del servicio', {
                     required: true,
@@ -224,10 +209,6 @@ export class GenerateTemplateUseCase {
                     dropdown: Object.values(ESTADO_COT_LABEL),
                     note: 'Obligatorio. Elige de la lista.',
                 }),
-                col('Remitente', {
-                    required: true,
-                    note: 'Obligatorio. Nombre de quien envía la cotización.',
-                }),
                 col('Observación'),
                 col('Link de propuesta'),
             ],
@@ -239,17 +220,36 @@ export class GenerateTemplateUseCase {
         const pasos = [
             'CÓMO LLENAR ESTA PLANTILLA',
             '',
-            '1. Completa las hojas Organizaciones, Contactos, Leads y Cotizaciones. No cambies los nombres de las columnas ni el orden de las hojas.',
+            '1. Completa las hojas Organizaciones, Contactos, Leads y Cotizaciones en ese orden. No cambies los nombres de las columnas ni el orden de las hojas.',
             '2. Las columnas con el encabezado resaltado en AZUL son OBLIGATORIAS.',
             '3. En las columnas con lista desplegable, elige un valor. También se aceptan equivalentes (p. ej. "soles" = PEN, "En proceso" = estado del lead).',
             '4. Pasa el cursor sobre cada encabezado (esquina con triángulo rojo) para ver la ayuda y ejemplos.',
-            '5. VINCULAR COTIZACIONES CON LEADS: el valor de "ID de lead" (hoja Cotizaciones) debe ser igual al de "ID Lead" (hoja Leads). Si no coinciden, la cotización no se importa.',
-            '6. VINCULAR ORGANIZACIÓN: contactos y leads se asocian a su organización por RUC (si lo tiene) o por el nombre de la organización. El RUC es OPCIONAL: si no lo tienes, basta el nombre, que puede ser el nombre comercial ("Organización") o la razón social ("Nombre completo"). La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
-            '7. Fechas en formato AAAA-MM-DD (ej: 2026-01-15). Montos solo con números (ej: 15000.50).',
-            '8. En el CRM, primero usa "Validar" para revisar errores y luego "Importar".',
             '',
-            'IMPORTANTE: la importación solo AGREGA registros nuevos. Los duplicados (mismo RUC, mismo correo o misma organización) se omiten automáticamente; no se actualizan datos existentes.',
-            'Consulta la hoja "Valores válidos" para ver todas las opciones aceptadas de cada campo.',
+            'CONTACTOS',
+            '· Organización abreviado es OBLIGATORIA. Selecciona de la lista (nombre comercial de la hoja Organizaciones).',
+            '· Teléfono: formato internacional (ej: +51987654321). Debe iniciar con + seguido del código de país.',
+            '· Correo electrónico 1 es la clave única: si ya existe en el CRM, el contacto se omite.',
+            '',
+            'LEADS',
+            '· ID Lead es solo referencial para vincular cotizaciones; repítelo en la hoja Cotizaciones, columna "ID de lead". No se guarda en el CRM.',
+            '· Organización es OBLIGATORIA. Selecciona de la lista de la hoja Organizaciones.',
+            '· Contacto (opcional): selecciona el correo de la lista de la hoja Contactos.',
+            '· El estado del lead determina cuántas cotizaciones puede tener:',
+            '    - EN_PROSPECTO: sin cotizaciones.',
+            '    - OFERTADO: exactamente 1 cotización (PENDIENTE o ENVIADA). Si no la agregas, se crea una automáticamente.',
+            '    - CIERRE_CON_VENTA: exactamente 1 cotización en ACEPTADA.',
+            '    - CIERRE_SIN_VENTA: exactamente 1 cotización en RECHAZADA.',
+            '',
+            'COTIZACIONES',
+            '· ID de lead es OBLIGATORIO y debe coincidir con el "ID Lead" de la hoja Leads del mismo archivo.',
+            '· Fecha de cotización es OBLIGATORIA. Formato AAAA-MM-DD (ej: 2026-01-15).',
+            '· Cliente, Dirigido a y Remitente se derivan automáticamente del lead vinculado (organización, contacto y encargado); no los incluyas como columnas.',
+            '',
+            'GENERAL',
+            '· Fechas en formato AAAA-MM-DD (ej: 2026-01-15). Montos solo con números (ej: 15000.50).',
+            '· Usa "Validar" primero para revisar errores antes de "Importar".',
+            '· La importación solo AGREGA registros nuevos; los duplicados se omiten sin modificar los existentes.',
+            '· Consulta la hoja "Valores válidos" para ver todas las opciones de cada campo.',
         ];
         return {
             name: 'Instrucciones',

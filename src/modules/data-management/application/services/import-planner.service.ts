@@ -293,6 +293,27 @@ export class ImportPlannerService {
                     continue;
                 }
             }
+            const orgNombreComercial = str(row, 'organizacion abreviado');
+            if (!orgNombreComercial) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Organización". Selecciona una de la hoja Organizaciones.',
+                });
+                continue;
+            }
+            const telefonoRaw = str(row, 'telefono');
+            if (telefonoRaw !== null) {
+                const stripped = telefonoRaw.replace(/[\s\-().]/g, '');
+                if (!/^\+\d{7,15}$/.test(stripped)) {
+                    errors.push({
+                        sheet,
+                        row: rowNumber,
+                        message: `Teléfono inválido: "${telefonoRaw}". Debe iniciar con + y código de país (ej: +51987654321).`,
+                    });
+                    continue;
+                }
+            }
             out.push({
                 rowNumber,
                 nombres,
@@ -301,10 +322,10 @@ export class ImportPlannerService {
                 cargo: str(row, 'cargo'),
                 correo,
                 correo2: str(row, 'correo electronico 2'),
-                telefono: str(row, 'telefono'),
+                telefono: telefonoRaw,
                 comentarios: str(row, 'comentarios'),
-                orgRuc: digits(str(row, 'ruc')),
-                orgNombreComercial: str(row, 'organizacion abreviado'),
+                orgRuc: null,
+                orgNombreComercial,
             });
         }
         return out;
@@ -347,6 +368,15 @@ export class ImportPlannerService {
                 });
                 continue;
             }
+            const orgNombreComercial = str(row, 'organizacion');
+            if (!orgNombreComercial) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Organización". Es obligatoria para importar el lead.',
+                });
+                continue;
+            }
             const encargadoNombre = str(row, 'encargado');
             if (!encargadoNombre) {
                 warnings.push({
@@ -356,19 +386,6 @@ export class ImportPlannerService {
                         'Sin "Encargado": se asignará al usuario que importa.',
                 });
             }
-
-            const proxNombre = str(row, 'proxima actividad');
-            const actividad = proxNombre
-                ? {
-                      nombre: proxNombre,
-                      fecha: dateVal(
-                          row,
-                          'fecha de proxima actividad',
-                          this.appTime.timeZone,
-                      ),
-                      tipo: 'OTRO', // sin columna de tipo en el Excel (acordado)
-                  }
-                : null;
 
             out.push({
                 rowNumber,
@@ -383,16 +400,12 @@ export class ImportPlannerService {
                     'fecha de creacion',
                     this.appTime.timeZone,
                 ),
-                fechaCierre: dateVal(
-                    row,
-                    'fecha de cierre',
-                    this.appTime.timeZone,
-                ),
-                orgRuc: digits(str(row, 'ruc // id contacto')),
-                orgNombreComercial: str(row, 'organizacion'),
-                contactoCorreo: str(row, 'correo electronico'),
+                fechaCierre: null,
+                orgRuc: null,
+                orgNombreComercial,
+                contactoCorreo: str(row, 'contacto'),
                 encargadoNombre,
-                actividad,
+                actividad: null,
             });
         }
         return out;
@@ -507,16 +520,14 @@ export class ImportPlannerService {
         for (const row of rows) {
             const rowNumber = this.rowNum(row);
             const sheet = 'Cotizaciones';
-            const dirigido = str(row, 'dirigido a');
             const servicio = str(row, 'nombre del servicio');
             const montoRaw = str(row, 'monto');
             const monedaRaw = str(row, 'moneda');
             const estadoRaw = str(row, 'estado del proceso');
-            const remitente = str(row, 'remitente');
             const excelLeadId = str(row, 'id de lead');
 
             // Fila residual sin datos de cotización: se omite.
-            if (!excelLeadId && !dirigido && !servicio && !montoRaw) {
+            if (!excelLeadId && !servicio && !montoRaw) {
                 continue;
             }
             if (!excelLeadId) {
@@ -527,27 +538,11 @@ export class ImportPlannerService {
                 });
                 continue;
             }
-            if (!dirigido) {
-                errors.push({
-                    sheet,
-                    row: rowNumber,
-                    message: 'Falta "Dirigido a".',
-                });
-                continue;
-            }
             if (!servicio) {
                 errors.push({
                     sheet,
                     row: rowNumber,
                     message: 'Falta "Nombre del servicio".',
-                });
-                continue;
-            }
-            if (!remitente) {
-                errors.push({
-                    sheet,
-                    row: rowNumber,
-                    message: 'Falta "Remitente".',
                 });
                 continue;
             }
@@ -580,23 +575,29 @@ export class ImportPlannerService {
                 });
                 continue;
             }
+            const fechaCot = dateVal(
+                row,
+                'fecha de cotizacion',
+                this.appTime.timeZone,
+            );
+            if (!fechaCot) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Fecha de cotización" o es inválida (usa formato AAAA-MM-DD).',
+                });
+                continue;
+            }
 
             out.push({
                 rowNumber,
                 excelLeadId,
-                fechaCot: dateVal(
-                    row,
-                    'fecha de cotizacion',
-                    this.appTime.timeZone,
-                ),
-                dirigido,
-                cliente: str(row, 'cliente'),
+                fechaCot,
                 producto: str(row, 'producto'),
                 nombreServicio: servicio,
                 monto,
                 tipo,
                 estado,
-                nombreRemitente: remitente,
                 observacion: str(row, 'observacion'),
                 linkPropuesta: str(row, 'link de propuesta'),
             });
