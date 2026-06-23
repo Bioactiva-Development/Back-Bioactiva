@@ -104,7 +104,7 @@ services:
       sh -c "npx prisma migrate deploy &&
             exec node -r tsconfig-paths/register dist/main"
 
-  bioactiva-backend-prod:
+  bioactiva-backend-prod:   
     profiles: ["testing"]
     build:
       context: .

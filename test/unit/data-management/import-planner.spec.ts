@@ -16,9 +16,17 @@ describe('Importación CRM — reader + planner sobre el archivo de referencia',
         timeZone: 'America/Lima',
     } as unknown as AppTimeConfig);
 
-    (HAS_FIXTURE ? it : it.skip)(
-        'parsea las 4 hojas y construye un plan sin errores inesperados',
-        async () => {
+    // El archivo de referencia no se versiona (contiene datos reales y está en
+    // .gitignore), así que solo existe en entornos locales. En CI se omite el
+    // test de integración en vez de fallar con ENOENT.
+    if (!HAS_FIXTURE) {
+        // eslint-disable-next-line no-console
+        console.warn(
+            `Fixture ausente (${filePath}); se omite el test de integración del importador CRM.`,
+        );
+    }
+
+    (HAS_FIXTURE ? it : it.skip)('parsea las 4 hojas y construye un plan sin errores bloqueantes', async () => {
         const buffer = readFileSync(filePath);
         const workbook = await reader.read(buffer);
         const { plan, validation } = planner.plan(workbook);
