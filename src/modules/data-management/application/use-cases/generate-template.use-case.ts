@@ -58,8 +58,8 @@ export class GenerateTemplateUseCase {
                 col('RUC', {
                     note: 'Opcional. 11 dígitos (ej: 20123456789). Si lo tienes, es la forma más segura de vincular contactos y leads; si no, se vinculan por el nombre de la organización.',
                 }),
-                col('Contacto vigente', {
-                    note: 'Opcional. Informativo.',
+                col('Sub área', {
+                    note: 'Opcional. Área o sub-área específica de la organización.',
                 }),
                 col('Tipo de organización', {
                     required: true,
@@ -72,8 +72,9 @@ export class GenerateTemplateUseCase {
                     note: 'Obligatorio. Elige de la lista.',
                 }),
                 col('Sector', {
+                    required: true,
                     dropdown: Object.values(SECTOR_LABEL),
-                    note: 'Opcional. Elige de la lista. Si no aplica, usa "Otros".',
+                    note: 'Obligatorio. Elige de la lista. Si no aplica, usa "Otros".',
                 }),
                 col('Alianzas'),
                 col('Actividades'),
@@ -91,7 +92,6 @@ export class GenerateTemplateUseCase {
             name: 'Contactos',
             columns: [
                 col('N°', { width: 6, note: 'Opcional: numeración libre.' }),
-                col('Código individual'),
                 col('Vocativo', {
                     dropdown: Object.values(VOCATIVO_LABEL),
                     note: 'Opcional. Elige de la lista.',
@@ -101,18 +101,12 @@ export class GenerateTemplateUseCase {
                     note: 'Obligatorio. Nombres del contacto.',
                 }),
                 col('Apellidos'),
-                col('Nombres y apellidos'),
                 col('Organización abreviado', {
                     note: 'Vincula el contacto a su organización por nombre. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando la organización no tiene RUC.',
                 }),
-                col('Organización extendido'),
                 col('RUC', {
                     note: 'Opcional. Vincula el contacto por RUC si la organización lo tiene; si no, se usa el nombre de la organización. La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
                 }),
-                col('Tamaño de la organización'),
-                col('Tipo de organización'),
-                col('Sector'),
-                col('Ubicación'),
                 col('Correo electrónico 1', {
                     required: true,
                     note: 'Obligatorio. Es la clave única del contacto: si ya existe ese correo, la fila se omite.',
@@ -131,7 +125,6 @@ export class GenerateTemplateUseCase {
             name: 'Leads',
             columns: [
                 col('N°', { width: 6, note: 'Opcional: numeración libre.' }),
-                col('Año'),
                 col('ID Lead', {
                     note: 'Identificador que TÚ asignas a este lead (ej: L-001). Repítelo en la hoja Cotizaciones, columna "ID de lead", para vincular sus cotizaciones.',
                 }),
@@ -141,9 +134,6 @@ export class GenerateTemplateUseCase {
                 col('Organización', {
                     note: 'Nombre de la organización del lead. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando no hay RUC.',
                 }),
-                col('Tipo'),
-                col('Sector'),
-                col('Nombre del contacto'),
                 col('Correo electrónico', {
                     note: 'Opcional. Correo del contacto del lead; debe existir en la hoja Contactos para vincularse.',
                 }),
@@ -171,7 +161,6 @@ export class GenerateTemplateUseCase {
                 col('Fecha de próxima actividad', {
                     note: 'Formato AAAA-MM-DD (ej: 2026-01-20).',
                 }),
-                col('Alerta actividad'),
                 col('Fecha de Cierre', {
                     note: 'Opcional. Formato AAAA-MM-DD (ej: 2026-02-10).',
                 }),
@@ -185,13 +174,10 @@ export class GenerateTemplateUseCase {
             name: 'Cotizaciones',
             columns: [
                 col('N°', { width: 6, note: 'Opcional: numeración libre.' }),
-                col('Año'),
-                col('Mes'),
                 col('ID de lead', {
                     required: true,
                     note: 'Obligatorio. Debe coincidir con un "ID Lead" de la hoja Leads de ESTE mismo archivo. Si no coincide, la cotización se omite.',
                 }),
-                col('# Cotización'),
                 col('Dirigido a', {
                     required: true,
                     note: 'Obligatorio. Persona o área a la que se dirige la cotización.',

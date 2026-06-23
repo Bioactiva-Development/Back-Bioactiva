@@ -210,18 +210,22 @@ export class ImportPlannerService {
                 });
                 continue;
             }
-            let sector: string | null = null;
-            if (sectorRaw) {
-                const resolved = resolveEnum(SECTOR_SYNONYMS, sectorRaw);
-                if (!resolved) {
-                    errors.push({
-                        sheet,
-                        row: rowNumber,
-                        message: `Sector no reconocido: "${sectorRaw}".`,
-                    });
-                    continue;
-                }
-                sector = resolved;
+            if (!sectorRaw) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Sector".',
+                });
+                continue;
+            }
+            const sector = resolveEnum(SECTOR_SYNONYMS, sectorRaw);
+            if (!sector) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: `Sector no reconocido: "${sectorRaw}".`,
+                });
+                continue;
             }
 
             const ruc = digits(str(row, 'ruc'));
@@ -234,6 +238,7 @@ export class ImportPlannerService {
                 tipo,
                 tamano,
                 sector,
+                subArea: str(row, 'sub area'),
                 alianzasEstrategicas: str(row, 'alianzas'),
                 actividadEconomica: str(row, 'actividades'),
                 ubicacion: str(row, 'departamento'),

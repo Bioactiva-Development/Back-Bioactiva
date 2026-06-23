@@ -8,7 +8,8 @@ export interface OrgInput {
     ruc: string | null;
     tipo: string;
     tamano: string;
-    sector: string | null;
+    sector: string;
+    subArea: string | null;
     alianzasEstrategicas: string | null;
     actividadEconomica: string | null;
     ubicacion: string | null;
