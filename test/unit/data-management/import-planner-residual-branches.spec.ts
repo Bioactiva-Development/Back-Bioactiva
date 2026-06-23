@@ -84,6 +84,7 @@ describe('Data management module', () => {
                             __rowNumber: 3,
                             'servicio de interes': 'S',
                             estado: 'nuevo',
+                            organizacion: 'OrgTest',
                             encargado: 'Maria',
                             // string de fecha válido -> dateVal devuelve Date
                             'fecha de creacion': '2024-01-01T00:00:00.000Z',
@@ -161,6 +162,7 @@ describe('Data management module', () => {
                             __rowNumber: 2,
                             'servicio de interes': 'S',
                             estado: 'nuevo',
+                            organizacion: 'OrgTest',
                             encargado: 'Maria',
                             'fecha de creacion': '', // empty -> dateVal null
                         },
@@ -188,6 +190,7 @@ describe('Data management module', () => {
                             __rowNumber: 2,
                             nombre: 'Juan',
                             'correo electronico 1': 'a@x.com',
+                            'organizacion abreviado': 'OrgTest',
                             // sin vocativo -> rama if(vocativoRaw) falsy
                         },
                     ],
