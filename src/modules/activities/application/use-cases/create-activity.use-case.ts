@@ -13,6 +13,11 @@ import { EstadoActividad } from '@/modules/activities/domain/enums/estado-activi
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
 import { PendingActivityExistsException } from '@/modules/activities/domain/exceptions/pending-activity-exists.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import {
+    exactTimeInZone,
+    startOfCurrentDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 export class CreateActivityUseCase {
     constructor(
@@ -20,13 +25,14 @@ export class CreateActivityUseCase {
         private readonly activityRepository: ActivityRepository,
         @Inject(LEAD_REPOSITORY)
         private readonly leadRepository: LeadRepository,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     async execute(dto: CreateActivityDto) {
         const lead = await this.leadRepository.findById(dto.idLead);
         if (!lead) {
             throw new ActivityNotFoundException(
-                `Lead con id ${dto.idLead} no encontrado`,
+                'El lead no fue encontrado',
             );
         }
 
@@ -37,8 +43,13 @@ export class CreateActivityUseCase {
 
         // Mantis #441: una actividad pendiente no puede programarse en el pasado.
         // Se permite la fecha actual (cualquier hora de hoy) o una fecha futura.
-        const inicioDelDia = new Date();
-        inicioDelDia.setHours(0, 0, 0, 0);
+        // El "inicio de hoy" se calcula en la zona de negocio (APP_TIMEZONE), no
+        // en la del proceso (UTC): si no, entre las 19:00 y medianoche en Lima la
+        // validación se correría al día siguiente.
+        const inicioDelDia = startOfCurrentDayInZone(
+            new Date(),
+            this.appTime.timeZone,
+        );
         if (dto.fechaInicio < inicioDelDia) {
             throw new InvalidActivityDateException(
                 'La fecha de la actividad no puede ser anterior a la fecha actual',
@@ -51,12 +62,19 @@ export class CreateActivityUseCase {
             );
         }
 
+        const ahora = exactTimeInZone(new Date(), this.appTime.timeZone);
+        if (dto.fechaFin < ahora) {
+            throw new InvalidActivityDateException(
+                'La fecha de fin de la actividad no puede ser anterior al momento actual',
+            );
+        }
+
         const pending = await this.activityRepository.findPendingByLead(
             dto.idLead,
         );
         if (pending) {
             throw new PendingActivityExistsException(
-                `El lead ${dto.idLead} ya tiene una actividad pendiente`,
+                'El lead ya tiene una actividad pendiente',
             );
         }
 

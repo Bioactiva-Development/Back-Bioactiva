@@ -15,7 +15,7 @@ export class DeleteCotizacionUseCase {
         const cotizacion = await this.cotizacionRepository.findById(id);
         if (!cotizacion) {
             throw new CotizacionNotFoundException(
-                `Cotización con id ${id} no encontrada`,
+                'La cotización no fue encontrada',
             );
         }
 

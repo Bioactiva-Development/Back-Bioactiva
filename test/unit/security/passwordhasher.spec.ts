@@ -1,14 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-jest.mock(
-    'bcryptjs',
-    () => ({
-        __esModule: true,
-        hash: jest.fn(),
-        compare: jest.fn(),
-    }),
-    { virtual: true },
-);
+jest.mock('bcryptjs', () => ({
+    hash: jest.fn(),
+    compare: jest.fn(),
+}));
 
 import { BcryptPasswordHasher } from '@/modules/auth/infrastructure/hash/bcrypt-password-hasher';
 

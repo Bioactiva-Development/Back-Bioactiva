@@ -5,6 +5,7 @@ import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { EstadoActividad } from '@/modules/activities/domain/enums/estado-actividad';
 import { TipoActividad } from '@/modules/activities/domain/enums/tipo-actividad';
 import { ActivityCalendarEventAlreadyExistsException } from '@/modules/activities/domain/exceptions/activity-calendar-event-exists.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 /**
  * Branch coverage extra:
@@ -79,12 +80,14 @@ describe('Activities module — branches2', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
+            const appTime = { timeZone: 'America/Lima' } as AppTimeConfig;
             calendarSync = {
                 updateCalendarEvent: jest.fn(),
             };
             useCase = new UpdateActivityUseCase(
                 activityRepository,
                 calendarSync,
+                appTime,
             );
         });
 

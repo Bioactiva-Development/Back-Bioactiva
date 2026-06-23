@@ -13,6 +13,7 @@ import {
     type ActivityContextReaderPort,
 } from '@/modules/notifications/domain/ports/activity-context-reader.port';
 import { NotificationStatus } from '@/modules/notifications/domain/enums/notification-status';
+import { renderNotificationInternalEmail } from '@/modules/common/mail/notification-internal-email.renderer';
 
 export class SendInternalEmailUseCase {
     private readonly logger = new Logger(SendInternalEmailUseCase.name);
@@ -57,21 +58,19 @@ export class SendInternalEmailUseCase {
             return;
         }
 
+        const leadLink = `${process.env.FRONTEND_URL}/leads/${notification.id_lead}?tab=actividades`;
+
         await this.mailer.send({
             to: email,
             subject: notification.asunto_interno,
-            html: this.withLeadLink(
-                notification.cuerpo_interno,
-                notification.id_lead,
-            ),
+            html: renderNotificationInternalEmail({
+                subject: notification.asunto_interno,
+                bodyHtml: notification.cuerpo_interno,
+                leadLink,
+            }),
         });
 
         notification.markInternalSent();
         await this.notificationRepository.save(notification);
-    }
-
-    private withLeadLink(body: string, idLead: number): string {
-        const link = `${process.env.FRONTEND_URL}/leads/${idLead}?tab=actividades`;
-        return `${body}<p><a href="${link}">Ver actividad del lead</a></p>`;
     }
 }

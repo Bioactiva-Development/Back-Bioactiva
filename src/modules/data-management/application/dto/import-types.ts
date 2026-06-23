@@ -8,7 +8,8 @@ export interface OrgInput {
     ruc: string | null;
     tipo: string;
     tamano: string;
-    sector: string | null;
+    sector: string;
+    subArea: string | null;
     alianzasEstrategicas: string | null;
     actividadEconomica: string | null;
     ubicacion: string | null;
@@ -52,22 +53,27 @@ export interface LeadInput {
     contactoCorreo: string | null;
     encargadoNombre: string | null;
     actividad: ActividadInput | null;
+    /**
+     * Bandera interna (nunca viene del Excel): si es `true`, el repositorio
+     * crea una cotización provisional PENDIENTE al persistir este lead.
+     * Se activa para leads OFERTADO sin cotización en el mismo archivo.
+     */
+    autoCreateCotizacion?: boolean;
 }
 
 export interface CotizacionInput {
     rowNumber: number;
     excelLeadId: string | null;
-    fechaCot: Date | null;
-    dirigido: string;
-    cliente: string | null;
+    /** Obligatoria desde la plantilla. */
+    fechaCot: Date;
     producto: string | null;
     nombreServicio: string;
     monto: string;
     tipo: string;
     estado: string;
-    nombreRemitente: string;
     observacion: string | null;
     linkPropuesta: string | null;
+    // cliente, dirigido y nombreRemitente se derivan del lead en el repositorio.
 }
 
 export interface ImportPlan {

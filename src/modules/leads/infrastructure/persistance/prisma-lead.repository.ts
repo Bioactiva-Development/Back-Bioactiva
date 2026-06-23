@@ -10,6 +10,7 @@ import {
     EstadoActividad as PrismaEstadoActividad,
     LeadState as PrismaLeadState,
     Sector as PrismaSector,
+    TipoEmpresa as PrismaTipoEmpresa,
     Prisma,
 } from '@prisma/client';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
@@ -189,13 +190,17 @@ export class PrismaLeadRepository implements LeadRepository {
                 mode: 'insensitive',
             };
         }
-        if (params?.sector) {
-            // Se mantiene el filtro de soft-delete de la organización y se le
-            // suma el filtro por sector.
-            where.organizacion = {
+        if (params?.sector || params?.tipo) {
+            const orgFilter: Prisma.OrganizacionWhereInput = {
                 deletedAt: null,
-                sector: params.sector as PrismaSector,
             };
+            if (params?.sector) {
+                orgFilter.sector = params.sector as PrismaSector;
+            }
+            if (params?.tipo) {
+                orgFilter.tipo = params.tipo as PrismaTipoEmpresa;
+            }
+            where.organizacion = orgFilter;
         }
         if (params?.fechaDesde || params?.fechaHasta) {
             const createdAt: Prisma.DateTimeFilter = {};

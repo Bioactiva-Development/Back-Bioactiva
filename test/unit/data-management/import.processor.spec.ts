@@ -6,10 +6,12 @@ describe('Data management module', () => {
     describe('ImportProcessor', () => {
         let processor: ImportProcessor;
         let commitImport: any;
+        let inAppRepo: any;
 
         beforeEach(() => {
             commitImport = { execute: jest.fn() };
-            processor = new ImportProcessor(commitImport);
+            inAppRepo = { create: jest.fn().mockResolvedValue(undefined) };
+            processor = new ImportProcessor(commitImport, inAppRepo);
         });
 
         const job = (over: Partial<any> = {}): any => ({
@@ -45,7 +47,7 @@ describe('Data management module', () => {
         it('handles a summary with no inserted counts', async () => {
             commitImport.execute.mockResolvedValue({
                 valid: false,
-                validation: {} as any,
+                validation: { errors: [] } as any,
                 summary: null,
             });
 
@@ -53,7 +55,7 @@ describe('Data management module', () => {
 
             expect(out).toEqual({
                 valid: false,
-                validation: {},
+                validation: { errors: [] },
                 summary: null,
             });
         });

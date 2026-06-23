@@ -14,7 +14,7 @@ export class DeleteLeadUseCase {
     async execute(id: number) {
         const lead = await this.leadRepository.findById(id);
         if (!lead) {
-            throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
+            throw new LeadNotFoundException('El lead no fue encontrado');
         }
 
         lead.markAsDeleted();

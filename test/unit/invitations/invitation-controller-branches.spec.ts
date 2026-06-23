@@ -58,7 +58,7 @@ describe('InvitationController (branches)', () => {
     });
 
     it('listInvitations forwards all filters when present', async () => {
-        listInvitationsUseCase.execute.mockResolvedValue([]);
+        listInvitationsUseCase.execute.mockResolvedValue({ data: [], total: 0 });
 
         await controller.listInvitations(
             mockUser,
@@ -77,13 +77,13 @@ describe('InvitationController (branches)', () => {
     });
 
     it('listInvitations forwards undefined filters when all are omitted', async () => {
-        listInvitationsUseCase.execute.mockResolvedValue([]);
+        listInvitationsUseCase.execute.mockResolvedValue({ data: [], total: 0 });
 
         await controller.listInvitations(mockUser);
 
         expect(listInvitationsUseCase.execute).toHaveBeenCalledWith(
-            undefined,
-            undefined,
+            1,
+            10,
             undefined,
             undefined,
         );

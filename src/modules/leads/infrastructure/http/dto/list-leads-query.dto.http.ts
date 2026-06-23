@@ -13,6 +13,7 @@ import { Transform, Type } from 'class-transformer';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
+import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { IsAfterOrEqualDate } from '@/shared/infrastructure/validators/is-after-or-equal-date.validator';
 
 export class ListLeadsQueryDto {
@@ -59,6 +60,15 @@ export class ListLeadsQueryDto {
     @IsOptional()
     @IsEnum(Sector)
     sector?: Sector;
+
+    @ApiPropertyOptional({
+        enum: EnterpriseType,
+        description: 'Filtrar por tipo de organización del lead',
+        example: 'EMPRESA_NACIONAL',
+    })
+    @IsOptional()
+    @IsEnum(EnterpriseType)
+    tipo?: EnterpriseType;
 
     @ApiPropertyOptional({
         description: 'Filtrar por fecha de creación desde (ISO 8601)',

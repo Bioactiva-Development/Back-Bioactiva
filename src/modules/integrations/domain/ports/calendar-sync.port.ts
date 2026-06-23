@@ -10,6 +10,8 @@ export interface CalendarEventInput {
     start: Date;
     end: Date;
     body?: string | null;
+    /** Zona IANA en la que se interpretan `start` y `end`. Por defecto 'UTC'. */
+    timeZone?: string;
 }
 
 export interface CalendarSyncResult {

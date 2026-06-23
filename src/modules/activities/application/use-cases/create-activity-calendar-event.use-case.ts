@@ -13,6 +13,7 @@ import { ActivityNotFoundException } from '@/modules/activities/domain/exception
 import { ActivityNotMeetingException } from '@/modules/activities/domain/exceptions/activity-not-meeting.exception';
 import { ActivityCalendarEventAlreadyExistsException } from '@/modules/activities/domain/exceptions/activity-calendar-event-exists.exception';
 import { ResponsibleNotConnectedException } from '@/modules/activities/domain/exceptions/responsible-not-connected.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 /**
  * CU007 (Calendario, pasos 83-90): crea bajo demanda el evento en Outlook y la
@@ -26,13 +27,14 @@ export class CreateActivityCalendarEventUseCase {
         private readonly activityRepository: ActivityRepository,
         @Inject(CALENDAR_SYNC)
         private readonly calendarSync: CalendarSyncPort,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     async execute(id: number): Promise<ActivityWithRelations> {
         const activity = await this.activityRepository.findById(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
 
@@ -42,7 +44,7 @@ export class CreateActivityCalendarEventUseCase {
 
         if (activity.outlook_event_id) {
             throw new ActivityCalendarEventAlreadyExistsException(
-                `La actividad ${id} ya tiene un evento de calendario asociado`,
+                'La actividad ya tiene un evento de calendario asociado',
             );
         }
 
@@ -60,6 +62,7 @@ export class CreateActivityCalendarEventUseCase {
                 start: activity.fecha_inicio,
                 end: activity.fecha_fin,
                 body: activity.notas,
+                timeZone: this.appTime.timeZone,
             },
             { onlineMeeting: true },
         );

@@ -11,6 +11,7 @@ import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/confi
 import { MicrosoftOAuthFailedException } from '@/modules/integrations/domain/exceptions/microsoft-oauth-failed.exception';
 import { MicrosoftRefreshTokenInvalidException } from '@/modules/integrations/domain/exceptions/microsoft-refresh-token-invalid.exception';
 import { MicrosoftGraphRequestException } from '@/modules/integrations/domain/exceptions/microsoft-graph-request.exception';
+import { toLocalISOString } from '@/shared/infrastructure/datetime/range-in-zone';
 
 @Injectable()
 export class MicrosoftGraphProvider implements MicrosoftProviderPort {
@@ -222,6 +223,9 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
         event: GraphEventData,
         onlineMeeting: boolean,
     ): Record<string, unknown> {
+        const tz = event.timeZone ?? 'UTC';
+        const format = (d: Date) =>
+            tz === 'UTC' ? d.toISOString() : toLocalISOString(d, tz);
         return {
             subject: event.subject,
             body: {
@@ -229,12 +233,12 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 content: event.body ?? '',
             },
             start: {
-                dateTime: event.start.toISOString(),
-                timeZone: 'UTC',
+                dateTime: format(event.start),
+                timeZone: tz,
             },
             end: {
-                dateTime: event.end.toISOString(),
-                timeZone: 'UTC',
+                dateTime: format(event.end),
+                timeZone: tz,
             },
             ...(onlineMeeting
                 ? {

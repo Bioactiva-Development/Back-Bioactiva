@@ -36,7 +36,7 @@ export class CreateCotizacionUseCase {
             await this.leadRepository.findByIdWithRelations(dto.idLead);
         if (!leadWithRelations) {
             throw new LeadNotFoundException(
-                `Lead con id ${dto.idLead} no encontrado`,
+                'El lead no fue encontrado',
             );
         }
         const { lead, organizationName, contactName } = leadWithRelations;
@@ -44,7 +44,7 @@ export class CreateCotizacionUseCase {
         const remitente = await this.userRepository.findById(dto.idRemitente);
         if (!remitente) {
             throw new UserNotFoundException(
-                `Remitente con id ${dto.idRemitente} no encontrado`,
+                'El remitente no fue encontrado',
             );
         }
 
@@ -56,7 +56,7 @@ export class CreateCotizacionUseCase {
         });
         if (existing > 0) {
             throw new CotizacionConflictException(
-                `El lead ${dto.idLead} ya tiene una cotización`,
+                'El lead ya tiene una cotización',
             );
         }
 
@@ -72,7 +72,7 @@ export class CreateCotizacionUseCase {
             );
             if (hasPending) {
                 throw new LeadHasPendingActivitiesException(
-                    `No se puede crear la cotización porque el lead ${dto.idLead} tiene actividades pendientes`,
+                    'El lead tiene actividades pendientes',
                 );
             }
         }

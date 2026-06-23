@@ -9,6 +9,7 @@ import { SendCotizacionUseCase } from '@/modules/quotations/application/use-case
 import { AcceptCotizacionUseCase } from '@/modules/quotations/application/use-cases/accept-cotizacion.use-case';
 import { RejectCotizacionUseCase } from '@/modules/quotations/application/use-cases/reject-cotizacion.use-case';
 import { DeleteCotizacionUseCase } from '@/modules/quotations/application/use-cases/delete-cotizacion.use-case';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('CotizacionController (optional-field branches)', () => {
     let controller: CotizacionController;
@@ -64,6 +65,10 @@ describe('CotizacionController (optional-field branches)', () => {
                 { provide: AcceptCotizacionUseCase, useValue: mocks.accept },
                 { provide: RejectCotizacionUseCase, useValue: mocks.reject },
                 { provide: DeleteCotizacionUseCase, useValue: mocks.del },
+                {
+                    provide: AppTimeConfig,
+                    useValue: { timeZone: 'America/Lima' },
+                },
             ],
         }).compile();
 

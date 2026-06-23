@@ -19,6 +19,12 @@ export interface SheetColumn {
      * el usuario puede escribir equivalentes que el importador igual reconoce.
      */
     dropdown?: string[];
+    /**
+     * Fórmula Excel para la validación de lista (alternativa a `dropdown`).
+     * Se usa para referenciar rangos de otras hojas, p. ej.
+     * `Organizaciones!$B$2:$B$301`. Mutuamente excluyente con `dropdown`.
+     */
+    dropdownFormula?: string;
 }
 
 /** Definición de una hoja: nombre, columnas y filas (objetos planos por `key`). */

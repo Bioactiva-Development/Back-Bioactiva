@@ -273,6 +273,17 @@ export class PrismaCrmReadRepository implements ICrmReadRepository {
         });
     }
 
+    async findActiveUsers(): Promise<string[]> {
+        const users = await this.prisma.usuario.findMany({
+            where: { estado: 'ACTIVO' },
+            select: { nombres: true, apellidos: true },
+            orderBy: { nombres: 'asc' },
+        });
+        return users.map((u) =>
+            [u.nombres, u.apellidos].filter(Boolean).join(' ').trim(),
+        );
+    }
+
     async findCotizaciones(opts?: {
         filters?: CotizacionExportFilters;
     }): Promise<CotizacionExportRow[]> {

@@ -194,7 +194,7 @@ model Organizacion {
   tipo                TipoEmpresa
   linkedin            String?  @db.VarChar(255)
   ubicacion           String?  @db.VarChar(100)
-  sector              Sector?
+  sector              Sector
   tamano              Tamano
   actividadEconomica  String?  @db.VarChar(120)
   alianzasEstrategicas String? @db.VarChar(300)

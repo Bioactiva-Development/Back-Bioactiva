@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Restablecer Contraseña - Bioactiva</title>
+		<title>{{subject}} - Bioactiva</title>
 		<style>
 			:root {
 				color-scheme: light;
@@ -58,18 +58,10 @@
 
 			.title {
 				margin: 0;
-				font-size: 34px;
-				line-height: 1.08;
+				font-size: 28px;
+				line-height: 1.15;
 				letter-spacing: -0.02em;
 				font-weight: 800;
-			}
-
-			.subtitle {
-				margin: 14px 0 0;
-				max-width: 520px;
-				font-size: 16px;
-				line-height: 1.7;
-				color: rgba(255, 255, 255, 0.9);
 			}
 
 			.content {
@@ -84,55 +76,33 @@
 				box-shadow: 0 10px 30px rgba(0, 33, 9, 0.04);
 			}
 
-			.intro {
-				margin: 0 0 18px;
-				font-size: 16px;
-				line-height: 1.75;
-				color: #1b1c1c;
-			}
-
 			.chip-row {
-				margin: 20px 0 26px;
+				margin: 0 0 24px;
 			}
 
 			.chip {
 				display: inline-block;
 				padding: 10px 14px;
 				border-radius: 12px;
-				background: #fae8e8;
-				color: #c53030;
+				background: #d8eadc;
+				color: #09612a;
 				font-size: 13px;
 				font-weight: 700;
 			}
 
-			.meta-grid {
+			.body-content {
 				margin: 0 0 28px;
-				display: grid;
-				grid-template-columns: repeat(2, minmax(0, 1fr));
-				gap: 14px;
-			}
-
-			.meta {
-				padding: 16px 18px;
-				border-radius: 16px;
-				background: #fbf9f9;
-			}
-
-			.meta-label {
-				display: block;
-				margin-bottom: 6px;
-				font-size: 12px;
-				letter-spacing: 0.14em;
-				text-transform: uppercase;
-				color: #5d655e;
-			}
-
-			.meta-value {
-				display: block;
 				font-size: 15px;
-				font-weight: 700;
+				line-height: 1.75;
 				color: #1b1c1c;
-				word-break: break-word;
+			}
+
+			.body-content p {
+				margin: 0 0 12px;
+			}
+
+			.body-content p:last-child {
+				margin-bottom: 0;
 			}
 
 			.cta {
@@ -148,10 +118,20 @@
 			}
 
 			.cta-note {
-				margin: 14px 0 0;
+				margin: 16px 0 0;
 				font-size: 13px;
 				line-height: 1.6;
 				color: #5d655e;
+			}
+
+			.raw-link {
+				display: block;
+				margin-top: 6px;
+				word-break: break-all;
+				color: #09612a;
+				text-decoration: none;
+				font-weight: 700;
+				font-size: 13px;
 			}
 
 			.footer {
@@ -159,21 +139,11 @@
 				background: #f5f3f3;
 			}
 
-			.divider-space {
-				height: 18px;
-			}
-
 			.footer-copy {
 				margin: 0;
 				font-size: 12px;
 				line-height: 1.7;
 				color: #5a605b;
-			}
-
-			.link {
-				color: #09612a;
-				text-decoration: none;
-				font-weight: 700;
 			}
 
 			@media (max-width: 640px) {
@@ -193,11 +163,7 @@
 				}
 
 				.title {
-					font-size: 28px;
-				}
-
-				.meta-grid {
-					grid-template-columns: 1fr;
+					font-size: 22px;
 				}
 			}
 		</style>
@@ -207,46 +173,22 @@
 			<div class="card">
 				<div class="hero">
 					<span class="eyebrow">Bioactiva Platform</span>
-					<h1 class="title">Restablecer tu contraseña</h1>
-					<p class="subtitle">
-						Hemos recibido una solicitud para restablecer la contraseña de acceso a tu cuenta en Bioactiva.
-					</p>
+					<h1 class="title">{{subject}}</h1>
 				</div>
 
 				<div class="content">
 					<div class="surface">
-						<p class="intro">
-							Para garantizar la seguridad de tu información científica y operativa, utiliza el siguiente enlace para establecer una nueva contraseña de acceso.
-						</p>
-
 						<div class="chip-row">
-							<span class="chip">Enlace válido por 2 horas</span>
+							<span class="chip">Aviso de actividad</span>
 						</div>
 
-						<div class="meta-grid">
-							<div class="meta">
-								<span class="meta-label">Usuario</span>
-								<span class="meta-value">{{recipientEmail}}</span>
-							</div>
-
-							<div class="meta">
-								<span class="meta-label">Acción</span>
-								<span class="meta-value">Restablecer Contraseña</span>
-							</div>
-
-							<div class="meta">
-								<span class="meta-label">Vencimiento</span>
-								<span class="meta-value">2 horas</span>
-							</div>
-
-							<div class="meta">
-								<span class="meta-label">Entorno</span>
-								<span class="meta-value">Seguro SSL</span>
-							</div>
+						<div class="body-content">
+							{{bodyHtml}}
 						</div>
+
 						<a
 							class="cta"
-							href="{{resetLink}}"
+							href="{{leadLink}}"
 							target="_blank"
 							rel="noreferrer"
 							style="
@@ -262,33 +204,34 @@
 								-webkit-text-fill-color: #ffffff;
 							"
 						>
-							Restablecer Contraseña
+							Ver actividad del lead
 						</a>
 
 						<p class="cta-note">
 							Si el botón no funciona, copia y pega este enlace en tu navegador:
 							<br />
 							<a
-								class="link"
-								href="{{resetLink}}"
+								class="raw-link"
+								href="{{leadLink}}"
 								target="_blank"
 								rel="noreferrer"
 								style="
 									color: #09612a !important;
 									text-decoration: none !important;
 									font-weight: 700;
+									word-break: break-all;
 									-webkit-text-fill-color: #09612a;
 								"
-							>{{resetLink}}</a>
+							>{{leadLink}}</a>
 						</p>
 					</div>
 				</div>
 
 				<div class="footer">
 					<p class="footer-copy">
-						Este correo electrónico fue generado automáticamente por Bioactiva. Si tú no realizaste esta solicitud, puedes ignorar este mensaje de forma segura; tu contraseña actual permanecerá activa.
+						Este mensaje fue generado automáticamente por Bioactiva. Si recibiste
+						este correo por error, puedes ignorarlo.
 					</p>
-					<div class="divider-space"></div>
 				</div>
 			</div>
 		</div>
