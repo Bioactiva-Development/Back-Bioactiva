@@ -13,5 +13,6 @@ export class ListLeadsDto {
         public readonly fechaHasta?: Date,
         public readonly sector?: string,
         public readonly conActividadesPendientes?: boolean,
+        public readonly tipo?: string,
     ) {}
 }

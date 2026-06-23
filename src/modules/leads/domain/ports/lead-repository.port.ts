@@ -19,6 +19,8 @@ export interface ListLeadsParams {
     search?: string;
     /** Sector de la organización del lead (valor del enum Sector). */
     sector?: string;
+    /** Tipo de organización del lead (valor del enum EnterpriseType). */
+    tipo?: string;
     /** Rango sobre la fecha de creación del lead (createdAt). */
     fechaDesde?: Date;
     fechaHasta?: Date;
