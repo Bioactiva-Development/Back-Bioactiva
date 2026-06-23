@@ -253,6 +253,33 @@ export class ImportPlannerService {
         return out;
     }
 
+    private validateTelefono(
+        telefonoRaw: string | null,
+        sheet: string,
+        rowNumber: number,
+        errors: RowIssue[],
+    ): boolean {
+        if (telefonoRaw === null) return true;
+        const stripped = telefonoRaw.replaceAll(/[\s\-().]/g, '');
+        if (!/^\+\d{7,15}$/.test(stripped)) {
+            errors.push({
+                sheet,
+                row: rowNumber,
+                message: `Teléfono inválido: "${telefonoRaw}". Debe iniciar con + y código de país (ej: +51987654321).`,
+            });
+            return false;
+        }
+        return true;
+    }
+
+    private isEmptyCotizacionRow(
+        excelLeadId: string | null,
+        servicio: string | null,
+        montoRaw: string | null,
+    ): boolean {
+        return !excelLeadId && !servicio && !montoRaw;
+    }
+
     private resolveVocativo(
         raw: string | null,
         sheet: string,
@@ -336,16 +363,8 @@ export class ImportPlannerService {
                 continue;
             }
             const telefonoRaw = str(row, 'telefono');
-            if (telefonoRaw !== null) {
-                const stripped = telefonoRaw.replaceAll(/[\s\-().]/g, '');
-                if (!/^\+\d{7,15}$/.test(stripped)) {
-                    errors.push({
-                        sheet,
-                        row: rowNumber,
-                        message: `Teléfono inválido: "${telefonoRaw}". Debe iniciar con + y código de país (ej: +51987654321).`,
-                    });
-                    continue;
-                }
+            if (!this.validateTelefono(telefonoRaw, sheet, rowNumber, errors)) {
+                continue;
             }
             out.push({
                 rowNumber,
@@ -580,7 +599,7 @@ export class ImportPlannerService {
             const excelLeadId = str(row, 'id de lead');
 
             // Fila residual sin datos de cotización: se omite.
-            if (!excelLeadId && !servicio && !montoRaw) {
+            if (this.isEmptyCotizacionRow(excelLeadId, servicio, montoRaw)) {
                 continue;
             }
             if (!excelLeadId) {
