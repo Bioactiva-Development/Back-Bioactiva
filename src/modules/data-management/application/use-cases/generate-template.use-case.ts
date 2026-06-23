@@ -102,7 +102,8 @@ export class GenerateTemplateUseCase {
                 }),
                 col('Apellidos'),
                 col('Organización abreviado', {
-                    note: 'Vincula el contacto a su organización por nombre. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando la organización no tiene RUC.',
+                    dropdownFormula: 'Organizaciones!$B$2:$B$301',
+                    note: 'Selecciona de la lista (se autocompleta con lo que hayas llenado en la hoja Organizaciones). También puedes escribir el nombre comercial o la razón social directamente.',
                 }),
                 col('RUC', {
                     note: 'Opcional. Vincula el contacto por RUC si la organización lo tiene; si no, se usa el nombre de la organización. La organización debe estar en la hoja Organizaciones o ya existir en el CRM.',
@@ -132,7 +133,8 @@ export class GenerateTemplateUseCase {
                     note: 'Opcional. RUC de la organización del lead (ej: 20123456789). Sirve para vincularlo con la hoja Organizaciones. Si no hay RUC, el vínculo se hace por la columna "Organización".',
                 }),
                 col('Organización', {
-                    note: 'Nombre de la organización del lead. Debe coincidir con "Organización" (nombre comercial) o con "Nombre completo" (razón social) de la hoja Organizaciones. Es la forma de vincular cuando no hay RUC.',
+                    dropdownFormula: 'Organizaciones!$B$2:$B$301',
+                    note: 'Selecciona de la lista (se autocompleta con lo que hayas llenado en la hoja Organizaciones). También puedes escribir el nombre comercial o la razón social directamente.',
                 }),
                 col('Correo electrónico', {
                     note: 'Opcional. Correo del contacto del lead; debe existir en la hoja Contactos para vincularse.',
