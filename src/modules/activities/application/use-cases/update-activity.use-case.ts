@@ -11,6 +11,7 @@ import {
 import { UpdateActivityDto } from '@/modules/activities/application/dto/update-activity.dto';
 import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 export class UpdateActivityUseCase {
     private readonly logger = new Logger(UpdateActivityUseCase.name);
@@ -20,6 +21,7 @@ export class UpdateActivityUseCase {
         private readonly activityRepository: ActivityRepository,
         @Inject(CALENDAR_SYNC)
         private readonly calendarSync: CalendarSyncPort,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     async execute(id: number, dto: UpdateActivityDto) {
@@ -74,6 +76,7 @@ export class UpdateActivityUseCase {
                     start: activity.fecha_inicio,
                     end: activity.fecha_fin,
                     body: activity.notas,
+                    timeZone: this.appTime.timeZone,
                 },
             );
         } catch (error) {

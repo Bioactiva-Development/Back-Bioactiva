@@ -150,3 +150,25 @@ export function exactTimeInZone(instant: Date, timeZone: string): Date {
         timeZone,
     );
 }
+
+/**
+ * Retorna la representación ISO del instante en la zona horaria indicada,
+ * sin sufijo de zona. Ej.: `2026-06-23T17:00:00` para las 5pm en Lima.
+ * Se usa para enviar a APIs externas (Microsoft Graph) que esperan la hora
+ * civil local acompañada de un campo `timeZone` separado.
+ */
+export function toLocalISOString(date: Date, timeZone: string): string {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    }).formatToParts(date);
+    const get = (t: string): string =>
+        parts.find((p) => p.type === t)?.value ?? '';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`;
+}

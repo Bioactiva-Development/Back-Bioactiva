@@ -7,6 +7,7 @@ import { ActivityNotFoundException } from '@/modules/activities/domain/exception
 import { ActivityNotMeetingException } from '@/modules/activities/domain/exceptions/activity-not-meeting.exception';
 import { ActivityCalendarEventAlreadyExistsException } from '@/modules/activities/domain/exceptions/activity-calendar-event-exists.exception';
 import { ResponsibleNotConnectedException } from '@/modules/activities/domain/exceptions/responsible-not-connected.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('Activities module', () => {
     describe('CreateActivityCalendarEventUseCase', () => {
@@ -42,6 +43,7 @@ describe('Activities module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
+            const appTime = { timeZone: 'America/Lima' } as AppTimeConfig;
             calendarSync = {
                 isUserConnected: jest.fn(),
                 createCalendarEvent: jest.fn(),
@@ -49,6 +51,7 @@ describe('Activities module', () => {
             useCase = new CreateActivityCalendarEventUseCase(
                 activityRepository,
                 calendarSync,
+                appTime,
             );
         });
 

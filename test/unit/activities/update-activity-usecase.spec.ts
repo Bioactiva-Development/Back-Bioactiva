@@ -6,6 +6,7 @@ import { EstadoActividad } from '@/modules/activities/domain/enums/estado-activi
 import { TipoActividad } from '@/modules/activities/domain/enums/tipo-actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 /**
  * UpdateActivityUseCase
@@ -49,6 +50,7 @@ describe('Activities module', () => {
                 findById: jest.fn(),
                 saveWithRelations: jest.fn(),
             };
+            const appTime = { timeZone: 'America/Lima' } as AppTimeConfig;
             calendarSync = {
                 isUserConnected: jest.fn(),
                 createCalendarEvent: jest.fn(),
@@ -59,6 +61,7 @@ describe('Activities module', () => {
             useCase = new UpdateActivityUseCase(
                 activityRepository,
                 calendarSync,
+                appTime,
             );
         });
 
