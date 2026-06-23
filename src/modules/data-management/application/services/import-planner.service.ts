@@ -121,6 +121,8 @@ export class ImportPlannerService {
         const leads = this.planLeads(leadSheet, errors, warnings);
         const cotizaciones = this.planCotizaciones(cotSheet, errors);
 
+        this.crossValidateLeadsCotizaciones(leads, cotizaciones, errors, warnings);
+
         const plan: ImportPlan = {
             organizaciones,
             contactos,
@@ -394,6 +396,107 @@ export class ImportPlannerService {
             });
         }
         return out;
+    }
+
+    /**
+     * Valida las reglas de negocio que relacionan el estado de un lead con
+     * sus cotizaciones. Muta `lead.autoCreateCotizacion` cuando corresponde.
+     */
+    private crossValidateLeadsCotizaciones(
+        leads: LeadInput[],
+        cotizaciones: CotizacionInput[],
+        errors: RowIssue[],
+        warnings: RowIssue[],
+    ): void {
+        const cotByLeadId = new Map<string, CotizacionInput[]>();
+        for (const cot of cotizaciones) {
+            if (cot.excelLeadId) {
+                const key = String(cot.excelLeadId).trim();
+                if (!cotByLeadId.has(key)) {
+                    cotByLeadId.set(key, []);
+                }
+                cotByLeadId.get(key)!.push(cot);
+            }
+        }
+
+        for (const lead of leads) {
+            const leadKey = lead.excelLeadId
+                ? String(lead.excelLeadId).trim()
+                : null;
+            const cots = leadKey ? (cotByLeadId.get(leadKey) ?? []) : [];
+            const sheet = 'Leads';
+
+            switch (lead.estado) {
+                case 'EN_PROSPECTO':
+                    if (cots.length > 0) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en EN_PROSPECTO no puede tener cotizaciones (encontradas: ${cots.length}).`,
+                        });
+                    }
+                    break;
+
+                case 'OFERTADO':
+                    if (cots.length > 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en OFERTADO solo puede tener 1 cotización (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots.length === 1) {
+                        const est = cots[0].estado;
+                        if (!['PENDIENTE', 'ENVIADA'].includes(est)) {
+                            errors.push({
+                                sheet,
+                                row: lead.rowNumber,
+                                message: `Lead en OFERTADO: la cotización debe estar en PENDIENTE o ENVIADA (estado actual: "${est}").`,
+                            });
+                        }
+                    } else {
+                        lead.autoCreateCotizacion = true;
+                        warnings.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message:
+                                'Lead OFERTADO sin cotización: se creará automáticamente una provisional en estado PENDIENTE.',
+                        });
+                    }
+                    break;
+
+                case 'CIERRE_CON_VENTA':
+                    if (cots.length !== 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_CON_VENTA debe tener exactamente 1 cotización en ACEPTADA (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots[0].estado !== 'ACEPTADA') {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_CON_VENTA: la cotización debe estar en ACEPTADA (estado actual: "${cots[0].estado}").`,
+                        });
+                    }
+                    break;
+
+                case 'CIERRE_SIN_VENTA':
+                    if (cots.length !== 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_SIN_VENTA debe tener exactamente 1 cotización en RECHAZADA (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots[0].estado !== 'RECHAZADA') {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_SIN_VENTA: la cotización debe estar en RECHAZADA (estado actual: "${cots[0].estado}").`,
+                        });
+                    }
+                    break;
+            }
+        }
     }
 
     private planCotizaciones(

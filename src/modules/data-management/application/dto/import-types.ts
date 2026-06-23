@@ -53,6 +53,12 @@ export interface LeadInput {
     contactoCorreo: string | null;
     encargadoNombre: string | null;
     actividad: ActividadInput | null;
+    /**
+     * Bandera interna (nunca viene del Excel): si es `true`, el repositorio
+     * crea una cotización provisional PENDIENTE al persistir este lead.
+     * Se activa para leads OFERTADO sin cotización en el mismo archivo.
+     */
+    autoCreateCotizacion?: boolean;
 }
 
 export interface CotizacionInput {

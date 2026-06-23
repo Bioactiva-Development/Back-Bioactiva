@@ -296,6 +296,33 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         });
                         summary.inserted.actividades++;
                     }
+
+                    if (l.autoCreateCotizacion) {
+                        const encargado = users.find(
+                            (u) => u.id === encargadoId,
+                        );
+                        const nombreRemitente = encargado
+                            ? [encargado.nombres, encargado.apellidos]
+                                  .filter(Boolean)
+                                  .join(' ')
+                                  .trim()
+                            : 'Por asignar';
+                        await tx.cotizacion.create({
+                            data: {
+                                fechaCot: new Date(),
+                                dirigido: 'Por definir',
+                                nombreServicio: l.servicioInteres,
+                                nombreRemitente,
+                                monto: '0',
+                                tipo: 'PEN',
+                                estado: 'PENDIENTE',
+                                idLead: createdLead.id,
+                                idRemitente: ctx.authorUserId,
+                                idAuthor: ctx.authorUserId,
+                            },
+                        });
+                        summary.inserted.cotizaciones++;
+                    }
                 }
 
                 // ---- Cotizaciones ----

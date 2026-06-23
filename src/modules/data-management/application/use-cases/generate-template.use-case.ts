@@ -14,6 +14,10 @@ import {
     TIPO_MONEDA_LABEL,
     ESTADO_COT_LABEL,
 } from '@/modules/data-management/domain/constants/enum-labels';
+import {
+    CRM_READ_REPOSITORY,
+    type ICrmReadRepository,
+} from '@/modules/data-management/domain/ports/crm-read.repository';
 
 /** Atajo para declarar una columna de la plantilla con sus ayudas. */
 function col(
@@ -27,14 +31,18 @@ export class GenerateTemplateUseCase {
     constructor(
         @Inject(WORKBOOK_BUILDER)
         private readonly workbookBuilder: IWorkbookBuilder,
+        @Inject(CRM_READ_REPOSITORY)
+        private readonly crmRead: ICrmReadRepository,
     ) {}
 
     async execute(): Promise<Buffer> {
+        const activeUsers = await this.crmRead.findActiveUsers();
+
         const sheets: SheetDefinition[] = [
             this.buildInstructionsSheet(),
             this.buildOrganizacionesSheet(),
             this.buildContactosSheet(),
-            this.buildLeadsSheet(),
+            this.buildLeadsSheet(activeUsers),
             this.buildCotizacionesSheet(),
             this.buildReferenceSheet(),
         ];
@@ -121,7 +129,7 @@ export class GenerateTemplateUseCase {
         };
     }
 
-    private buildLeadsSheet(): SheetDefinition {
+    private buildLeadsSheet(activeUsers: string[]): SheetDefinition {
         return {
             name: 'Leads',
             columns: [
@@ -155,7 +163,14 @@ export class GenerateTemplateUseCase {
                 col('Comentarios'),
                 col('Desafío u oportunidad'),
                 col('Encargado', {
-                    note: 'Nombre y apellido tal como aparece en el CRM. Si no coincide, el lead se te asigna a ti.',
+                    ...(activeUsers.length > 0
+                        ? {
+                              dropdown: activeUsers,
+                              note: 'Selecciona de la lista (usuarios activos en el CRM). Si no coincide, el lead se te asigna a ti.',
+                          }
+                        : {
+                              note: 'Nombre y apellido tal como aparece en el CRM. Si no coincide, el lead se te asigna a ti.',
+                          }),
                 }),
                 col('Canal de captación'),
                 col('Próxima actividad', {
