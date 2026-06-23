@@ -58,7 +58,7 @@ export class SendInternalEmailUseCase {
             return;
         }
 
-        const leadLink = `${process.env.FRONTEND_URL}/leads/${notification.id_lead}?tab=actividades`;
+        const leadLink = `${process.env.FRONTEND_URL}/pipeline/${notification.id_lead}`;
 
         await this.mailer.send({
             to: email,
