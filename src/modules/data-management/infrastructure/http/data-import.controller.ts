@@ -108,7 +108,7 @@ export class DataImportController {
     }
 
     private assertFile(file: UploadedExcel | undefined): void {
-        if (!file || !file.buffer || file.size === 0) {
+        if (!file?.buffer || file.size === 0) {
             throw new BadRequestException(
                 'Debe adjuntar un archivo .xlsx en el campo "file".',
             );

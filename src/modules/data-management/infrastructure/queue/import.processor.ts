@@ -55,16 +55,16 @@ export class ImportProcessor extends WorkerHost {
             throw err;
         }
 
-        if (!result.valid) {
+        if (result.valid) {
+            this.logger.log(
+                `Importación job ${job.id}: ` +
+                    `insertados=${JSON.stringify(result.summary?.inserted ?? {})}`,
+            );
+        } else {
             await this.sendNotification(
                 userId,
                 'Error de importación',
                 this.buildValidationMessage(filename, result.validation.errors),
-            );
-        } else {
-            this.logger.log(
-                `Importación job ${job.id}: ` +
-                    `insertados=${JSON.stringify(result.summary?.inserted ?? {})}`,
             );
         }
 
@@ -82,12 +82,12 @@ export class ImportProcessor extends WorkerHost {
         );
         if (rest > 0) {
             lines.push(
-                `...y ${rest} error${rest !== 1 ? 'es' : ''} más. Usa el validador para ver el detalle completo.`,
+                `...y ${rest} error${rest === 1 ? '' : 'es'} más. Usa el validador para ver el detalle completo.`,
             );
         }
 
         return [
-            `Se detectaron ${total} error${total !== 1 ? 'es' : ''} en "${filename}". Los datos no fueron importados.`,
+            `Se detectaron ${total} error${total === 1 ? '' : 'es'} en "${filename}". Los datos no fueron importados.`,
             '',
             ...lines,
         ].join('\n');

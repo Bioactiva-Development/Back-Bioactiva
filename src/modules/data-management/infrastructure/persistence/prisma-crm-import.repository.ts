@@ -333,9 +333,9 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                             data: {
                                 fechaCot: new Date(),
                                 cliente: orgNombreComercialById.get(orgId) ?? null,
-                                dirigido: contactoId != null
-                                    ? (contactNombreById.get(contactoId) ?? null)
-                                    : null,
+                                dirigido: contactoId == null
+                                    ? null
+                                    : (contactNombreById.get(contactoId) ?? null),
                                 nombreServicio: l.servicioInteres,
                                 nombreRemitente,
                                 monto: '0',
@@ -373,9 +373,9 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         ? (orgNombreComercialById.get(meta.orgId) ?? null)
                         : null;
                     const dirigido =
-                        meta?.contactoId != null
-                            ? (contactNombreById.get(meta.contactoId) ?? null)
-                            : null;
+                        meta?.contactoId == null
+                            ? null
+                            : (contactNombreById.get(meta.contactoId) ?? null);
                     const encargado = meta
                         ? users.find((u) => u.id === meta.encargadoId)
                         : undefined;

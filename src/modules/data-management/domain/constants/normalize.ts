@@ -7,11 +7,14 @@ export function normalizeCell(value: unknown): string {
     if (value === null || value === undefined) {
         return '';
     }
+    if (typeof value === 'object' && !(value instanceof Date)) {
+        return '';
+    }
     return String(value)
         .trim()
         .toLowerCase()
         .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '') // elimina diacríticos (tildes, diéresis)
-        .replace(/\.$/, '') // quita el punto final ("sr." -> "sr")
-        .replace(/\s+/g, ' '); // colapsa espacios internos
+        .replaceAll(/\p{Diacritic}/gu, '')
+        .replace(/\.$/, '')
+        .replaceAll(/\s+/g, ' ');
 }
