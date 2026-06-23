@@ -74,7 +74,7 @@ describe('Data management module', () => {
                 expect(validation.valid).toBe(false);
             });
 
-            it('plan válido con sector vacío (sector queda null) y ruc nulo', () => {
+            it('plan válido con ruc nulo y sector presente', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         organizaciones: [
@@ -84,13 +84,14 @@ describe('Data management module', () => {
                                 'nombre completo': 'Org Completa',
                                 'tipo de organizacion': 'empresa nacional',
                                 tamano: 'grande',
-                                // sin sector ni ruc
+                                sector: 'tecnologia',
+                                // sin ruc
                             },
                         ],
                     }),
                 );
                 expect(validation.valid).toBe(true);
-                expect(plan.organizaciones[0].sector).toBeNull();
+                expect(plan.organizaciones[0].sector).toBe('TECNOLOGIA');
                 expect(plan.organizaciones[0].ruc).toBeNull();
             });
         });
@@ -326,6 +327,7 @@ describe('Data management module', () => {
                             'nombre completo': 'Org Completa',
                             'tipo de organizacion': 'empresa nacional',
                             tamano: 'grande',
+                            sector: 'tecnologia',
                             ruc: 'sin-digitos', // digits() -> null
                         },
                     ],
