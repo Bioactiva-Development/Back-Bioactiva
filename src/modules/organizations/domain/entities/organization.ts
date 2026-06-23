@@ -13,7 +13,7 @@ export class Organization {
         public tipo: EnterpriseType,
         public linkedin: string | null,
         public ubicacion: string | null,
-        public sector: Sector | null,
+        public sector: Sector,
         public tamano: Size,
         public actividadEconomica: string | null,
         public alianzasEstrategicas: string | null,

@@ -68,8 +68,8 @@ export class HttpCreateOrganizationDto {
     ubicacion!: string | null;
 
     @IsEnum(Sector, { message: 'El sector no es un valor válido.' })
-    @IsOptional()
-    sector!: Sector | null;
+    @IsNotEmpty({ message: 'El sector es obligatorio.' })
+    sector!: Sector;
 
     @IsEnum(Size, { message: 'El tamaño no es un valor válido.' })
     @IsNotEmpty({ message: 'El tamaño es obligatorio.' })
