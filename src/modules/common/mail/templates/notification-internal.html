@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{{subject}} - Bioactiva</title>
+		<style>
+			:root {
+				color-scheme: light;
+			}
+
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				background: #fbf9f9;
+				color: #1b1c1c;
+				font-family: Inter, Helvetica, Arial, sans-serif;
+			}
+
+			.shell {
+				width: 100%;
+				background:
+					radial-gradient(circle at top left, rgba(164, 245, 174, 0.26), transparent 34%),
+					radial-gradient(circle at top right, rgba(9, 97, 42, 0.1), transparent 28%),
+					#fbf9f9;
+				padding: 48px 20px;
+			}
+
+			.card {
+				max-width: 640px;
+				margin: 0 auto;
+				background: rgba(255, 255, 255, 0.92);
+				border-radius: 20px;
+				box-shadow: 0 20px 40px rgba(0, 33, 9, 0.06);
+				overflow: hidden;
+				backdrop-filter: blur(12px);
+			}
+
+			.hero {
+				padding: 40px 40px 28px;
+				background: linear-gradient(135deg, #09612a 0%, #2c7a40 100%);
+				color: #ffffff;
+			}
+
+			.eyebrow {
+				display: inline-block;
+				margin-bottom: 18px;
+				padding: 8px 14px;
+				border-radius: 9999px;
+				background: #15803d;
+				color: #ffffff;
+				font-size: 12px;
+				font-weight: 700;
+				letter-spacing: 0.16em;
+				text-transform: uppercase;
+			}
+
+			.title {
+				margin: 0;
+				font-size: 28px;
+				line-height: 1.15;
+				letter-spacing: -0.02em;
+				font-weight: 800;
+			}
+
+			.content {
+				padding: 36px 40px 40px;
+				background: #f5f3f3;
+			}
+
+			.surface {
+				background: #ffffff;
+				border-radius: 18px;
+				padding: 28px;
+				box-shadow: 0 10px 30px rgba(0, 33, 9, 0.04);
+			}
+
+			.chip-row {
+				margin: 0 0 24px;
+			}
+
+			.chip {
+				display: inline-block;
+				padding: 10px 14px;
+				border-radius: 12px;
+				background: #d8eadc;
+				color: #09612a;
+				font-size: 13px;
+				font-weight: 700;
+			}
+
+			.body-content {
+				margin: 0 0 28px;
+				font-size: 15px;
+				line-height: 1.75;
+				color: #1b1c1c;
+			}
+
+			.body-content p {
+				margin: 0 0 12px;
+			}
+
+			.body-content p:last-child {
+				margin-bottom: 0;
+			}
+
+			.cta {
+				display: inline-block;
+				padding: 16px 28px;
+				border-radius: 9999px;
+				background: linear-gradient(135deg, #09612a 0%, #2c7a40 100%);
+				color: #ffffff;
+				font-size: 15px;
+				font-weight: 700;
+				text-decoration: none;
+				box-shadow: 0 14px 30px rgba(9, 97, 42, 0.18);
+			}
+
+			.cta-note {
+				margin: 16px 0 0;
+				font-size: 13px;
+				line-height: 1.6;
+				color: #5d655e;
+			}
+
+			.raw-link {
+				display: block;
+				margin-top: 6px;
+				word-break: break-all;
+				color: #09612a;
+				text-decoration: none;
+				font-weight: 700;
+				font-size: 13px;
+			}
+
+			.footer {
+				padding: 0 40px 36px;
+				background: #f5f3f3;
+			}
+
+			.footer-copy {
+				margin: 0;
+				font-size: 12px;
+				line-height: 1.7;
+				color: #5a605b;
+			}
+
+			@media (max-width: 640px) {
+				.shell {
+					padding: 24px 12px;
+				}
+
+				.hero,
+				.content,
+				.footer {
+					padding-left: 20px;
+					padding-right: 20px;
+				}
+
+				.surface {
+					padding: 22px 18px;
+				}
+
+				.title {
+					font-size: 22px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="shell">
+			<div class="card">
+				<div class="hero">
+					<span class="eyebrow">Bioactiva Platform</span>
+					<h1 class="title">{{subject}}</h1>
+				</div>
+
+				<div class="content">
+					<div class="surface">
+						<div class="chip-row">
+							<span class="chip">Aviso de actividad</span>
+						</div>
+
+						<div class="body-content">
+							{{bodyHtml}}
+						</div>
+
+						<a
+							class="cta"
+							href="{{leadLink}}"
+							target="_blank"
+							rel="noreferrer"
+							style="
+								display: inline-block;
+								padding: 16px 28px;
+								border-radius: 9999px;
+								background: linear-gradient(135deg, #09612a 0%, #2c7a40 100%);
+								color: #ffffff !important;
+								font-size: 15px;
+								font-weight: 700;
+								text-decoration: none !important;
+								box-shadow: 0 14px 30px rgba(9, 97, 42, 0.18);
+								-webkit-text-fill-color: #ffffff;
+							"
+						>
+							Ver actividad del lead
+						</a>
+
+						<p class="cta-note">
+							Si el botón no funciona, copia y pega este enlace en tu navegador:
+							<br />
+							<a
+								class="raw-link"
+								href="{{leadLink}}"
+								target="_blank"
+								rel="noreferrer"
+								style="
+									color: #09612a !important;
+									text-decoration: none !important;
+									font-weight: 700;
+									word-break: break-all;
+									-webkit-text-fill-color: #09612a;
+								"
+							>{{leadLink}}</a>
+						</p>
+					</div>
+				</div>
+
+				<div class="footer">
+					<p class="footer-copy">
+						Este mensaje fue generado automáticamente por Bioactiva. Si recibiste
+						este correo por error, puedes ignorarlo.
+					</p>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
