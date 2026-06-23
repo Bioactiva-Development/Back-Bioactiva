@@ -137,7 +137,8 @@ export class GenerateTemplateUseCase {
                     note: 'Selecciona de la lista (se autocompleta con lo que hayas llenado en la hoja Organizaciones). También puedes escribir el nombre comercial o la razón social directamente.',
                 }),
                 col('Correo electrónico', {
-                    note: 'Opcional. Correo del contacto del lead; debe existir en la hoja Contactos para vincularse.',
+                    dropdownFormula: 'Contactos!$G$2:$G$301',
+                    note: 'Selecciona de la lista (se autocompleta con los correos de la hoja Contactos). El contacto debe existir en esa hoja para vincularse.',
                 }),
                 col('Estado', {
                     required: true,
@@ -178,7 +179,8 @@ export class GenerateTemplateUseCase {
                 col('N°', { width: 6, note: 'Opcional: numeración libre.' }),
                 col('ID de lead', {
                     required: true,
-                    note: 'Obligatorio. Debe coincidir con un "ID Lead" de la hoja Leads de ESTE mismo archivo. Si no coincide, la cotización se omite.',
+                    dropdownFormula: 'Leads!$B$2:$B$301',
+                    note: 'Obligatorio. Selecciona de la lista (se autocompleta con los IDs de la hoja Leads). Si no coincide con ningún ID Lead, la cotización se omite.',
                 }),
                 col('Dirigido a', {
                     required: true,
