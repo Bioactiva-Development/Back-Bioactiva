@@ -23,13 +23,13 @@ export class DeleteActivityUseCase {
         const activity = await this.activityRepository.findById(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
 
         if (activity.estado !== EstadoActividad.PENDIENTE) {
             throw new InvalidActivityTransitionException(
-                `No se puede eliminar una actividad en estado ${activity.estado}`,
+                'Solo se pueden eliminar actividades pendientes',
             );
         }
 

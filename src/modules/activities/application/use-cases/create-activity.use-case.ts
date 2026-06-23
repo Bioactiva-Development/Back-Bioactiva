@@ -32,7 +32,7 @@ export class CreateActivityUseCase {
         const lead = await this.leadRepository.findById(dto.idLead);
         if (!lead) {
             throw new ActivityNotFoundException(
-                `Lead con id ${dto.idLead} no encontrado`,
+                'El lead no fue encontrado',
             );
         }
 
@@ -74,7 +74,7 @@ export class CreateActivityUseCase {
         );
         if (pending) {
             throw new PendingActivityExistsException(
-                `El lead ${dto.idLead} ya tiene una actividad pendiente`,
+                'El lead ya tiene una actividad pendiente',
             );
         }
 

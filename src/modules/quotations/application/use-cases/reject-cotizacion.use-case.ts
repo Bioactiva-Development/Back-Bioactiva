@@ -24,7 +24,7 @@ export class RejectCotizacionUseCase {
         const cotizacion = await this.cotizacionRepository.findById(id);
         if (!cotizacion) {
             throw new CotizacionNotFoundException(
-                `Cotización con id ${id} no encontrada`,
+                'La cotización no fue encontrada',
             );
         }
 
@@ -34,7 +34,7 @@ export class RejectCotizacionUseCase {
         const lead = await this.leadRepository.findById(cotizacion.id_lead);
         if (!lead) {
             throw new LeadNotFoundException(
-                `Lead con id ${cotizacion.id_lead} no encontrado`,
+                'El lead asociado a la cotización no fue encontrado',
             );
         }
 
@@ -45,7 +45,7 @@ export class RejectCotizacionUseCase {
         );
         if (hasPending) {
             throw new LeadHasPendingActivitiesException(
-                `No se puede rechazar la cotización porque el lead ${lead.id} tiene actividades pendientes`,
+                'El lead tiene actividades pendientes',
             );
         }
 

@@ -32,7 +32,7 @@ export class CreateActivityCalendarEventUseCase {
         const activity = await this.activityRepository.findById(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
 
@@ -42,7 +42,7 @@ export class CreateActivityCalendarEventUseCase {
 
         if (activity.outlook_event_id) {
             throw new ActivityCalendarEventAlreadyExistsException(
-                `La actividad ${id} ya tiene un evento de calendario asociado`,
+                'La actividad ya tiene un evento de calendario asociado',
             );
         }
 

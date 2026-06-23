@@ -23,7 +23,7 @@ export class ChangeLeadStatusUseCase {
     async execute(id: number, dto: ChangeLeadStatusDto) {
         const lead = await this.leadRepository.findById(id);
         if (!lead) {
-            throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
+            throw new LeadNotFoundException('El lead no fue encontrado');
         }
 
         const isStateChange = dto.estado !== lead.estado;
@@ -33,7 +33,7 @@ export class ChangeLeadStatusUseCase {
         // fallar con su propio error, no con el de actividades pendientes.
         if (!lead.canTransitionTo(dto.estado)) {
             throw new InvalidLeadTransitionException(
-                `No se puede cambiar el estado del lead de ${lead.estado} a ${dto.estado}`,
+                'La transición de estado solicitada no es válida',
             );
         }
 
@@ -45,7 +45,7 @@ export class ChangeLeadStatusUseCase {
             );
             if (hasPending) {
                 throw new LeadHasPendingActivitiesException(
-                    `No se puede cambiar el estado del lead ${id} porque tiene actividades pendientes`,
+                    'El lead tiene actividades pendientes',
                 );
             }
         }

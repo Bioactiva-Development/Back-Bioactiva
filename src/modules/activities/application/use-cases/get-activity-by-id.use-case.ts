@@ -16,7 +16,7 @@ export class GetActivityByIdUseCase {
             await this.activityRepository.findByIdWithRelations(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
         return activity;

@@ -15,7 +15,7 @@ export class UpdateLeadUseCase {
     async execute(id: number, dto: UpdateLeadDto) {
         const lead = await this.leadRepository.findById(id);
         if (!lead) {
-            throw new LeadNotFoundException(`Lead con id ${id} no encontrado`);
+            throw new LeadNotFoundException('El lead no fue encontrado');
         }
 
         // El encargado de un lead no se puede cambiar mediante actualización.
