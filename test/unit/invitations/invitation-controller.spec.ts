@@ -81,7 +81,7 @@ describe('InvitationController', () => {
     });
 
     it('should list invitations', async () => {
-        listInvitationsUseCase.execute.mockResolvedValue([]);
+        listInvitationsUseCase.execute.mockResolvedValue({ data: [], total: 0 });
 
         const result = await controller.listInvitations(
             mockUser,
@@ -97,6 +97,10 @@ describe('InvitationController', () => {
             'test',
             undefined,
         );
+        expect(result).toMatchObject({
+            data: [],
+            meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        });
     });
 
     it('should obtain invitation info', async () => {

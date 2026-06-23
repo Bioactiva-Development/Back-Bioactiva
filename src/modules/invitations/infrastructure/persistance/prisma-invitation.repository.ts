@@ -20,13 +20,7 @@ export class PrismaInvitationsRepository implements InvitationsRepositoryPort {
         term?: string,
         estado?: TokenStatus,
     ): Promise<InvitationToken[]> {
-        const where = {
-            proposito: PrismaTokenPurpose.INVITACION,
-            correo: { contains: term },
-            estado: estado
-                ? TokenMapper.mapTokenStatusToPrisma(estado)
-                : undefined,
-        };
+        const where = this.buildWhere(term, estado);
         page = page ?? 1;
         limit = limit ?? 10;
         const tokens = await this.prisma.userToken.findMany({
@@ -36,6 +30,20 @@ export class PrismaInvitationsRepository implements InvitationsRepositoryPort {
             orderBy: { createdAt: 'desc' },
         });
         return tokens.map((token) => InvitationMapper.toDomain(token));
+    }
+
+    async count(term?: string, estado?: TokenStatus): Promise<number> {
+        return this.prisma.userToken.count({ where: this.buildWhere(term, estado) });
+    }
+
+    private buildWhere(term?: string, estado?: TokenStatus) {
+        return {
+            proposito: PrismaTokenPurpose.INVITACION,
+            correo: { contains: term },
+            estado: estado
+                ? TokenMapper.mapTokenStatusToPrisma(estado)
+                : undefined,
+        };
     }
 
     async findPendingExpired(before: Date): Promise<InvitationToken[]> {
