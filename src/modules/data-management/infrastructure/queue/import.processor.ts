@@ -8,6 +8,7 @@ import {
     DATA_IMPORT_JOB,
     ImportJobData,
 } from '@/modules/data-management/infrastructure/queue/import-queue.constants';
+import { RowIssue } from '@/modules/data-management/application/dto/import-types';
 import {
     IN_APP_NOTIFICATION_REPOSITORY,
     type InAppNotificationRepositoryPort,
@@ -55,11 +56,10 @@ export class ImportProcessor extends WorkerHost {
         }
 
         if (!result.valid) {
-            const count = result.validation.errors.length;
             await this.sendNotification(
                 userId,
                 'Error de importación',
-                `Se detectaron ${count} error${count !== 1 ? 'es' : ''} en "${filename}". Los datos no fueron importados. Revisa el archivo con el validador.`,
+                this.buildValidationMessage(filename, result.validation.errors),
             );
         } else {
             this.logger.log(
@@ -69,6 +69,28 @@ export class ImportProcessor extends WorkerHost {
         }
 
         return result;
+    }
+
+    private buildValidationMessage(filename: string, errors: RowIssue[]): string {
+        const MAX_SHOWN = 10;
+        const total = errors.length;
+        const shown = errors.slice(0, MAX_SHOWN);
+        const rest = total - shown.length;
+
+        const lines = shown.map(
+            (e) => `• [${e.sheet} · fila ${e.row}] ${e.message}`,
+        );
+        if (rest > 0) {
+            lines.push(
+                `...y ${rest} error${rest !== 1 ? 'es' : ''} más. Usa el validador para ver el detalle completo.`,
+            );
+        }
+
+        return [
+            `Se detectaron ${total} error${total !== 1 ? 'es' : ''} en "${filename}". Los datos no fueron importados.`,
+            '',
+            ...lines,
+        ].join('\n');
     }
 
     private async sendNotification(
