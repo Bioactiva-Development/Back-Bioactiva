@@ -14,7 +14,10 @@ import { ActivityNotFoundException } from '@/modules/activities/domain/exception
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
 import { PendingActivityExistsException } from '@/modules/activities/domain/exceptions/pending-activity-exists.exception';
 import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
-import { startOfCurrentDayInZone } from '@/shared/infrastructure/datetime/range-in-zone';
+import {
+    exactTimeInZone,
+    startOfCurrentDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 export class CreateActivityUseCase {
     constructor(
@@ -56,6 +59,13 @@ export class CreateActivityUseCase {
         if (dto.fechaFin <= dto.fechaInicio) {
             throw new InvalidActivityDateException(
                 'La fecha de inicio debe ser menor que la fecha de fin',
+            );
+        }
+
+        const ahora = exactTimeInZone(new Date(), this.appTime.timeZone);
+        if (dto.fechaFin < ahora) {
+            throw new InvalidActivityDateException(
+                'La fecha de fin de la actividad no puede ser anterior al momento actual',
             );
         }
 

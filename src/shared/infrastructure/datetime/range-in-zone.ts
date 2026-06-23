@@ -65,20 +65,31 @@ function wallTimeToUtc(
     return new Date(guess - offset);
 }
 
-/** Componentes de la fecha civil (zona) de un instante absoluto. */
+/** Componentes de la fecha y hora civil (zona) de un instante absoluto. */
 function civilDateParts(
     instant: Date,
     timeZone: string,
-): { year: number; month: number; day: number } {
+): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone,
+        hourCycle: 'h23',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
     }).formatToParts(instant);
     const get = (type: string): number =>
         Number(parts.find((p) => p.type === type)?.value);
-    return { year: get('year'), month: get('month'), day: get('day') };
+    return {
+        year: get('year'),
+        month: get('month'),
+        day: get('day'),
+        hour: get('hour'),
+        minute: get('minute'),
+        second: get('second'),
+    };
 }
 
 /**
@@ -115,4 +126,27 @@ export function endOfDayInZone(input: string, timeZone: string): Date {
 export function startOfCurrentDayInZone(instant: Date, timeZone: string): Date {
     const { year, month, day } = civilDateParts(instant, timeZone);
     return wallTimeToUtc(year, month, day, 0, 0, 0, 0, timeZone);
+}
+
+/**
+ * Instante exacto (zona) que corresponde al instante dado. Útil para reglas
+ * tipo "no anterior al momento actual" razonando en la zona de negocio.
+ * Los milisegundos se preservan directamente del instante original porque
+ * `formatToParts` trunca a segundos.
+ */
+export function exactTimeInZone(instant: Date, timeZone: string): Date {
+    const { year, month, day, hour, minute, second } = civilDateParts(
+        instant,
+        timeZone,
+    );
+    return wallTimeToUtc(
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        instant.getMilliseconds(),
+        timeZone,
+    );
 }
