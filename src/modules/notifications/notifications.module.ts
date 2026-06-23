@@ -126,6 +126,6 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         ActivityCompletionAdapter,
         { provide: FOLLOW_UP_CANCELER, useExisting: ActivityCompletionAdapter },
     ],
-    exports: [FOLLOW_UP_CANCELER],
+    exports: [FOLLOW_UP_CANCELER, IN_APP_NOTIFICATION_REPOSITORY],
 })
 export class NotificationsModule {}
