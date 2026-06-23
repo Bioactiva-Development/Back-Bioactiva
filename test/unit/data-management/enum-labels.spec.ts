@@ -15,7 +15,7 @@ import {
 
 describe('Data management module', () => {
     describe('enum-labels', () => {
-        it('exposes the canonical Spanish labels', () => {
+        it('exposes the canonical labels for each enum', () => {
             expect(TIPO_EMPRESA_LABEL.EMPRESA_NACIONAL).toBe(
                 'Empresa nacional',
             );
@@ -23,7 +23,8 @@ describe('Data management module', () => {
             expect(SECTOR_LABEL.AGRICOLA).toBe('Agrícola');
             expect(VOCATIVO_LABEL.SR).toBe('Sr.');
             expect(ESTADO_CORREO_LABEL.VENCIDO).toBe('Vencido');
-            expect(LEAD_STATE_LABEL.EN_PROSPECTO).toBe('Nuevo');
+            // Lead states usan la versión legible del nombre interno.
+            expect(LEAD_STATE_LABEL.EN_PROSPECTO).toBe('En prospecto');
             expect(TIPO_ACTIVIDAD_LABEL.REUNION).toBe('Reunión');
             expect(ESTADO_ACTIVIDAD_LABEL.PENDIENTE).toBe('Pendiente');
             expect(TIPO_MONEDA_LABEL.USD).toBe('USD');

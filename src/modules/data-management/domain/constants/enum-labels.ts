@@ -64,10 +64,10 @@ export const ESTADO_CORREO_LABEL: Record<string, string> = {
 };
 
 export const LEAD_STATE_LABEL: Record<string, string> = {
-    EN_PROSPECTO: 'Nuevo',
-    OFERTADO: 'En proceso',
-    CIERRE_CON_VENTA: 'Cerrado ganado',
-    CIERRE_SIN_VENTA: 'Cerrado perdido',
+    EN_PROSPECTO: 'En prospecto',
+    OFERTADO: 'Ofertado',
+    CIERRE_CON_VENTA: 'Cierre con venta',
+    CIERRE_SIN_VENTA: 'Cierre sin venta',
 };
 
 export const TIPO_ACTIVIDAD_LABEL: Record<string, string> = {

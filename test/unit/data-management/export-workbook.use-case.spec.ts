@@ -302,7 +302,7 @@ describe('Data management module', () => {
             const sheet = sheetsArg()[0];
             expect(sheet.name).toBe('Leads');
             expect(sheet.rows[0].anio).toBe(2024);
-            expect(sheet.rows[0].estado).toBe('Nuevo');
+            expect(sheet.rows[0].estado).toBe('En prospecto');
             expect(sheet.rows[0].alerta).toBe('Sí');
             expect(sheet.rows[0].__alerta).toBe(true);
             expect(sheet.rows[1].rucContacto).toBe('');
@@ -310,7 +310,7 @@ describe('Data management module', () => {
             expect(sheet.rows[1].proxFecha).toBe('');
             expect(sheet.rows[1].fechaCierre).toBe('');
             expect(sheet.rows[1].alerta).toBe('No');
-            expect(sheet.rows[1].estado).toBe('En proceso');
+            expect(sheet.rows[1].estado).toBe('Ofertado');
             expect(sheet.highlightWhen?.(sheet.rows[0])).toBe(true);
             expect(sheet.highlightWhen?.(sheet.rows[1])).toBe(false);
         });
