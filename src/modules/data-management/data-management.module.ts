@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { RedisModule } from '@/modules/common/redis/redis.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 import { DataExportController } from './infrastructure/http/data-export.controller';
 import { DataImportController } from './infrastructure/http/data-import.controller';
@@ -28,6 +29,7 @@ import { GenerateTemplateUseCase } from './application/use-cases/generate-templa
     imports: [
         RedisModule,
         BullModule.registerQueue({ name: DATA_IMPORT_QUEUE }),
+        NotificationsModule,
     ],
     controllers: [DataExportController, DataImportController],
     providers: [

@@ -19,7 +19,7 @@ describe('Organizations module', () => {
                     EnterpriseType.EMPRESA_NACIONAL,
                     null,
                     null,
-                    null,
+                    Sector.OTROS,
                     Size.MEDIANO,
                     null,
                     null,
@@ -37,7 +37,7 @@ describe('Organizations module', () => {
             expect(dto.ruc).toBeNull();
             expect(dto.linkedin).toBeNull();
             expect(dto.ubicacion).toBeNull();
-            expect(dto.sector).toBeNull();
+            expect(dto.sector).toBe(Sector.OTROS);
             expect(dto.actividadEconomica).toBeNull();
             expect(dto.alianzasEstrategicas).toBeNull();
             expect(dto.idContactoActivo).toBeNull();

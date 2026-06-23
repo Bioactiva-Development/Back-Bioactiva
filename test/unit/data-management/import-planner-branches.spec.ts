@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { ImportPlannerService } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import {
     ParsedRow,
     ParsedWorkbook,
@@ -11,7 +12,9 @@ import {
  */
 describe('Data management module', () => {
     describe('ImportPlannerService — ramas de error y avisos', () => {
-        const planner = new ImportPlannerService();
+        const planner = new ImportPlannerService({
+            timeZone: 'America/Lima',
+        } as unknown as AppTimeConfig);
 
         const wb = (sheets: Record<string, ParsedRow[]>): ParsedWorkbook =>
             sheets;
@@ -71,7 +74,7 @@ describe('Data management module', () => {
                 expect(validation.valid).toBe(false);
             });
 
-            it('plan válido con sector vacío (sector queda null) y ruc nulo', () => {
+            it('plan válido con ruc nulo y sector presente', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         organizaciones: [
@@ -81,19 +84,20 @@ describe('Data management module', () => {
                                 'nombre completo': 'Org Completa',
                                 'tipo de organizacion': 'empresa nacional',
                                 tamano: 'grande',
-                                // sin sector ni ruc
+                                sector: 'tecnologia',
+                                // sin ruc
                             },
                         ],
                     }),
                 );
                 expect(validation.valid).toBe(true);
-                expect(plan.organizaciones[0].sector).toBeNull();
+                expect(plan.organizaciones[0].sector).toBe('TECNOLOGIA');
                 expect(plan.organizaciones[0].ruc).toBeNull();
             });
         });
 
         describe('Contactos', () => {
-            it('omite filas residuales y reporta falta de Nombre, Correo y vocativo inválido', () => {
+            it('omite filas residuales y reporta falta de Nombre, Correo, vocativo inválido y organización', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         contactos: [
@@ -112,18 +116,25 @@ describe('Data management module', () => {
                                 'correo electronico 1': 'a@x.com',
                                 vocativo: 'capitan', // vocativo no reconocido
                             },
+                            {
+                                __rowNumber: 6,
+                                nombre: 'Juan',
+                                'correo electronico 1': 'b@x.com',
+                                // falta organizacion abreviado
+                            },
                         ],
                     }),
                 );
                 expect(plan.contactos).toHaveLength(0);
                 const errs = errorsFor('Contactos', validation);
-                expect(errs).toHaveLength(3);
+                expect(errs).toHaveLength(4);
                 expect(errs[0].message).toContain('Nombre');
                 expect(errs[1].message).toContain('Correo electrónico 1');
                 expect(errs[2].message).toContain('Vocativo');
+                expect(errs[3].message).toContain('Organización');
             });
 
-            it('plan válido de contacto con vocativo reconocido', () => {
+            it('plan válido de contacto con vocativo reconocido y organización', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         contactos: [
@@ -132,14 +143,15 @@ describe('Data management module', () => {
                                 nombre: 'Juan',
                                 'correo electronico 1': 'a@x.com',
                                 vocativo: 'sr',
-                                ruc: '20-404',
+                                'organizacion abreviado': 'OrgTest',
                             },
                         ],
                     }),
                 );
                 expect(validation.valid).toBe(true);
                 expect(plan.contactos[0].vocativo).toBe('SR');
-                expect(plan.contactos[0].orgRuc).toBe('20404');
+                expect(plan.contactos[0].orgNombreComercial).toBe('OrgTest');
+                expect(plan.contactos[0].orgRuc).toBeNull();
             });
         });
 
@@ -168,7 +180,7 @@ describe('Data management module', () => {
                 expect(errs[1].message).toContain('Estado de lead');
             });
 
-            it('genera aviso sin encargado y construye actividad próxima con fecha inválida -> null', () => {
+            it('genera aviso sin encargado (actividad siempre null)', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         leads: [
@@ -176,8 +188,7 @@ describe('Data management module', () => {
                                 __rowNumber: 2,
                                 'servicio de interes': 'S',
                                 estado: 'nuevo',
-                                'proxima actividad': 'Reunión inicial',
-                                'fecha de proxima actividad': 'no-es-fecha',
+                                organizacion: 'OrgTest',
                                 // sin encargado -> warning
                             },
                         ],
@@ -187,15 +198,10 @@ describe('Data management module', () => {
                 expect(validation.warnings).toHaveLength(1);
                 expect(validation.warnings[0].message).toContain('Encargado');
                 expect(plan.leads[0].estado).toBe('EN_PROSPECTO');
-                expect(plan.leads[0].actividad).not.toBeNull();
-                expect(plan.leads[0].actividad?.nombre).toBe(
-                    'Reunión inicial',
-                );
-                expect(plan.leads[0].actividad?.fecha).toBeNull();
-                expect(plan.leads[0].actividad?.tipo).toBe('OTRO');
+                expect(plan.leads[0].actividad).toBeNull();
             });
 
-            it('lead con encargado y sin próxima actividad -> sin warning y actividad null', () => {
+            it('lead con encargado y organización -> sin warning y actividad null', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         leads: [
@@ -203,6 +209,7 @@ describe('Data management module', () => {
                                 __rowNumber: 2,
                                 'servicio de interes': 'S',
                                 estado: 'nuevo',
+                                organizacion: 'OrgTest',
                                 encargado: 'Maria',
                                 'fecha de creacion': new Date(
                                     '2024-01-01T00:00:00.000Z',
@@ -218,70 +225,77 @@ describe('Data management module', () => {
         });
 
         describe('Cotizaciones', () => {
-            it('omite residual y reporta cada campo faltante / inválido', () => {
+            it('omite residual y reporta cada campo faltante / inválido (sin dirigido/remitente, fecha requerida)', () => {
                 const { plan, validation } = planner.plan(
                     wb({
                         cotizaciones: [
                             { __rowNumber: 2 }, // residual
                             {
                                 __rowNumber: 3,
-                                'dirigido a': 'Z', // falta id de lead
+                                'nombre del servicio': 'S',
+                                monto: '100',
+                                moneda: 'soles',
+                                'estado del proceso': 'enviada',
+                                'fecha de cotizacion': new Date('2024-01-01'),
+                                // falta id de lead
                             },
                             {
                                 __rowNumber: 4,
-                                'id de lead': 'L1', // falta dirigido a
+                                'id de lead': 'L1',
+                                monto: '100',
+                                moneda: 'soles',
+                                'estado del proceso': 'enviada',
+                                'fecha de cotizacion': new Date('2024-01-01'),
+                                // falta nombre del servicio
                             },
                             {
                                 __rowNumber: 5,
                                 'id de lead': 'L1',
-                                'dirigido a': 'Z', // falta nombre del servicio
+                                'nombre del servicio': 'S',
+                                monto: 'abc', // monto inválido
+                                moneda: 'soles',
+                                'estado del proceso': 'enviada',
+                                'fecha de cotizacion': new Date('2024-01-01'),
                             },
                             {
                                 __rowNumber: 6,
                                 'id de lead': 'L1',
-                                'dirigido a': 'Z',
-                                'nombre del servicio': 'S', // falta remitente
+                                'nombre del servicio': 'S',
+                                monto: '1000',
+                                moneda: 'rublos', // moneda no reconocida
+                                'estado del proceso': 'enviada',
+                                'fecha de cotizacion': new Date('2024-01-01'),
                             },
                             {
                                 __rowNumber: 7,
                                 'id de lead': 'L1',
-                                'dirigido a': 'Z',
                                 'nombre del servicio': 'S',
-                                remitente: 'R',
-                                monto: 'abc', // monto inválido
+                                monto: '1000',
+                                moneda: 'usd',
+                                'estado del proceso': 'fantasma', // estado no reconocido
+                                'fecha de cotizacion': new Date('2024-01-01'),
                             },
                             {
                                 __rowNumber: 8,
                                 'id de lead': 'L1',
-                                'dirigido a': 'Z',
                                 'nombre del servicio': 'S',
-                                remitente: 'R',
                                 monto: '1000',
-                                moneda: 'rublos', // moneda no reconocida
-                            },
-                            {
-                                __rowNumber: 9,
-                                'id de lead': 'L1',
-                                'dirigido a': 'Z',
-                                'nombre del servicio': 'S',
-                                remitente: 'R',
-                                monto: '1000',
-                                moneda: 'usd',
-                                'estado del proceso': 'fantasma', // estado no reconocido
+                                moneda: 'soles',
+                                'estado del proceso': 'enviada',
+                                // falta fecha de cotizacion
                             },
                         ],
                     }),
                 );
                 expect(plan.cotizaciones).toHaveLength(0);
                 const errs = errorsFor('Cotizaciones', validation);
-                expect(errs).toHaveLength(7);
+                expect(errs).toHaveLength(6);
                 expect(errs[0].message).toContain('ID de lead');
-                expect(errs[1].message).toContain('Dirigido a');
-                expect(errs[2].message).toContain('Nombre del servicio');
-                expect(errs[3].message).toContain('Remitente');
-                expect(errs[4].message).toContain('Monto');
-                expect(errs[5].message).toContain('Moneda');
-                expect(errs[6].message).toContain('Estado de cotización');
+                expect(errs[1].message).toContain('Nombre del servicio');
+                expect(errs[2].message).toContain('Monto');
+                expect(errs[3].message).toContain('Moneda');
+                expect(errs[4].message).toContain('Estado de cotización');
+                expect(errs[5].message).toContain('Fecha de cotización');
             });
 
             it('cotización válida normaliza monto con coma decimal', () => {
@@ -291,9 +305,7 @@ describe('Data management module', () => {
                             {
                                 __rowNumber: 2,
                                 'id de lead': 'L1',
-                                'dirigido a': 'Z',
                                 'nombre del servicio': 'S',
-                                remitente: 'R',
                                 monto: 'S/ 1250,50',
                                 moneda: 'soles',
                                 'estado del proceso': 'aceptada',
@@ -323,6 +335,7 @@ describe('Data management module', () => {
                             'nombre completo': 'Org Completa',
                             'tipo de organizacion': 'empresa nacional',
                             tamano: 'grande',
+                            sector: 'tecnologia',
                             ruc: 'sin-digitos', // digits() -> null
                         },
                     ],

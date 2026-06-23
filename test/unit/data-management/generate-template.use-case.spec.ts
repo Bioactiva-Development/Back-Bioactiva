@@ -6,10 +6,12 @@ describe('Data management module', () => {
     describe('GenerateTemplateUseCase', () => {
         let useCase: GenerateTemplateUseCase;
         let workbookBuilder: any;
+        let crmRead: any;
 
         beforeEach(() => {
             workbookBuilder = { build: jest.fn() };
-            useCase = new GenerateTemplateUseCase(workbookBuilder);
+            crmRead = { findActiveUsers: jest.fn().mockResolvedValue([]) };
+            useCase = new GenerateTemplateUseCase(workbookBuilder, crmRead);
         });
 
         it('builds the instructions sheet, the 4 empty data sheets and the reference sheet', async () => {

@@ -102,11 +102,16 @@ export const ESTADO_CORREO_SYNONYMS: Record<string, string> = {
 };
 
 export const LEAD_STATE_SYNONYMS: Record<string, string> = {
+    // Nombres internos del módulo (entrada directa desde el Excel).
+    en_prospecto: 'EN_PROSPECTO',
+    ofertado: 'OFERTADO',
+    cierre_con_venta: 'CIERRE_CON_VENTA',
+    cierre_sin_venta: 'CIERRE_SIN_VENTA',
+    // Sinónimos en español para compatibilidad con archivos anteriores.
     nuevo: 'EN_PROSPECTO',
     'en prospecto': 'EN_PROSPECTO',
     prospecto: 'EN_PROSPECTO',
-    'en proceso': 'OFERTADO', // confirmado con el cliente
-    ofertado: 'OFERTADO',
+    'en proceso': 'OFERTADO',
     'cerrado ganado': 'CIERRE_CON_VENTA',
     'cierre con venta': 'CIERRE_CON_VENTA',
     'cerrado perdido': 'CIERRE_SIN_VENTA',

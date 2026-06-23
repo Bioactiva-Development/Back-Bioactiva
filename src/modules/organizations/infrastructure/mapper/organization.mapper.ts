@@ -115,7 +115,7 @@ export class OrganizationMapper {
             enterpriseTypeMapToDomain[raw.tipo],
             raw.linkedin,
             raw.ubicacion,
-            raw.sector ? sectorMapToDomain[raw.sector] : null,
+            sectorMapToDomain[raw.sector],
             sizeMapToDomain[raw.tamano],
             raw.actividadEconomica,
             raw.alianzasEstrategicas,
@@ -142,9 +142,7 @@ export class OrganizationMapper {
             tipo: enterpriseTypeMapToPersistence[domain.tipo],
             linkedin: domain.linkedin,
             ubicacion: domain.ubicacion,
-            sector: domain.sector
-                ? sectorMapToPersistence[domain.sector]
-                : null,
+            sector: sectorMapToPersistence[domain.sector],
             tamano: sizeMapToPersistence[domain.tamano],
             actividadEconomica: domain.actividadEconomica,
             alianzasEstrategicas: domain.alianzasEstrategicas,

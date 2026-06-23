@@ -80,18 +80,22 @@ export class ExceljsWorkbookBuilder implements IWorkbookBuilder {
                 if (col.note) {
                     headerCell.note = col.note;
                 }
-                if (col.dropdown && col.dropdown.length > 0) {
-                    const range = ensureListRange(col.dropdown);
+                const formula =
+                    col.dropdownFormula ??
+                    (col.dropdown && col.dropdown.length > 0
+                        ? ensureListRange(col.dropdown)
+                        : null);
+                if (formula) {
                     const letter = columnLetter(idx + 1);
                     for (let r = 2; r <= VALIDATION_ROWS + 1; r++) {
                         worksheet.getCell(`${letter}${r}`).dataValidation = {
                             type: 'list',
                             allowBlank: true,
-                            formulae: [range],
+                            formulae: [formula],
                             showErrorMessage: true,
                             errorStyle: 'warning',
                             errorTitle: 'Valor sugerido',
-                            error: 'Elige un valor de la lista. También se aceptan equivalentes (p. ej. "soles" = PEN).',
+                            error: 'Elige un valor de la lista. También se aceptan equivalentes.',
                         };
                     }
                 }

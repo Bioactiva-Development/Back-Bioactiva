@@ -23,6 +23,8 @@ import {
     LeadInput,
     CotizacionInput,
 } from '@/modules/data-management/application/dto/import-types';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import { startOfDayInZone } from '@/shared/infrastructure/datetime/range-in-zone';
 
 /** Nombres de hoja esperados (se buscan sin distinguir mayúsculas/acentos). */
 const SHEET_ALIASES: Record<string, string[]> = {
@@ -32,12 +34,26 @@ const SHEET_ALIASES: Record<string, string[]> = {
     cotizaciones: ['cotizaciones', 'cotizacion', 'cotizaciones', 'quotations'],
 };
 
+/** Convierte una celda (`unknown`) a texto sin disparar `no-base-to-string`. */
+function cellToString(v: unknown): string {
+    if (typeof v === 'string') {
+        return v;
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+        return String(v);
+    }
+    if (v instanceof Date) {
+        return v.toISOString();
+    }
+    return '';
+}
+
 function str(row: ParsedRow, key: string): string | null {
     const v = row[key];
     if (v === null || v === undefined) {
         return null;
     }
-    const s = String(v).trim();
+    const s = cellToString(v).trim();
     return s === '' ? null : s;
 }
 
@@ -49,7 +65,7 @@ function digits(value: string | null): string | null {
     return d === '' ? null : d;
 }
 
-function dateVal(row: ParsedRow, key: string): Date | null {
+function dateVal(row: ParsedRow, key: string, timeZone: string): Date | null {
     const v = row[key];
     if (v === null || v === undefined || v === '') {
         return null;
@@ -57,7 +73,10 @@ function dateVal(row: ParsedRow, key: string): Date | null {
     if (v instanceof Date) {
         return v;
     }
-    const parsed = new Date(String(v));
+    // Una celda de texto solo-fecha ("2026-06-22") se interpreta como ese día
+    // civil en la zona de negocio, no como medianoche UTC (que se guardaría con
+    // un día de desfase). Los valores con hora se respetan como instante.
+    const parsed = startOfDayInZone(cellToString(v).trim(), timeZone);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -82,6 +101,8 @@ export function generateCodigoCliente(
 
 @Injectable()
 export class ImportPlannerService {
+    constructor(private readonly appTime: AppTimeConfig) {}
+
     /** Parsea y valida el libro, construyendo un plan de inserción (sin tocar la BD). */
     plan(workbook: ParsedWorkbook): {
         plan: ImportPlan;
@@ -99,6 +120,8 @@ export class ImportPlannerService {
         const contactos = this.planContactos(contactSheet, errors);
         const leads = this.planLeads(leadSheet, errors, warnings);
         const cotizaciones = this.planCotizaciones(cotSheet, errors);
+
+        this.crossValidateLeadsCotizaciones(leads, cotizaciones, errors, warnings);
 
         const plan: ImportPlan = {
             organizaciones,
@@ -189,18 +212,22 @@ export class ImportPlannerService {
                 });
                 continue;
             }
-            let sector: string | null = null;
-            if (sectorRaw) {
-                const resolved = resolveEnum(SECTOR_SYNONYMS, sectorRaw);
-                if (!resolved) {
-                    errors.push({
-                        sheet,
-                        row: rowNumber,
-                        message: `Sector no reconocido: "${sectorRaw}".`,
-                    });
-                    continue;
-                }
-                sector = resolved;
+            if (!sectorRaw) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Sector".',
+                });
+                continue;
+            }
+            const sector = resolveEnum(SECTOR_SYNONYMS, sectorRaw);
+            if (!sector) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: `Sector no reconocido: "${sectorRaw}".`,
+                });
+                continue;
             }
 
             const ruc = digits(str(row, 'ruc'));
@@ -213,6 +240,7 @@ export class ImportPlannerService {
                 tipo,
                 tamano,
                 sector,
+                subArea: str(row, 'sub area'),
                 alianzasEstrategicas: str(row, 'alianzas'),
                 actividadEconomica: str(row, 'actividades'),
                 ubicacion: str(row, 'departamento'),
@@ -265,6 +293,27 @@ export class ImportPlannerService {
                     continue;
                 }
             }
+            const orgNombreComercial = str(row, 'organizacion abreviado');
+            if (!orgNombreComercial) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Organización". Selecciona una de la hoja Organizaciones.',
+                });
+                continue;
+            }
+            const telefonoRaw = str(row, 'telefono');
+            if (telefonoRaw !== null) {
+                const stripped = telefonoRaw.replace(/[\s\-().]/g, '');
+                if (!/^\+\d{7,15}$/.test(stripped)) {
+                    errors.push({
+                        sheet,
+                        row: rowNumber,
+                        message: `Teléfono inválido: "${telefonoRaw}". Debe iniciar con + y código de país (ej: +51987654321).`,
+                    });
+                    continue;
+                }
+            }
             out.push({
                 rowNumber,
                 nombres,
@@ -273,10 +322,10 @@ export class ImportPlannerService {
                 cargo: str(row, 'cargo'),
                 correo,
                 correo2: str(row, 'correo electronico 2'),
-                telefono: str(row, 'telefono'),
+                telefono: telefonoRaw,
                 comentarios: str(row, 'comentarios'),
-                orgRuc: digits(str(row, 'ruc')),
-                orgNombreComercial: str(row, 'organizacion abreviado'),
+                orgRuc: null,
+                orgNombreComercial,
             });
         }
         return out;
@@ -319,6 +368,15 @@ export class ImportPlannerService {
                 });
                 continue;
             }
+            const orgNombreComercial = str(row, 'organizacion');
+            if (!orgNombreComercial) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Organización". Es obligatoria para importar el lead.',
+                });
+                continue;
+            }
             const encargadoNombre = str(row, 'encargado');
             if (!encargadoNombre) {
                 warnings.push({
@@ -329,15 +387,6 @@ export class ImportPlannerService {
                 });
             }
 
-            const proxNombre = str(row, 'proxima actividad');
-            const actividad = proxNombre
-                ? {
-                      nombre: proxNombre,
-                      fecha: dateVal(row, 'fecha de proxima actividad'),
-                      tipo: 'OTRO', // sin columna de tipo en el Excel (acordado)
-                  }
-                : null;
-
             out.push({
                 rowNumber,
                 excelLeadId: str(row, 'id lead'),
@@ -346,16 +395,121 @@ export class ImportPlannerService {
                 comentarios: str(row, 'comentarios'),
                 desafioOportunidad: str(row, 'desafio u oportunidad'),
                 canalCaptacion: str(row, 'canal de captacion'),
-                createdAt: dateVal(row, 'fecha de creacion'),
-                fechaCierre: dateVal(row, 'fecha de cierre'),
-                orgRuc: digits(str(row, 'ruc // id contacto')),
-                orgNombreComercial: str(row, 'organizacion'),
-                contactoCorreo: str(row, 'correo electronico'),
+                createdAt: dateVal(
+                    row,
+                    'fecha de creacion',
+                    this.appTime.timeZone,
+                ),
+                fechaCierre: null,
+                orgRuc: null,
+                orgNombreComercial,
+                contactoCorreo: str(row, 'contacto'),
                 encargadoNombre,
-                actividad,
+                actividad: null,
             });
         }
         return out;
+    }
+
+    /**
+     * Valida las reglas de negocio que relacionan el estado de un lead con
+     * sus cotizaciones. Muta `lead.autoCreateCotizacion` cuando corresponde.
+     */
+    private crossValidateLeadsCotizaciones(
+        leads: LeadInput[],
+        cotizaciones: CotizacionInput[],
+        errors: RowIssue[],
+        warnings: RowIssue[],
+    ): void {
+        const cotByLeadId = new Map<string, CotizacionInput[]>();
+        for (const cot of cotizaciones) {
+            if (cot.excelLeadId) {
+                const key = String(cot.excelLeadId).trim();
+                if (!cotByLeadId.has(key)) {
+                    cotByLeadId.set(key, []);
+                }
+                cotByLeadId.get(key)!.push(cot);
+            }
+        }
+
+        for (const lead of leads) {
+            const leadKey = lead.excelLeadId
+                ? String(lead.excelLeadId).trim()
+                : null;
+            const cots = leadKey ? (cotByLeadId.get(leadKey) ?? []) : [];
+            const sheet = 'Leads';
+
+            switch (lead.estado) {
+                case 'EN_PROSPECTO':
+                    if (cots.length > 0) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en EN_PROSPECTO no puede tener cotizaciones (encontradas: ${cots.length}).`,
+                        });
+                    }
+                    break;
+
+                case 'OFERTADO':
+                    if (cots.length > 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en OFERTADO solo puede tener 1 cotización (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots.length === 1) {
+                        const est = cots[0].estado;
+                        if (!['PENDIENTE', 'ENVIADA'].includes(est)) {
+                            errors.push({
+                                sheet,
+                                row: lead.rowNumber,
+                                message: `Lead en OFERTADO: la cotización debe estar en PENDIENTE o ENVIADA (estado actual: "${est}").`,
+                            });
+                        }
+                    } else {
+                        lead.autoCreateCotizacion = true;
+                        warnings.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message:
+                                'Lead OFERTADO sin cotización: se creará automáticamente una provisional en estado PENDIENTE.',
+                        });
+                    }
+                    break;
+
+                case 'CIERRE_CON_VENTA':
+                    if (cots.length !== 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_CON_VENTA debe tener exactamente 1 cotización en ACEPTADA (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots[0].estado !== 'ACEPTADA') {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_CON_VENTA: la cotización debe estar en ACEPTADA (estado actual: "${cots[0].estado}").`,
+                        });
+                    }
+                    break;
+
+                case 'CIERRE_SIN_VENTA':
+                    if (cots.length !== 1) {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_SIN_VENTA debe tener exactamente 1 cotización en RECHAZADA (encontradas: ${cots.length}).`,
+                        });
+                    } else if (cots[0].estado !== 'RECHAZADA') {
+                        errors.push({
+                            sheet,
+                            row: lead.rowNumber,
+                            message: `Lead en CIERRE_SIN_VENTA: la cotización debe estar en RECHAZADA (estado actual: "${cots[0].estado}").`,
+                        });
+                    }
+                    break;
+            }
+        }
     }
 
     private planCotizaciones(
@@ -366,16 +520,14 @@ export class ImportPlannerService {
         for (const row of rows) {
             const rowNumber = this.rowNum(row);
             const sheet = 'Cotizaciones';
-            const dirigido = str(row, 'dirigido a');
             const servicio = str(row, 'nombre del servicio');
             const montoRaw = str(row, 'monto');
             const monedaRaw = str(row, 'moneda');
             const estadoRaw = str(row, 'estado del proceso');
-            const remitente = str(row, 'remitente');
             const excelLeadId = str(row, 'id de lead');
 
             // Fila residual sin datos de cotización: se omite.
-            if (!excelLeadId && !dirigido && !servicio && !montoRaw) {
+            if (!excelLeadId && !servicio && !montoRaw) {
                 continue;
             }
             if (!excelLeadId) {
@@ -386,27 +538,11 @@ export class ImportPlannerService {
                 });
                 continue;
             }
-            if (!dirigido) {
-                errors.push({
-                    sheet,
-                    row: rowNumber,
-                    message: 'Falta "Dirigido a".',
-                });
-                continue;
-            }
             if (!servicio) {
                 errors.push({
                     sheet,
                     row: rowNumber,
                     message: 'Falta "Nombre del servicio".',
-                });
-                continue;
-            }
-            if (!remitente) {
-                errors.push({
-                    sheet,
-                    row: rowNumber,
-                    message: 'Falta "Remitente".',
                 });
                 continue;
             }
@@ -439,19 +575,29 @@ export class ImportPlannerService {
                 });
                 continue;
             }
+            const fechaCot = dateVal(
+                row,
+                'fecha de cotizacion',
+                this.appTime.timeZone,
+            );
+            if (!fechaCot) {
+                errors.push({
+                    sheet,
+                    row: rowNumber,
+                    message: 'Falta "Fecha de cotización" o es inválida (usa formato AAAA-MM-DD).',
+                });
+                continue;
+            }
 
             out.push({
                 rowNumber,
                 excelLeadId,
-                fechaCot: dateVal(row, 'fecha de cotizacion'),
-                dirigido,
-                cliente: str(row, 'cliente'),
+                fechaCot,
                 producto: str(row, 'producto'),
                 nombreServicio: servicio,
                 monto,
                 tipo,
                 estado,
-                nombreRemitente: remitente,
                 observacion: str(row, 'observacion'),
                 linkPropuesta: str(row, 'link de propuesta'),
             });

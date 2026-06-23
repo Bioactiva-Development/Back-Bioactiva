@@ -3,6 +3,7 @@ import {
     ImportPlannerService,
     generateCodigoCliente,
 } from '@/modules/data-management/application/services/import-planner.service';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import {
     ParsedRow,
     ParsedWorkbook,
@@ -16,7 +17,9 @@ import {
  */
 describe('Data management module', () => {
     describe('ImportPlannerService — ramas residuales', () => {
-        const planner = new ImportPlannerService();
+        const planner = new ImportPlannerService({
+            timeZone: 'America/Lima',
+        } as unknown as AppTimeConfig);
         const wb = (sheets: Record<string, ParsedRow[]>): ParsedWorkbook =>
             sheets;
         const errorsFor = (sheet: string, validation: { errors: any[] }) =>
@@ -81,6 +84,7 @@ describe('Data management module', () => {
                             __rowNumber: 3,
                             'servicio de interes': 'S',
                             estado: 'nuevo',
+                            organizacion: 'OrgTest',
                             encargado: 'Maria',
                             // string de fecha válido -> dateVal devuelve Date
                             'fecha de creacion': '2024-01-01T00:00:00.000Z',
@@ -158,6 +162,7 @@ describe('Data management module', () => {
                             __rowNumber: 2,
                             'servicio de interes': 'S',
                             estado: 'nuevo',
+                            organizacion: 'OrgTest',
                             encargado: 'Maria',
                             'fecha de creacion': '', // empty -> dateVal null
                         },
@@ -185,6 +190,7 @@ describe('Data management module', () => {
                             __rowNumber: 2,
                             nombre: 'Juan',
                             'correo electronico 1': 'a@x.com',
+                            'organizacion abreviado': 'OrgTest',
                             // sin vocativo -> rama if(vocativoRaw) falsy
                         },
                     ],

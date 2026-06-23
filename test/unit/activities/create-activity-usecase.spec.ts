@@ -7,6 +7,7 @@ import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
 import { PendingActivityExistsException } from '@/modules/activities/domain/exceptions/pending-activity-exists.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 /**
  * CreateActivityUseCase
@@ -56,6 +57,7 @@ describe('Activities module', () => {
             useCase = new CreateActivityUseCase(
                 activityRepository,
                 leadRepository,
+                { timeZone: 'America/Lima' } as unknown as AppTimeConfig,
             );
         });
 

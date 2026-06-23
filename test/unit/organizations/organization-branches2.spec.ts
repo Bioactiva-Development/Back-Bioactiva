@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { GetAllOrganizationsUseCase } from '@/modules/organizations/application/use-cases/get-all-organizations.use-case';
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
+import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { Size } from '@/modules/organizations/domain/enums/size';
 import { PrismaOrganizationRepository } from '@/modules/organizations/infrastructure/persistance/prisma-organization.repository';
 
@@ -44,7 +45,7 @@ describe('Organizations module — branches2', () => {
                 EnterpriseType.EMPRESA_NACIONAL,
                 null,
                 null,
-                null,
+                Sector.OTROS,
                 Size.MICRO,
                 null,
                 null,
@@ -100,7 +101,7 @@ describe('Organizations module — branches2', () => {
                 tipo: 'EMPRESA_NACIONAL',
                 linkedin: null,
                 ubicacion: null,
-                sector: null,
+                sector: 'OTROS' as const,
                 tamano: 'MICRO',
                 actividadEconomica: null,
                 alianzasEstrategicas: null,

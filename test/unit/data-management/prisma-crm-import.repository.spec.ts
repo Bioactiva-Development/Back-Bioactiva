@@ -615,20 +615,17 @@ describe('Data-management import repository', () => {
             const cot = {
                 rowNumber: 5,
                 excelLeadId: 'L1',
-                fechaCot: null,
-                dirigido: 'Gerente',
-                cliente: null,
+                fechaCot: new Date('2024-01-01'),
                 producto: null,
                 nombreServicio: 'Consultoria',
                 monto: '1500',
                 tipo: 'PEN',
                 estado: 'ENVIADA',
-                nombreRemitente: 'Luis',
                 observacion: null,
                 linkPropuesta: null,
             };
 
-            it('should insert a cotizacion linked to its lead (default fechaCot now)', async () => {
+            it('should insert a cotizacion linked to its lead with provided fechaCot', async () => {
                 tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
                 tx.lead.create.mockResolvedValue({ id: 100 });
                 tx.cotizacion.create.mockResolvedValue({ id: 300 });
@@ -646,7 +643,7 @@ describe('Data-management import repository', () => {
                 expect(data.idRemitente).toBe(7);
             });
 
-            it('should keep provided fechaCot when present', async () => {
+            it('should use the exact fechaCot from CotizacionInput', async () => {
                 tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
                 tx.lead.create.mockResolvedValue({ id: 100 });
                 tx.cotizacion.create.mockResolvedValue({ id: 300 });

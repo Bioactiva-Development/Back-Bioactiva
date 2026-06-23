@@ -7,6 +7,7 @@ import { ListLeadsUseCase } from '@/modules/leads/application/use-cases/list-lea
 import { UpdateLeadUseCase } from '@/modules/leads/application/use-cases/update-lead.use-case';
 import { ChangeLeadStatusUseCase } from '@/modules/leads/application/use-cases/change-lead-status.use-case';
 import { DeleteLeadUseCase } from '@/modules/leads/application/use-cases/delete-lead.use-case';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('LeadController', () => {
     let controller: LeadController;
@@ -55,6 +56,10 @@ describe('LeadController', () => {
                     useValue: mocks.changeStatus,
                 },
                 { provide: DeleteLeadUseCase, useValue: mocks.del },
+                {
+                    provide: AppTimeConfig,
+                    useValue: { timeZone: 'America/Lima' },
+                },
             ],
         }).compile();
         controller = moduleRef.get(LeadController);

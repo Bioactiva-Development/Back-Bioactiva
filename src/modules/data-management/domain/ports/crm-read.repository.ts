@@ -123,6 +123,8 @@ export interface ICrmReadRepository {
     findCotizaciones(opts?: {
         filters?: CotizacionExportFilters;
     }): Promise<CotizacionExportRow[]>;
+    /** Devuelve los nombres completos ("Nombres Apellidos") de usuarios ACTIVO. */
+    findActiveUsers(): Promise<string[]>;
 }
 
 export const CRM_READ_REPOSITORY = Symbol('CRM_READ_REPOSITORY');

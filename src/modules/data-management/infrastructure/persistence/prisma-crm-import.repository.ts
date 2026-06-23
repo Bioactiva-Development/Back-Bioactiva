@@ -55,6 +55,8 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 const orgIdByRuc = new Map<string, string>();
                 const orgIdByComercial = new Map<string, string>();
                 const orgIdByNombre = new Map<string, string>();
+                /** Nombre comercial de cada org (por id) para derivar `cliente` en cotizaciones. */
+                const orgNombreComercialById = new Map<string, string>();
 
                 const existingOrgs = await tx.organizacion.findMany({
                     select: {
@@ -74,6 +76,7 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         o.id,
                     );
                     orgIdByNombre.set(normalizeCell(o.nombre), o.id);
+                    orgNombreComercialById.set(o.id, o.nombreComercial);
                 }
 
                 for (const org of plan.organizaciones) {
@@ -121,7 +124,8 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                             ruc: org.ruc,
                             tipo: org.tipo as TipoEmpresa,
                             tamano: org.tamano as Tamano,
-                            sector: (org.sector as Sector | null) ?? null,
+                            sector: org.sector as Sector,
+                            subArea: org.subArea,
                             linkedin: org.linkedin,
                             ubicacion: org.ubicacion,
                             actividadEconomica: org.actividadEconomica,
@@ -137,6 +141,7 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         created.id,
                     );
                     orgIdByNombre.set(normalizeCell(org.nombre), created.id);
+                    orgNombreComercialById.set(created.id, org.nombreComercial);
                 }
 
                 // Resuelve la organización de un contacto/lead por RUC (si lo
@@ -164,11 +169,17 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
 
                 // ---- Contactos ----
                 const contactIdByCorreo = new Map<string, number>();
+                /** Nombre completo del contacto por id (para derivar `dirigido` en cotizaciones). */
+                const contactNombreById = new Map<number, string>();
                 const existingContacts = await tx.contacto.findMany({
-                    select: { id: true, correo: true },
+                    select: { id: true, correo: true, nombres: true, apellidos: true },
                 });
                 for (const c of existingContacts) {
                     contactIdByCorreo.set(normalizeCell(c.correo), c.id);
+                    contactNombreById.set(
+                        c.id,
+                        [c.nombres, c.apellidos].filter(Boolean).join(' ').trim(),
+                    );
                 }
 
                 for (const c of plan.contactos) {
@@ -211,10 +222,19 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                     });
                     summary.inserted.contactos++;
                     contactIdByCorreo.set(correoKey, created.id);
+                    contactNombreById.set(
+                        created.id,
+                        [c.nombres, c.apellidos].filter(Boolean).join(' ').trim(),
+                    );
                 }
 
                 // ---- Leads (+ Actividad pendiente) ----
                 const leadIdByExcelId = new Map<string, number>();
+                /** Metadatos del lead para derivar campos de cotización en el paso siguiente. */
+                const leadMetaByExcelId = new Map<
+                    string,
+                    { orgId: string; contactoId: number | null; encargadoId: number }
+                >();
                 for (const l of plan.leads) {
                     const orgId = resolveOrgId(
                         l.orgRuc,
@@ -273,10 +293,13 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                     });
                     summary.inserted.leads++;
                     if (l.excelLeadId) {
-                        leadIdByExcelId.set(
-                            String(l.excelLeadId).trim(),
-                            createdLead.id,
-                        );
+                        const key = String(l.excelLeadId).trim();
+                        leadIdByExcelId.set(key, createdLead.id);
+                        leadMetaByExcelId.set(key, {
+                            orgId,
+                            contactoId,
+                            encargadoId,
+                        });
                     }
 
                     if (l.actividad) {
@@ -295,12 +318,45 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         });
                         summary.inserted.actividades++;
                     }
+
+                    if (l.autoCreateCotizacion) {
+                        const encargado = users.find(
+                            (u) => u.id === encargadoId,
+                        );
+                        const nombreRemitente = encargado
+                            ? [encargado.nombres, encargado.apellidos]
+                                  .filter(Boolean)
+                                  .join(' ')
+                                  .trim()
+                            : 'Por asignar';
+                        await tx.cotizacion.create({
+                            data: {
+                                fechaCot: new Date(),
+                                cliente: orgNombreComercialById.get(orgId) ?? null,
+                                dirigido: contactoId != null
+                                    ? (contactNombreById.get(contactoId) ?? null)
+                                    : null,
+                                nombreServicio: l.servicioInteres,
+                                nombreRemitente,
+                                monto: '0',
+                                tipo: 'PEN',
+                                estado: 'PENDIENTE',
+                                idLead: createdLead.id,
+                                idRemitente: ctx.authorUserId,
+                                idAuthor: ctx.authorUserId,
+                            },
+                        });
+                        summary.inserted.cotizaciones++;
+                    }
                 }
 
                 // ---- Cotizaciones ----
                 for (const q of plan.cotizaciones) {
-                    const leadId = q.excelLeadId
-                        ? leadIdByExcelId.get(String(q.excelLeadId).trim())
+                    const leadKey = q.excelLeadId
+                        ? String(q.excelLeadId).trim()
+                        : null;
+                    const leadId = leadKey
+                        ? leadIdByExcelId.get(leadKey)
                         : undefined;
                     if (!leadId) {
                         summary.skipped.push({
@@ -310,13 +366,32 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                         });
                         continue;
                     }
+                    const meta = leadKey
+                        ? leadMetaByExcelId.get(leadKey)
+                        : undefined;
+                    const cliente = meta
+                        ? (orgNombreComercialById.get(meta.orgId) ?? null)
+                        : null;
+                    const dirigido =
+                        meta?.contactoId != null
+                            ? (contactNombreById.get(meta.contactoId) ?? null)
+                            : null;
+                    const encargado = meta
+                        ? users.find((u) => u.id === meta.encargadoId)
+                        : undefined;
+                    const nombreRemitente = encargado
+                        ? [encargado.nombres, encargado.apellidos]
+                              .filter(Boolean)
+                              .join(' ')
+                              .trim()
+                        : 'Por asignar';
                     await tx.cotizacion.create({
                         data: {
-                            fechaCot: q.fechaCot ?? new Date(),
-                            dirigido: q.dirigido,
-                            cliente: q.cliente,
+                            fechaCot: q.fechaCot,
+                            dirigido,
+                            cliente,
                             producto: q.producto,
-                            nombreRemitente: q.nombreRemitente,
+                            nombreRemitente,
                             nombreServicio: q.nombreServicio,
                             monto: q.monto,
                             tipo: q.tipo as TipoMoneda,

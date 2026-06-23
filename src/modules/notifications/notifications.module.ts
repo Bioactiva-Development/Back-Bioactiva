@@ -40,6 +40,7 @@ import { CancelNotificationUseCase } from '@/modules/notifications/application/u
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
 import { CompleteActivityFollowUpUseCase } from '@/modules/notifications/application/use-cases/complete-activity-follow-up.use-case';
+import { CancelActivityNotificationsUseCase } from '@/modules/notifications/application/use-cases/cancel-activity-notifications.use-case';
 import { SendInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-internal-email.use-case';
 import { SendInstanceInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-internal-email.use-case';
 import { SendInstanceExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-external-email.use-case';
@@ -107,6 +108,7 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         ListNotificationsUseCase,
         ListActiveTemplatesUseCase,
         CompleteActivityFollowUpUseCase,
+        CancelActivityNotificationsUseCase,
         SendInternalEmailUseCase,
         SendInstanceInternalEmailUseCase,
         SendInstanceExternalEmailUseCase,
@@ -124,6 +126,6 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         ActivityCompletionAdapter,
         { provide: FOLLOW_UP_CANCELER, useExisting: ActivityCompletionAdapter },
     ],
-    exports: [FOLLOW_UP_CANCELER],
+    exports: [FOLLOW_UP_CANCELER, IN_APP_NOTIFICATION_REPOSITORY],
 })
 export class NotificationsModule {}

@@ -4,6 +4,11 @@ import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.
 import { GetDashboardMetricsUseCase } from '@/modules/dashboard/application/use-cases/get-dashboard-metrics.use-case';
 import { DashboardQueryDto } from '@/modules/dashboard/infrastructure/http/dtos/dashboard-query.dto';
 import { DashboardResponseDto } from '@/modules/dashboard/infrastructure/http/dtos/dashboard-response.dto';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import {
+    startOfDayInZone,
+    endOfDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
@@ -12,6 +17,7 @@ import { DashboardResponseDto } from '@/modules/dashboard/infrastructure/http/dt
 export class DashboardController {
     constructor(
         private readonly getDashboardMetricsUseCase: GetDashboardMetricsUseCase,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     @Get('metrics')
@@ -19,8 +25,12 @@ export class DashboardController {
         @Query() query: DashboardQueryDto,
     ): Promise<DashboardResponseDto> {
         const metrics = await this.getDashboardMetricsUseCase.execute({
-            startDate: query.startDate ? new Date(query.startDate) : undefined,
-            endDate: query.endDate ? new Date(query.endDate) : undefined,
+            startDate: query.startDate
+                ? startOfDayInZone(query.startDate, this.appTime.timeZone)
+                : undefined,
+            endDate: query.endDate
+                ? endOfDayInZone(query.endDate, this.appTime.timeZone)
+                : undefined,
             idEncargado: query.idEncargado,
         });
         return new DashboardResponseDto(metrics);
