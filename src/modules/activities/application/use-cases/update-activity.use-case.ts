@@ -5,16 +5,13 @@ import {
     type ActivityRepository,
 } from '@/modules/activities/domain/ports/activity-repository.port';
 import {
-    USER_REPOSITORY,
-    type UserRepositoryPort,
-} from '@/modules/users/domain/ports/user-repository.port';
-import {
     CALENDAR_SYNC,
     type CalendarSyncPort,
 } from '@/modules/integrations/domain/ports/calendar-sync.port';
 import { UpdateActivityDto } from '@/modules/activities/application/dto/update-activity.dto';
 import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 export class UpdateActivityUseCase {
     private readonly logger = new Logger(UpdateActivityUseCase.name);
@@ -22,31 +19,22 @@ export class UpdateActivityUseCase {
     constructor(
         @Inject(ACTIVITY_REPOSITORY)
         private readonly activityRepository: ActivityRepository,
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: UserRepositoryPort,
         @Inject(CALENDAR_SYNC)
         private readonly calendarSync: CalendarSyncPort,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     async execute(id: number, dto: UpdateActivityDto) {
         const activity = await this.activityRepository.findById(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
 
-        if (dto.idResponsable !== undefined) {
-            const responsable = await this.userRepository.findById(
-                dto.idResponsable,
-            );
-            if (!responsable) {
-                throw new ActivityNotFoundException(
-                    `Responsable con id ${dto.idResponsable} no encontrado`,
-                );
-            }
-            activity.id_responsable = dto.idResponsable;
-        }
+        // El responsable no se actualiza desde la petición: es siempre el
+        // encargado del lead (regla de negocio). Cualquier idResponsable recibido
+        // se ignora.
 
         if (dto.nombreActividad !== undefined) {
             activity.nombre_actividad = dto.nombreActividad;
@@ -88,6 +76,7 @@ export class UpdateActivityUseCase {
                     start: activity.fecha_inicio,
                     end: activity.fecha_fin,
                     body: activity.notas,
+                    timeZone: this.appTime.timeZone,
                 },
             );
         } catch (error) {

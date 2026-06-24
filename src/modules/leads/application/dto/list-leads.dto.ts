@@ -1,4 +1,4 @@
-import { ActivityAlertFilter } from '@/modules/leads/domain/enums/activity-alert-filter';
+import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 export class ListLeadsDto {
     constructor(
@@ -8,8 +8,11 @@ export class ListLeadsDto {
         public readonly search?: string,
         public readonly page: number = 1,
         public readonly limit: number = 10,
-        public readonly alertaActividad?: ActivityAlertFilter,
+        public readonly alertaActividad?: ActivityAlertLevel,
         public readonly fechaDesde?: Date,
         public readonly fechaHasta?: Date,
+        public readonly sector?: string,
+        public readonly conActividadesPendientes?: boolean,
+        public readonly tipo?: string,
     ) {}
 }

@@ -18,14 +18,17 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CreateActivityUseCase } from '@/modules/activities/application/use-cases/create-activity.use-case';
+import { CreateActivityCalendarEventUseCase } from '@/modules/activities/application/use-cases/create-activity-calendar-event.use-case';
 import { GetActivityByIdUseCase } from '@/modules/activities/application/use-cases/get-activity-by-id.use-case';
 import { ListActivitiesUseCase } from '@/modules/activities/application/use-cases/list-activities.use-case';
 import { UpdateActivityUseCase } from '@/modules/activities/application/use-cases/update-activity.use-case';
+import { UpdateNotesUseCase } from '@/modules/activities/application/use-cases/update-notes.use-case';
 import { CompleteActivityUseCase } from '@/modules/activities/application/use-cases/complete-activity.use-case';
 import { CancelActivityUseCase } from '@/modules/activities/application/use-cases/cancel-activity.use-case';
 import { DeleteActivityUseCase } from '@/modules/activities/application/use-cases/delete-activity.use-case';
 import { HttpCreateActivityDto } from '@/modules/activities/infrastructure/http/dto/create-activity.dto.http';
 import { HttpUpdateActivityDto } from '@/modules/activities/infrastructure/http/dto/update-activity.dto.http';
+import { HttpUpdateNotesDto } from '@/modules/activities/infrastructure/http/dto/update-notes.dto.http';
 import { ListActivitiesQueryDto } from '@/modules/activities/infrastructure/http/dto/list-activities-query.dto.http';
 import { ActivityResponseDto } from '@/modules/activities/infrastructure/http/dto/activity-response.dto';
 import { PaginatedActivityResponseDto } from '@/modules/activities/infrastructure/http/dto/paginated-activity-response.dto';
@@ -40,9 +43,11 @@ import { ListActivitiesDto } from '@/modules/activities/application/dto/list-act
 export class ActivityController {
     constructor(
         private readonly createActivityUseCase: CreateActivityUseCase,
+        private readonly createActivityCalendarEventUseCase: CreateActivityCalendarEventUseCase,
         private readonly getActivityByIdUseCase: GetActivityByIdUseCase,
         private readonly listActivitiesUseCase: ListActivitiesUseCase,
         private readonly updateActivityUseCase: UpdateActivityUseCase,
+        private readonly updateNotesUseCase: UpdateNotesUseCase,
         private readonly completeActivityUseCase: CompleteActivityUseCase,
         private readonly cancelActivityUseCase: CancelActivityUseCase,
         private readonly deleteActivityUseCase: DeleteActivityUseCase,
@@ -58,7 +63,7 @@ export class ActivityController {
     @ApiResponse({
         status: 400,
         description:
-            'Datos inválidos (fechaFin debe ser mayor que fechaInicio)',
+            'Datos inválidos (fechaFin debe ser mayor que fechaInicio, o la fecha es anterior a la actual)',
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({
@@ -79,11 +84,37 @@ export class ActivityController {
             httpDto.fechaFin,
             httpDto.tipo,
             httpDto.notas ?? null,
-            httpDto.idResponsable,
-            httpDto.syncWithMicrosoft ?? false,
-            httpDto.createTeamsMeeting ?? false,
         );
         const result = await this.createActivityUseCase.execute(createDto);
+        return new ActivityResponseDto(result);
+    }
+
+    @Post(':id/calendar-event')
+    @ApiOperation({
+        summary:
+            'Crear el evento de Microsoft Calendar y la reunión de Teams para una actividad de tipo Reunión',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Evento de calendario creado y vinculado a la actividad',
+        type: ActivityResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'La actividad no es de tipo Reunión o el encargado no tiene Microsoft conectado',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'La actividad ya tiene un evento de calendario',
+    })
+    async createCalendarEvent(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<ActivityResponseDto> {
+        const result =
+            await this.createActivityCalendarEventUseCase.execute(id);
         return new ActivityResponseDto(result);
     }
 
@@ -167,6 +198,23 @@ export class ActivityController {
             httpDto.idResponsable,
         );
         const result = await this.updateActivityUseCase.execute(id, updateDto);
+        return new ActivityResponseDto(result);
+    }
+
+    @Patch(':id/notes')
+    @ApiOperation({ summary: 'Actualizar las notas de una actividad' })
+    @ApiResponse({
+        status: 200,
+        description: 'Notas actualizadas exitosamente',
+        type: ActivityResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+    async updateNotes(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() httpDto: HttpUpdateNotesDto,
+    ): Promise<ActivityResponseDto> {
+        const result = await this.updateNotesUseCase.execute(id, httpDto.notas);
         return new ActivityResponseDto(result);
     }
 

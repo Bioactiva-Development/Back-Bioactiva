@@ -10,6 +10,7 @@ import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-c
 import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
 import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
 import { AcceptInvitationDto } from '@/modules/invitations/infrastructure/http/dto/accept-invitation.dto.htpp';
+import { PaginatedInvitationResponseDto } from '@/modules/invitations/infrastructure/http/dto/paginated-invitation-response.dto';
 import { CreateInvitationDto } from '@/modules/invitations/infrastructure/http/dto/create-invitation.dto.http';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
@@ -95,7 +96,11 @@ export class InvitationController {
         description: 'Búsqueda por correo',
     })
     @ApiQuery({ name: 'estado', required: false, enum: TokenStatus })
-    @ApiResponse({ status: 200, description: 'Listado de invitaciones' })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado paginado de invitaciones',
+        type: PaginatedInvitationResponseDto,
+    })
     @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({
         status: 403,
@@ -107,8 +112,21 @@ export class InvitationController {
         @Query('limit', ParseIntPipe) limit?: number,
         @Query('term') term?: string,
         @Query('estado') estado?: TokenStatus,
-    ) {
-        return this.listInvitationsUseCase.execute(page, limit, term, estado);
+    ): Promise<PaginatedInvitationResponseDto> {
+        const resolvedPage = page ?? 1;
+        const resolvedLimit = limit ?? 10;
+        const { data, total } = await this.listInvitationsUseCase.execute(
+            resolvedPage,
+            resolvedLimit,
+            term,
+            estado,
+        );
+        return new PaginatedInvitationResponseDto(
+            data,
+            total,
+            resolvedPage,
+            resolvedLimit,
+        );
     }
 
     @Get('info/:token')
@@ -177,8 +195,11 @@ export class InvitationController {
 
         response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
             httpOnly: true,
+            // Misma política que el login: en prod el front es cross-site, así
+            // que la cookie necesita SameSite=None + Secure (HTTPS). En dev se
+            // mantiene Lax + no-secure. Requiere NODE_ENV=production en prod.
             secure: isProduction,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
             path: '/auth/refresh',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

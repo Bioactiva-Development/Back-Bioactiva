@@ -37,7 +37,7 @@ export class CreateLeadUseCase {
         );
         if (!organization) {
             throw new LeadNotFoundException(
-                `Organización con id ${dto.idOrg} no encontrada`,
+                'La organización no fue encontrada',
             );
         }
 
@@ -47,7 +47,7 @@ export class CreateLeadUseCase {
             );
             if (!contact) {
                 throw new LeadContactInvalidException(
-                    `Contacto con id ${dto.idContacto} no encontrado`,
+                    'El contacto no fue encontrado',
                 );
             }
             if (contact.idOrganizacion !== dto.idOrg) {
@@ -65,7 +65,7 @@ export class CreateLeadUseCase {
         const encargado = await this.userRepository.findById(dto.idEncargado);
         if (!encargado) {
             throw new LeadNotFoundException(
-                `Encargado con id ${dto.idEncargado} no encontrado`,
+                'El encargado asignado no fue encontrado',
             );
         }
 
@@ -77,7 +77,6 @@ export class CreateLeadUseCase {
             dto.servicioInteres,
             dto.comentarios,
             dto.desafioOportunidad,
-            dto.notasContacto,
             dto.idEncargado,
             dto.canalCaptacion,
             dto.idAuthor,

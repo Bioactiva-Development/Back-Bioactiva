@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { NotificationsController } from '@/modules/notifications/infrastructure/http/notifications.controller';
 import { CreateReminderUseCase } from '@/modules/notifications/application/use-cases/create-reminder.use-case';
 import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-cases/create-follow-up.use-case';
+import { EditFollowUpUseCase } from '@/modules/notifications/application/use-cases/edit-follow-up.use-case';
 import { CancelNotificationUseCase } from '@/modules/notifications/application/use-cases/cancel-notification.use-case';
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
@@ -52,6 +53,10 @@ describe('Notifications module', () => {
                         useValue: { execute: jest.fn() },
                     },
                     {
+                        provide: EditFollowUpUseCase,
+                        useValue: { execute: jest.fn() },
+                    },
+                    {
                         provide: CancelNotificationUseCase,
                         useValue: cancelNotification,
                     },
@@ -81,7 +86,7 @@ describe('Notifications module', () => {
             createReminder.execute.mockResolvedValue(sampleReminder());
 
             const result = await controller.createReminder({
-                idActividad: 1,
+                idLead: 2,
                 fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
                 idTemplate: 5,
                 asunto: 'Asunto',
@@ -93,8 +98,11 @@ describe('Notifications module', () => {
             expect(result.idResponsable).toBe(3);
         });
 
-        it('lists notifications filtered by estado', async () => {
-            listNotifications.execute.mockResolvedValue([sampleReminder()]);
+        it('lists notifications filtered by estado with pagination metadata', async () => {
+            listNotifications.execute.mockResolvedValue({
+                data: [sampleReminder()],
+                total: 1,
+            });
 
             const result = await controller.list({
                 estado: NotificationStatus.PROGRAMADA,
@@ -104,9 +112,40 @@ describe('Notifications module', () => {
                 estado: NotificationStatus.PROGRAMADA,
                 idLead: undefined,
                 idResponsable: undefined,
+                page: 1,
+                limit: 10,
             });
-            expect(result).toHaveLength(1);
-            expect(result[0]).toBeInstanceOf(NotificationResponseDto);
+            expect(result.data).toHaveLength(1);
+            expect(result.data[0]).toBeInstanceOf(NotificationResponseDto);
+            expect(result.meta).toEqual({
+                page: 1,
+                limit: 10,
+                total: 1,
+                totalPages: 1,
+            });
+        });
+
+        it('forwards explicit page and limit', async () => {
+            listNotifications.execute.mockResolvedValue({
+                data: [],
+                total: 30,
+            });
+
+            const result = await controller.list({ page: 2, limit: 5 });
+
+            expect(listNotifications.execute).toHaveBeenCalledWith({
+                estado: undefined,
+                idLead: undefined,
+                idResponsable: undefined,
+                page: 2,
+                limit: 5,
+            });
+            expect(result.meta).toEqual({
+                page: 2,
+                limit: 5,
+                total: 30,
+                totalPages: 6,
+            });
         });
 
         it('cancels a notification by id', async () => {

@@ -4,6 +4,7 @@ import { DashboardController } from '@/modules/dashboard/infrastructure/http/das
 import { GetDashboardMetricsUseCase } from '@/modules/dashboard/application/use-cases/get-dashboard-metrics.use-case';
 import { DashboardQueryDto } from '@/modules/dashboard/infrastructure/http/dtos/dashboard-query.dto';
 import type { DashboardMetrics } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('Dashboard module', () => {
     describe('DashboardController', () => {
@@ -12,14 +13,14 @@ describe('Dashboard module', () => {
 
         const mockMetrics: DashboardMetrics = {
             totalLeads: 100,
-            averageTicketAmount: 5000,
+            averageTicketAmount: { pen: 5000, usd: 1300 },
             conversionRate: 25,
             avgClosingTimeDays: 30.5,
             proposalToCloseRate: 66.67,
             avgProposalStageDays: 15.2,
             avgActivitiesPerLead: 2.5,
-            pipelineTotalAmount: 200000,
-            closedRevenue: 45000,
+            pipelineTotalAmount: { pen: 200000, usd: 50000 },
+            closedRevenue: { pen: 45000, usd: 12000 },
             stalledLeadPercentage: 10,
             periodStart: new Date('2026-01-01'),
             periodEnd: new Date('2026-06-05'),
@@ -34,6 +35,10 @@ describe('Dashboard module', () => {
                     {
                         provide: GetDashboardMetricsUseCase,
                         useValue: getDashboardMetricsUseCase,
+                    },
+                    {
+                        provide: AppTimeConfig,
+                        useValue: { timeZone: 'America/Lima' },
                     },
                 ],
             }).compile();
@@ -84,9 +89,12 @@ describe('Dashboard module', () => {
 
             expect(result.constructor.name).toBe('DashboardResponseDto');
             expect(result.totalLeads).toBe(100);
-            expect(result.averageTicketAmount).toBe(5000);
-            expect(result.pipelineTotalAmount).toBe(200000);
-            expect(result.closedRevenue).toBe(45000);
+            expect(result.averageTicketAmount).toEqual({ pen: 5000, usd: 1300 });
+            expect(result.pipelineTotalAmount).toEqual({
+                pen: 200000,
+                usd: 50000,
+            });
+            expect(result.closedRevenue).toEqual({ pen: 45000, usd: 12000 });
         });
     });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { UserController } from '@/modules/users/infrastructure/http/user.controller';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
+import { GetAssignableUsersUseCase } from '@/modules/users/application/use-cases/get-assignable-users.use-case';
 import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
 import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
 import { ChangeUserRoleUseCase } from '@/modules/users/application/use-cases/change-user-role.use-case';
@@ -12,16 +13,22 @@ import { UserState } from '@/modules/users/domain/enums/estado';
 describe('UserController', () => {
     let controller: UserController;
     let getAllUsersUseCase: jest.Mocked<GetAllUsersUseCase>;
+    let getAssignableUsersUseCase: jest.Mocked<GetAssignableUsersUseCase>;
     let changeUserRoleUseCase: jest.Mocked<ChangeUserRoleUseCase>;
 
     beforeEach(async () => {
         getAllUsersUseCase = { execute: jest.fn() } as any;
+        getAssignableUsersUseCase = { execute: jest.fn() } as any;
         changeUserRoleUseCase = { execute: jest.fn() } as any;
 
         const module = await Test.createTestingModule({
             controllers: [UserController],
             providers: [
                 { provide: GetAllUsersUseCase, useValue: getAllUsersUseCase },
+                {
+                    provide: GetAssignableUsersUseCase,
+                    useValue: getAssignableUsersUseCase,
+                },
                 {
                     provide: DisableUserUseCase,
                     useValue: { execute: jest.fn() },
@@ -40,21 +47,25 @@ describe('UserController', () => {
         controller = module.get(UserController);
     });
 
-    it('should list users with pagination', async () => {
+    it('should list users with pagination, passing the viewer role', async () => {
         getAllUsersUseCase.execute.mockResolvedValue({
             data: [],
             total: 0,
         });
 
         const query = { page: 1, limit: 10 } as any;
-        const result = await controller.findAll(query);
+        const currentUser = { role: UserRole.ADMINISTRADOR } as User;
+        const result = await controller.findAll(query, currentUser);
 
-        expect(getAllUsersUseCase.execute).toHaveBeenCalled();
+        expect(getAllUsersUseCase.execute).toHaveBeenCalledWith(
+            expect.anything(),
+            UserRole.ADMINISTRADOR,
+        );
         expect(result.data).toEqual([]);
         expect(result.meta.total).toBe(0);
     });
 
-    it('should list users with search and role filter', async () => {
+    it('forwards the worker role so the use case restricts the listing', async () => {
         getAllUsersUseCase.execute.mockResolvedValue({
             data: [],
             total: 0,
@@ -67,10 +78,42 @@ describe('UserController', () => {
             page: 1,
             limit: 20,
         } as any;
-        const result = await controller.findAll(query);
+        const currentUser = { role: UserRole.TRABAJADOR } as User;
+        const result = await controller.findAll(query, currentUser);
 
-        expect(getAllUsersUseCase.execute).toHaveBeenCalled();
+        expect(getAllUsersUseCase.execute).toHaveBeenCalledWith(
+            expect.anything(),
+            UserRole.TRABAJADOR,
+        );
         expect(result.meta.total).toBe(0);
+    });
+
+    // Mantis #434: selector de encargado lista a todos los habilitados.
+    it('findAssignable maps enabled users to the response dto', async () => {
+        const user = new User(
+            3,
+            'Fabricio',
+            'Lanche',
+            'fabricio@example.com',
+            'hashed',
+            new Date(),
+            UserRole.ADMINISTRADOR,
+            UserState.ACTIVO,
+            new Date(),
+        );
+        getAssignableUsersUseCase.execute.mockResolvedValue([user]);
+
+        const result = await controller.findAssignable();
+
+        expect(getAssignableUsersUseCase.execute).toHaveBeenCalled();
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+            id: 3,
+            nombres: 'Fabricio',
+            apellidos: 'Lanche',
+            correo: 'fabricio@example.com',
+            rol: 'ADMINISTRADOR',
+        });
     });
 
     // Mantis #333: el administrador cambia el rol de un usuario.

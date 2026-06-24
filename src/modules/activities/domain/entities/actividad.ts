@@ -58,6 +58,7 @@ export class Actividad {
     }
 
     markAsDeleted() {
+        this.estado = EstadoActividad.CANCELADA;
         this.deleted_at = new Date();
         this.updated_at = new Date();
     }

@@ -8,6 +8,7 @@ export interface InvitationsRepositoryPort {
         term?: string,
         estado?: TokenStatus,
     ): Promise<InvitationToken[]>;
+    count(term?: string, estado?: TokenStatus): Promise<number>;
     findPendingExpired(before: Date): Promise<InvitationToken[]>;
     findById(id: number): Promise<InvitationToken | null>;
     findByToken(token: string): Promise<InvitationToken | null>;

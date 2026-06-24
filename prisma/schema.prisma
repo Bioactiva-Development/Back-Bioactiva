@@ -194,7 +194,7 @@ model Organizacion {
   tipo                TipoEmpresa
   linkedin            String?  @db.VarChar(255)
   ubicacion           String?  @db.VarChar(100)
-  sector              Sector?
+  sector              Sector
   tamano              Tamano
   actividadEconomica  String?  @db.VarChar(120)
   alianzasEstrategicas String? @db.VarChar(300)
@@ -245,7 +245,6 @@ model Lead {
   servicioInteres     String @db.VarChar(120)
   comentarios         String? @db.VarChar(500)
   desafioOportunidad  String? @db.VarChar(500)
-  notasContacto       String? @db.VarChar(1000)
   canalCaptacion      String? @db.VarChar(60)
 
   idOrg String @db.Uuid
@@ -372,7 +371,7 @@ model Cotizacion {
   id Int @id @default(autoincrement())
 
   fechaCot DateTime
-  dirigido String @db.VarChar(90)
+  dirigido String? @db.VarChar(90)
   cliente String? @db.VarChar(120)
   producto String? @db.VarChar(120)
   nombreRemitente String @db.VarChar(120)
@@ -477,7 +476,36 @@ model NotificacionProgramada {
   idResponsable Int
   responsable   Usuario @relation(fields: [idResponsable], references: [id])
 
-  // Correo interno (ambos tipos): copia editable de la plantilla
+  // Correo interno (solo RECORDATORIO): copia editable de la plantilla
+  asuntoInterno     String?   @db.VarChar(255)
+  cuerpoInterno     String?
+  fechaEnvioInterno DateTime?
+  idTemplateInterno Int?
+  jobIdInterno      String?   @db.VarChar(150)
+  enviadoInterno    Boolean   @default(false)
+
+  // Destinatario del cliente (solo SEGUIMIENTO): mismo correo para todas las instancias
+  correoCliente String? @db.VarChar(254)
+
+  // Instancias de seguimiento (solo SEGUIMIENTO): 1-3 envíos escalonados
+  instancias SeguimientoInstancia[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Instancia de un SEGUIMIENTO (CU007). Cada seguimiento agrupa de 1 a 3
+/// instancias escalonadas; cada una envía un correo interno al responsable y,
+/// luego, uno externo al cliente. Se ejecutan en orden y sus fechas no se
+/// solapan (la externa de una instancia es anterior a la interna de la siguiente).
+model SeguimientoInstancia {
+  id    Int @id @default(autoincrement())
+  orden Int
+
+  idNotificacion Int
+  notificacion   NotificacionProgramada @relation(fields: [idNotificacion], references: [id], onDelete: Cascade)
+
+  // Correo interno al responsable de la actividad
   asuntoInterno     String   @db.VarChar(255)
   cuerpoInterno     String
   fechaEnvioInterno DateTime
@@ -485,15 +513,16 @@ model NotificacionProgramada {
   jobIdInterno      String?  @db.VarChar(150)
   enviadoInterno    Boolean  @default(false)
 
-  // Correo externo (solo SEGUIMIENTO)
-  correoCliente     String?   @db.VarChar(254)
-  asuntoExterno     String?   @db.VarChar(255)
-  cuerpoExterno     String?
-  fechaEnvioExterno DateTime?
+  // Correo externo al cliente
+  asuntoExterno     String   @db.VarChar(255)
+  cuerpoExterno     String
+  fechaEnvioExterno DateTime
   idTemplateExterno Int?
-  jobIdExterno      String?   @db.VarChar(150)
-  enviadoExterno    Boolean   @default(false)
+  jobIdExterno      String?  @db.VarChar(150)
+  enviadoExterno    Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([idNotificacion, orden])
 }

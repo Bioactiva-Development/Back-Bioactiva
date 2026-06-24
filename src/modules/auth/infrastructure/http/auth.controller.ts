@@ -9,6 +9,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { ApiHeader } from '@nestjs/swagger';
 import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/authenticate-user.use-case';
 import { RefreshSessionUseCase } from '@/modules/auth/application/use-cases/refresh-session.use-case';
 import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
@@ -16,6 +17,10 @@ import { LoginCredentials } from '@/modules/auth/domain/value-objects/login_cred
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { ExtractCookie } from '@/modules/auth/infrastructure/http/decorator/cookie.decorator';
+import {
+    RecaptchaGuard,
+    RECAPTCHA_TOKEN_HEADER,
+} from '@/modules/auth/infrastructure/http/guards/recaptcha.guard';
 import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
 import { User } from '@/modules/users/domain/entities/user';
 import { LoginDto } from '@/modules/auth/infrastructure/http/dtos/login.dto.http';
@@ -29,6 +34,12 @@ export class AuthController {
 
     @Post('login')
     @HttpCode(200)
+    @UseGuards(RecaptchaGuard)
+    @ApiHeader({
+        name: RECAPTCHA_TOKEN_HEADER,
+        description: 'Token de reCAPTCHA Enterprise generado por el frontend',
+        required: true,
+    })
     async login(
         @Body() body: LoginDto,
         @Res({ passthrough: true }) response: Response,
@@ -79,8 +90,12 @@ export class AuthController {
 
         response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
             httpOnly: true,
+            // En prod el front y la API están en sitios distintos: la cookie
+            // debe viajar cross-site (SameSite=None), lo que obliga a
+            // Secure=true (HTTPS). En dev (mismo host localhost, HTTP) se
+            // mantiene Lax + no-secure. Requiere NODE_ENV=production en prod.
             secure: isProduction,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
             path: '/auth/refresh',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });

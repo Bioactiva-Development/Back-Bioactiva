@@ -21,7 +21,7 @@ export class CompleteActivityUseCase {
         const activity = await this.activityRepository.findById(id);
         if (!activity) {
             throw new ActivityNotFoundException(
-                `Actividad con id ${id} no encontrada`,
+                'La actividad no fue encontrada',
             );
         }
 

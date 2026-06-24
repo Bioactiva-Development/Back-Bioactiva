@@ -35,6 +35,11 @@ import { CreateLeadDto } from '@/modules/leads/application/dto/create-lead.dto';
 import { UpdateLeadDto } from '@/modules/leads/application/dto/update-lead.dto';
 import { ChangeLeadStatusDto } from '@/modules/leads/application/dto/change-lead-status.dto';
 import { ListLeadsDto } from '@/modules/leads/application/dto/list-leads.dto';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import {
+    startOfDayInZone,
+    endOfDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 @ApiTags('leads')
 @ApiBearerAuth()
@@ -48,6 +53,7 @@ export class LeadController {
         private readonly updateLeadUseCase: UpdateLeadUseCase,
         private readonly changeLeadStatusUseCase: ChangeLeadStatusUseCase,
         private readonly deleteLeadUseCase: DeleteLeadUseCase,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     @Post()
@@ -67,7 +73,6 @@ export class LeadController {
             httpDto.servicioInteres,
             httpDto.comentarios ?? null,
             httpDto.desafioOportunidad ?? null,
-            httpDto.notasContacto ?? null,
             httpDto.canalCaptacion ?? null,
             httpDto.idEncargado,
             user.id!,
@@ -85,17 +90,30 @@ export class LeadController {
     })
     async findAll(
         @Query() query: ListLeadsQueryDto,
+        @CurrentUser() user: User,
     ): Promise<PaginatedLeadResponseDto> {
+        // "misLeads" reutiliza el filtro existente por encargado, forzándolo al
+        // usuario autenticado.
+        const idEncargado = query.misLeads
+            ? (user.id ?? undefined)
+            : query.idEncargado;
         const dto = new ListLeadsDto(
             query.estado,
             query.idOrg,
-            query.idEncargado,
+            idEncargado,
             query.search,
             query.page,
             query.limit,
             query.alertaActividad,
-            query.fechaDesde ? new Date(query.fechaDesde) : undefined,
-            query.fechaHasta ? new Date(query.fechaHasta) : undefined,
+            query.fechaDesde
+                ? startOfDayInZone(query.fechaDesde, this.appTime.timeZone)
+                : undefined,
+            query.fechaHasta
+                ? endOfDayInZone(query.fechaHasta, this.appTime.timeZone)
+                : undefined,
+            query.sector,
+            query.conActividadesPendientes,
+            query.tipo,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));
@@ -135,14 +153,10 @@ export class LeadController {
         @Body() httpDto: HttpUpdateLeadDto,
     ): Promise<LeadResponseDto> {
         const updateDto = new UpdateLeadDto(
-            httpDto.idOrg,
-            httpDto.idContacto,
             httpDto.servicioInteres,
             httpDto.comentarios,
             httpDto.desafioOportunidad,
-            httpDto.notasContacto,
             httpDto.canalCaptacion,
-            httpDto.idEncargado,
         );
         const result = await this.updateLeadUseCase.execute(id, updateDto);
         return new LeadResponseDto(result);
@@ -159,7 +173,7 @@ export class LeadController {
     @ApiResponse({
         status: 409,
         description:
-            'El lead tiene actividades pendientes; deben resolverse antes de cambiar de estado',
+            'Transición de estado inválida (p. ej. volver a EN_PROSPECTO) o el lead tiene actividades pendientes que deben resolverse antes de cambiar de estado',
     })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,

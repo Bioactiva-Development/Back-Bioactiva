@@ -16,7 +16,7 @@ export class GetCotizacionByIdUseCase {
             await this.cotizacionRepository.findByIdWithRelations(id);
         if (!result) {
             throw new CotizacionNotFoundException(
-                `Cotización con id ${id} no encontrada`,
+                'La cotización no fue encontrada',
             );
         }
         return result;

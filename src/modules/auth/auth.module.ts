@@ -13,6 +13,10 @@ import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.
 import { RolesGuard } from '@/modules/auth/infrastructure/jwt/guards/roles.guard';
 import { BcryptPasswordHasher } from '@/modules/auth/infrastructure/hash/bcrypt-password-hasher';
 import { PrismaUserAuthRepository } from '@/modules/auth/infrastructure/persistance/prisma-user-auth.repository';
+import { RECAPTCHA_VERIFIER } from '@/modules/auth/domain/ports/recaptcha-verifier.port';
+import { RecaptchaConfig } from '@/modules/auth/infrastructure/config/recaptcha.config';
+import { RecaptchaEnterpriseVerifier } from '@/modules/auth/infrastructure/recaptcha/recaptcha-enterprise.verifier';
+import { RecaptchaGuard } from '@/modules/auth/infrastructure/http/guards/recaptcha.guard';
 
 @Module({
     imports: [PassportModule, JwtModule.register({})],
@@ -26,6 +30,9 @@ import { PrismaUserAuthRepository } from '@/modules/auth/infrastructure/persista
         JwtStrategy,
         JwtAuthGuard,
         RolesGuard,
+        RecaptchaConfig,
+        RecaptchaGuard,
+        { provide: RECAPTCHA_VERIFIER, useClass: RecaptchaEnterpriseVerifier },
         { provide: TOKEN_SERVICE, useExisting: JwtTokenService },
         { provide: PASSWORD_HASHER, useExisting: BcryptPasswordHasher },
         {

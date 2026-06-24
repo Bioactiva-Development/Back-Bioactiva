@@ -12,7 +12,7 @@ export class UpdateOrganizationDto {
         public readonly tipo?: EnterpriseType,
         public readonly linkedin?: string | null,
         public readonly ubicacion?: string | null,
-        public readonly sector?: Sector | null,
+        public readonly sector?: Sector,
         public readonly tamano?: Size,
         public readonly actividadEconomica?: string | null,
         public readonly alianzasEstrategicas?: string | null,

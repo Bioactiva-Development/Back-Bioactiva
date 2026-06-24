@@ -13,6 +13,8 @@ export interface CotizacionWithRelations {
 
 export interface ListCotizacionesParams {
     idLead?: number;
+    /** Filtra por la organización del lead asociado (Lead.idOrg). */
+    idOrg?: string;
     estado?: string;
     idRemitente?: number;
     /** Filtra por moneda (PEN / USD). */
@@ -26,8 +28,19 @@ export interface ListCotizacionesParams {
 export interface CotizacionRepositoryPort {
     findById(id: number): Promise<Cotizacion | null>;
     findByIdWithRelations(id: number): Promise<CotizacionWithRelations | null>;
+    /** Cotización (única) vinculada a un lead, o null si no tiene. */
+    findByLead(leadId: number): Promise<Cotizacion | null>;
     save(cotizacion: Cotizacion): Promise<Cotizacion>;
     saveWithRelations(cotizacion: Cotizacion): Promise<CotizacionWithRelations>;
+    /**
+     * Crea la cotización y promueve el estado del lead asociado de forma
+     * atómica (una sola transacción): o se persisten ambos cambios o ninguno.
+     */
+    createAndPromoteLead(
+        cotizacion: Cotizacion,
+        leadId: number,
+        leadState: LeadState,
+    ): Promise<CotizacionWithRelations>;
     acceptAndUpdateLead(
         cotizacionId: number,
         leadId: number,

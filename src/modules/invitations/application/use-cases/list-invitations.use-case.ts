@@ -17,6 +17,10 @@ export class ListInvitationsUseCase {
         term?: string,
         estado?: TokenStatus,
     ) {
-        return await this.invitationsRepository.list(page, limit, term, estado);
+        const [data, total] = await Promise.all([
+            this.invitationsRepository.list(page, limit, term, estado),
+            this.invitationsRepository.count(term, estado),
+        ]);
+        return { data, total };
     }
 }

@@ -7,6 +7,8 @@ export interface ListNotificationsFilter {
     estado?: NotificationStatus;
     idLead?: number;
     idResponsable?: number;
+    page?: number;
+    limit?: number;
 }
 
 export interface NotificationRepositoryPort {
@@ -16,5 +18,12 @@ export interface NotificationRepositoryPort {
     findActiveByActivity(
         idActividad: number,
     ): Promise<ScheduledNotification | null>;
+    /** Seguimiento (agregado completo) que contiene la instancia indicada. */
+    findByInstanceId(
+        instanciaId: number,
+    ): Promise<ScheduledNotification | null>;
     list(filter: ListNotificationsFilter): Promise<ScheduledNotification[]>;
+    count(
+        filter: Omit<ListNotificationsFilter, 'page' | 'limit'>,
+    ): Promise<number>;
 }

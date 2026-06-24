@@ -4,7 +4,6 @@ import { Organization } from '@/modules/organizations/domain/entities/organizati
 import { EnterpriseType } from '@/modules/organizations/domain/enums/organization-type';
 import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
-import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
 import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
@@ -106,7 +105,7 @@ describe('Organizations module', () => {
             expect(mockRepository.findByRuc).not.toHaveBeenCalled();
         });
 
-        it('should reject if RUC already exists locally', async () => {
+        it('reuses and restores the existing record when the RUC already exists', async () => {
             const existingOrg = new Organization(
                 'org-existing',
                 'CLI-002',
@@ -117,7 +116,75 @@ describe('Organizations module', () => {
                 EnterpriseType.EMPRESA_NACIONAL,
                 '',
                 '',
+                Sector.TECNOLOGIA,
+                Size.PEQUENO,
                 null,
+                null,
+                null,
+                1,
+                new Date(),
+                new Date(),
+                new Date(), // estaba soft-deleted
+            );
+
+            (mockRepository.findByRuc as jest.Mock).mockResolvedValue(
+                existingOrg,
+            );
+            (mockRepository.findByCodigoCliente as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockRepository.save as jest.Mock).mockImplementation(
+                async (org: Organization) => org,
+            );
+
+            const result = await useCase.execute(validDto);
+
+            // Reutiliza el mismo registro (no crea uno nuevo)
+            expect(result.id).toBe('org-existing');
+            // Restaura el soft-delete y sobrescribe los datos con el nuevo payload
+            expect(result.deletedAt).toBeNull();
+            expect(result.codigoCliente).toBe(validDto.codigoCliente);
+            expect(result.nombre).toBe(validDto.nombre);
+            expect(mockRepository.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'org-existing',
+                    deletedAt: null,
+                    codigoCliente: validDto.codigoCliente,
+                }),
+            );
+        });
+
+        it('rejects reuse when the new client code belongs to another org', async () => {
+            const existingByRuc = new Organization(
+                'org-existing',
+                'CLI-002',
+                'Existing Company',
+                'ExistingCorp',
+                'Area',
+                validDto.ruc,
+                EnterpriseType.EMPRESA_NACIONAL,
+                '',
+                '',
+                Sector.TECNOLOGIA,
+                Size.PEQUENO,
+                null,
+                null,
+                null,
+                1,
+                new Date(),
+                new Date(),
+            );
+            const otherWithCode = new Organization(
+                'org-other',
+                validDto.codigoCliente,
+                'Other',
+                'OtherCorp',
+                'Area',
+                '20999999999',
+                EnterpriseType.EMPRESA_NACIONAL,
+                '',
+                '',
+                Sector.TECNOLOGIA,
                 Size.PEQUENO,
                 null,
                 null,
@@ -128,12 +195,16 @@ describe('Organizations module', () => {
             );
 
             (mockRepository.findByRuc as jest.Mock).mockResolvedValue(
-                existingOrg,
+                existingByRuc,
+            );
+            (mockRepository.findByCodigoCliente as jest.Mock).mockResolvedValue(
+                otherWithCode,
             );
 
             await expect(useCase.execute(validDto)).rejects.toThrow(
-                OrganizationAlreadyExistsException,
+                DuplicateClientCodeException,
             );
+            expect(mockRepository.save).not.toHaveBeenCalled();
         });
 
         it('should reject if client code already exists (Mantis #189)', async () => {
@@ -149,7 +220,7 @@ describe('Organizations module', () => {
                 EnterpriseType.EMPRESA_NACIONAL,
                 '',
                 '',
-                null,
+                Sector.TECNOLOGIA,
                 Size.PEQUENO,
                 'Actividad',
                 '',

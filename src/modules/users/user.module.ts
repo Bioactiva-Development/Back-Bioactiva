@@ -4,6 +4,7 @@ import { AdminInitializerService } from '@/modules/users/infrastructure/data-ini
 import { PrismaUserRepository } from '@/modules/users/infrastructure/persistance/prisma-user.repository';
 import { USER_REPOSITORY } from '@/modules/users/domain/ports/user-repository.port';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
+import { GetAssignableUsersUseCase } from '@/modules/users/application/use-cases/get-assignable-users.use-case';
 import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
 import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
 import { ChangeUserRoleUseCase } from '@/modules/users/application/use-cases/change-user-role.use-case';
@@ -23,6 +24,7 @@ import { ProfileController } from '@/modules/users/infrastructure/http/profile.c
             useExisting: PrismaUserRepository,
         },
         GetAllUsersUseCase,
+        GetAssignableUsersUseCase,
         DisableUserUseCase,
         EnableUserUseCase,
         ChangeUserRoleUseCase,

@@ -4,7 +4,7 @@ import type { CotizacionWithRelations } from '@/modules/quotations/domain/ports/
 export class CotizacionResponseDto {
     @ApiProperty({ example: 1 }) id: number;
     @ApiProperty({ example: '2026-06-01T10:00:00.000Z' }) fechaCot: Date;
-    @ApiProperty({ example: 'Dr. Martinez' }) dirigido: string;
+    @ApiPropertyOptional({ example: 'Dr. Martinez' }) dirigido: string | null;
     @ApiPropertyOptional({ example: 'TechCorp SA' }) cliente: string | null;
     @ApiPropertyOptional({ example: 'Licencia Software Pro' }) producto:
         | string

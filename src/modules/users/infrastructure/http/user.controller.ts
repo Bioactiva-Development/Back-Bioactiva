@@ -19,6 +19,7 @@ import { RolesGuard } from '@/modules/auth/infrastructure/jwt/guards/roles.guard
 import { Roles } from '@/modules/auth/infrastructure/jwt/decorators/roles.decorator';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { GetAllUsersUseCase } from '@/modules/users/application/use-cases/get-all-users.use-case';
+import { GetAssignableUsersUseCase } from '@/modules/users/application/use-cases/get-assignable-users.use-case';
 import { DisableUserUseCase } from '@/modules/users/application/use-cases/disable-user.use-case';
 import { EnableUserUseCase } from '@/modules/users/application/use-cases/enable-user.use-case';
 import { ChangeUserRoleUseCase } from '@/modules/users/application/use-cases/change-user-role.use-case';
@@ -28,6 +29,7 @@ import { ChangeRoleDto } from '@/modules/users/infrastructure/http/dtos/change-r
 import { UserResponseDto } from '@/modules/users/infrastructure/http/dtos/user-response.dto';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { PaginatedUserResponseDto } from '@/modules/users/infrastructure/http/dtos/paginated-user-response.dto';
+import { AssignableUserResponseDto } from '@/modules/users/infrastructure/http/dtos/assignable-user-response.dto';
 import { ListUsersDto } from '@/modules/users/application/dto/list-users.dto';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -35,11 +37,11 @@ import { User } from '@/modules/users/domain/entities/user';
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMINISTRADOR)
 @Controller('users')
 export class UserController {
     constructor(
         private readonly getAllUsersUseCase: GetAllUsersUseCase,
+        private readonly getAssignableUsersUseCase: GetAssignableUsersUseCase,
         private readonly disableUserUseCase: DisableUserUseCase,
         private readonly enableUserUseCase: EnableUserUseCase,
         private readonly changeUserRoleUseCase: ChangeUserRoleUseCase,
@@ -49,7 +51,7 @@ export class UserController {
     @ApiOperation({
         summary: 'Listar usuarios',
         description:
-            'Obtiene un listado paginado de usuarios con filtros opcionales. Solo accesible para administradores.',
+            'Obtiene un listado paginado de usuarios con filtros opcionales. Un administrador ve a todos los usuarios; un trabajador solo ve a otros trabajadores.',
     })
     @ApiResponse({
         status: 200,
@@ -57,12 +59,9 @@ export class UserController {
         type: PaginatedUserResponseDto,
     })
     @ApiResponse({ status: 401, description: 'No autenticado' })
-    @ApiResponse({
-        status: 403,
-        description: 'No autorizado — se requiere rol ADMINISTRADOR',
-    })
     async findAll(
         @Query() query: ListUsersQueryDto,
+        @CurrentUser() currentUser: User,
     ): Promise<PaginatedUserResponseDto> {
         const dto = new ListUsersDto(
             query.search,
@@ -71,7 +70,10 @@ export class UserController {
             query.page,
             query.limit,
         );
-        const { data, total } = await this.getAllUsersUseCase.execute(dto);
+        const { data, total } = await this.getAllUsersUseCase.execute(
+            dto,
+            currentUser.role,
+        );
         const responseData = data.map((user) => new UserResponseDto(user));
         return new PaginatedUserResponseDto(
             responseData,
@@ -81,7 +83,27 @@ export class UserController {
         );
     }
 
+    @Get('assignable')
+    @ApiOperation({
+        summary: 'Listar usuarios habilitados para asignación',
+        description:
+            'Devuelve todos los usuarios en estado Habilitado para poblar selectores ' +
+            '(p. ej. el encargado de un lead). Accesible para cualquier usuario ' +
+            'autenticado, sin importar el rol.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Usuarios habilitados',
+        type: [AssignableUserResponseDto],
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    async findAssignable(): Promise<AssignableUserResponseDto[]> {
+        const users = await this.getAssignableUsersUseCase.execute();
+        return users.map((user) => new AssignableUserResponseDto(user));
+    }
+
     @Patch(':id/disable')
+    @Roles(UserRole.ADMINISTRADOR)
     @HttpCode(204)
     @ApiOperation({
         summary: 'Deshabilitar usuario',
@@ -111,6 +133,7 @@ export class UserController {
     }
 
     @Patch(':id/enable')
+    @Roles(UserRole.ADMINISTRADOR)
     @HttpCode(204)
     @ApiOperation({
         summary: 'Habilitar usuario',
@@ -133,6 +156,7 @@ export class UserController {
     }
 
     @Patch(':id/role')
+    @Roles(UserRole.ADMINISTRADOR)
     @ApiOperation({
         summary: 'Cambiar el rol de un usuario',
         description:

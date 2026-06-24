@@ -9,25 +9,35 @@ import {
 } from '@/modules/integrations/domain/ports/microsoft-provider.port';
 import { MicrosoftAuthConfig } from '@/modules/integrations/infrastructure/config/microsoft-auth.config';
 import { MicrosoftOAuthFailedException } from '@/modules/integrations/domain/exceptions/microsoft-oauth-failed.exception';
+import { MicrosoftRefreshTokenInvalidException } from '@/modules/integrations/domain/exceptions/microsoft-refresh-token-invalid.exception';
 import { MicrosoftGraphRequestException } from '@/modules/integrations/domain/exceptions/microsoft-graph-request.exception';
+import { toLocalISOString } from '@/shared/infrastructure/datetime/range-in-zone';
 
 @Injectable()
 export class MicrosoftGraphProvider implements MicrosoftProviderPort {
-    private readonly msalClient: ConfidentialClientApplication;
+    constructor(private readonly config: MicrosoftAuthConfig) {}
 
-    constructor(private readonly config: MicrosoftAuthConfig) {
+    /**
+     * Crea un cliente MSAL con cache en memoria propio para CADA operación de
+     * tokens. Antes el cliente era un singleton: su cache acumulaba los refresh
+     * tokens de todos los usuarios y `extractRefreshTokenFromCache` tomaba el
+     * primero (`Object.keys()[0]`), por lo que la rotación podía persistir el
+     * token de otra cuenta (fuga cross-usuario). Con un cliente efímero el cache
+     * solo contiene el token de la llamada en curso.
+     */
+    private buildClient(): ConfidentialClientApplication {
         const msalConfig: Configuration = {
             auth: {
-                clientId: config.clientId,
-                clientSecret: config.clientSecret,
-                authority: config.authority,
+                clientId: this.config.clientId,
+                clientSecret: this.config.clientSecret,
+                authority: this.config.authority,
             },
         };
-        this.msalClient = new ConfidentialClientApplication(msalConfig);
+        return new ConfidentialClientApplication(msalConfig);
     }
 
     async getAuthUrl(state: string): Promise<string> {
-        return await this.msalClient.getAuthCodeUrl({
+        return await this.buildClient().getAuthCodeUrl({
             redirectUri: this.config.redirectUri,
             scopes: this.config.scopes,
             state,
@@ -35,14 +45,15 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
     }
 
     async exchangeCodeForTokens(code: string): Promise<TokenResponse> {
+        const client = this.buildClient();
         try {
-            const response = await this.msalClient.acquireTokenByCode({
+            const response = await client.acquireTokenByCode({
                 code,
                 redirectUri: this.config.redirectUri,
                 scopes: this.config.scopes,
             });
 
-            const refreshToken = this.extractRefreshTokenFromCache();
+            const refreshToken = this.extractRefreshTokenFromCache(client);
 
             return {
                 accessToken: response.accessToken,
@@ -92,8 +103,9 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
     }
 
     async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+        const client = this.buildClient();
         try {
-            const response = await this.msalClient.acquireTokenByRefreshToken({
+            const response = await client.acquireTokenByRefreshToken({
                 refreshToken,
                 scopes: this.config.scopes,
             });
@@ -104,7 +116,7 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 );
             }
 
-            const newRefreshToken = this.extractRefreshTokenFromCache();
+            const newRefreshToken = this.extractRefreshTokenFromCache(client);
 
             return {
                 accessToken: response.accessToken,
@@ -119,10 +131,40 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
             if (error instanceof MicrosoftOAuthFailedException) {
                 throw error;
             }
+            // invalid_grant (o las variantes AADSTS de expiración/revocación) son
+            // terminales: el refresh token murió y hay que reconectar la cuenta.
+            // Se distingue de un fallo transitorio (red, 5xx) para que el caller
+            // marque la integración como desconectada solo en este caso.
+            if (this.isInvalidRefreshTokenError(error)) {
+                throw new MicrosoftRefreshTokenInvalidException(
+                    'El refresh token de Microsoft expiró o fue revocado; se requiere reconectar la cuenta',
+                );
+            }
             throw new MicrosoftOAuthFailedException(
                 `Error al refrescar token: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
+    }
+
+    /**
+     * Indica si el error de MSAL corresponde a un refresh token caducado/revocado.
+     * Microsoft lo señala con `errorCode === 'invalid_grant'` y/o un código AADSTS:
+     *  - AADSTS700082: refresh token expirado por inactividad.
+     *  - AADSTS70008:  token expirado o revocado.
+     *  - AADSTS50173:  credenciales cambiadas (p. ej. cambio de contraseña).
+     *  - AADSTS700084: refresh token fuera de su ventana de validez.
+     */
+    private isInvalidRefreshTokenError(error: unknown): boolean {
+        const e = error as {
+            errorCode?: string;
+            errorMessage?: string;
+            message?: string;
+        };
+        if (e?.errorCode === 'invalid_grant') {
+            return true;
+        }
+        const detail = `${e?.errorMessage ?? ''} ${e?.message ?? ''}`;
+        return /AADSTS(700082|70008|50173|700084)/.test(detail);
     }
 
     async createCalendarEvent(
@@ -181,6 +223,9 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
         event: GraphEventData,
         onlineMeeting: boolean,
     ): Record<string, unknown> {
+        const tz = event.timeZone ?? 'UTC';
+        const format = (d: Date) =>
+            tz === 'UTC' ? d.toISOString() : toLocalISOString(d, tz);
         return {
             subject: event.subject,
             body: {
@@ -188,12 +233,12 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
                 content: event.body ?? '',
             },
             start: {
-                dateTime: event.start.toISOString(),
-                timeZone: 'UTC',
+                dateTime: format(event.start),
+                timeZone: tz,
             },
             end: {
-                dateTime: event.end.toISOString(),
-                timeZone: 'UTC',
+                dateTime: format(event.end),
+                timeZone: tz,
             },
             ...(onlineMeeting
                 ? {
@@ -243,9 +288,11 @@ export class MicrosoftGraphProvider implements MicrosoftProviderPort {
         > | null;
     }
 
-    private extractRefreshTokenFromCache(): string | undefined {
+    private extractRefreshTokenFromCache(
+        client: ConfidentialClientApplication,
+    ): string | undefined {
         try {
-            const cache = this.msalClient.getTokenCache();
+            const cache = client.getTokenCache();
             const cacheData = cache.serialize();
             const parsed = JSON.parse(cacheData);
             const refreshTokens = parsed.RefreshToken;

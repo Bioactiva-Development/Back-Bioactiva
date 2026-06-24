@@ -8,6 +8,7 @@ import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { CotizacionNotFoundException } from '@/modules/quotations/domain/exceptions/cotizacion-not-found.exception';
 import { InvalidCotizacionTransitionException } from '@/modules/quotations/domain/exceptions/invalid-cotizacion-transition.exception';
 import { LeadNotFoundException } from '@/modules/leads/domain/exceptions/lead-not-found.exception';
+import { LeadHasPendingActivitiesException } from '@/modules/leads/domain/exceptions/lead-has-pending-activities.exception';
 
 /**
  * Accept / Reject Cotizacion use cases
@@ -52,7 +53,12 @@ describe('Quotations module', () => {
                 findById: jest.fn(),
                 acceptAndUpdateLead: jest.fn(),
             };
-            leadRepository = { findById: jest.fn() };
+            leadRepository = {
+                findById: jest.fn(),
+                hasPendingActivities: jest
+                    .fn<() => Promise<boolean>>()
+                    .mockResolvedValue(false),
+            };
             useCase = new AcceptCotizacionUseCase(
                 cotizacionRepository,
                 leadRepository,
@@ -138,6 +144,25 @@ describe('Quotations module', () => {
                 cotizacionRepository.acceptAndUpdateLead,
             ).not.toHaveBeenCalled();
         });
+
+        it('should throw when the lead has pending activities and not close the lead', async () => {
+            cotizacionRepository.findById.mockResolvedValue(
+                buildCotizacion(EstadoCot.PENDIENTE, 1, 10),
+            );
+            leadRepository.findById.mockResolvedValue({
+                id: 10,
+                changeState: jest.fn(),
+            });
+            leadRepository.hasPendingActivities.mockResolvedValue(true);
+
+            await expect(useCase.execute(1)).rejects.toThrow(
+                LeadHasPendingActivitiesException,
+            );
+            expect(leadRepository.hasPendingActivities).toHaveBeenCalledWith(10);
+            expect(
+                cotizacionRepository.acceptAndUpdateLead,
+            ).not.toHaveBeenCalled();
+        });
     });
 
     describe('RejectCotizacionUseCase', () => {
@@ -150,7 +175,12 @@ describe('Quotations module', () => {
                 findById: jest.fn(),
                 rejectAndUpdateLead: jest.fn(),
             };
-            leadRepository = { findById: jest.fn() };
+            leadRepository = {
+                findById: jest.fn(),
+                hasPendingActivities: jest
+                    .fn<() => Promise<boolean>>()
+                    .mockResolvedValue(false),
+            };
             useCase = new RejectCotizacionUseCase(
                 cotizacionRepository,
                 leadRepository,
@@ -210,6 +240,25 @@ describe('Quotations module', () => {
             await expect(useCase.execute(1)).rejects.toThrow(
                 LeadNotFoundException,
             );
+            expect(
+                cotizacionRepository.rejectAndUpdateLead,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('should throw when the lead has pending activities and not close the lead', async () => {
+            cotizacionRepository.findById.mockResolvedValue(
+                buildCotizacion(EstadoCot.ENVIADA, 5, 50),
+            );
+            leadRepository.findById.mockResolvedValue({
+                id: 50,
+                changeState: jest.fn(),
+            });
+            leadRepository.hasPendingActivities.mockResolvedValue(true);
+
+            await expect(useCase.execute(5)).rejects.toThrow(
+                LeadHasPendingActivitiesException,
+            );
+            expect(leadRepository.hasPendingActivities).toHaveBeenCalledWith(50);
             expect(
                 cotizacionRepository.rejectAndUpdateLead,
             ).not.toHaveBeenCalled();

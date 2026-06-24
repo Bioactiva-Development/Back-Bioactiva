@@ -32,13 +32,13 @@ describe('Users module', () => {
             useCase = new GetAllUsersUseCase(mockRepository);
         });
 
-        it('should return paginated users with default params', async () => {
+        it('should return paginated users with default params (admin viewer)', async () => {
             const users = [buildUser(1, 'John', 'john@test.com')];
             mockRepository.findAll.mockResolvedValue(users);
             mockRepository.countAll.mockResolvedValue(1);
 
             const dto = new ListUsersDto();
-            const result = await useCase.execute(dto);
+            const result = await useCase.execute(dto, UserRole.ADMINISTRADOR);
 
             expect(result.data).toEqual(users);
             expect(result.total).toBe(1);
@@ -56,7 +56,7 @@ describe('Users module', () => {
             });
         });
 
-        it('should pass search, role and estado filters to repository', async () => {
+        it('admin can filter by any role', async () => {
             mockRepository.findAll.mockResolvedValue([]);
             mockRepository.countAll.mockResolvedValue(0);
 
@@ -67,7 +67,7 @@ describe('Users module', () => {
                 2,
                 5,
             );
-            await useCase.execute(dto);
+            await useCase.execute(dto, UserRole.ADMINISTRADOR);
 
             expect(mockRepository.findAll).toHaveBeenCalledWith({
                 search: 'john',
@@ -83,12 +83,40 @@ describe('Users module', () => {
             });
         });
 
+        it('worker only sees workers, ignoring an incoming role filter', async () => {
+            mockRepository.findAll.mockResolvedValue([]);
+            mockRepository.countAll.mockResolvedValue(0);
+
+            // El trabajador intenta filtrar por ADMINISTRADOR: se fuerza TRABAJADOR.
+            const dto = new ListUsersDto(
+                undefined,
+                UserRole.ADMINISTRADOR,
+                undefined,
+                1,
+                10,
+            );
+            await useCase.execute(dto, UserRole.TRABAJADOR);
+
+            expect(mockRepository.findAll).toHaveBeenCalledWith({
+                search: undefined,
+                role: UserRole.TRABAJADOR,
+                estado: undefined,
+                page: 1,
+                limit: 10,
+            });
+            expect(mockRepository.countAll).toHaveBeenCalledWith({
+                search: undefined,
+                role: UserRole.TRABAJADOR,
+                estado: undefined,
+            });
+        });
+
         it('should handle empty results', async () => {
             mockRepository.findAll.mockResolvedValue([]);
             mockRepository.countAll.mockResolvedValue(0);
 
             const dto = new ListUsersDto();
-            const result = await useCase.execute(dto);
+            const result = await useCase.execute(dto, UserRole.ADMINISTRADOR);
 
             expect(result.data).toHaveLength(0);
             expect(result.total).toBe(0);
@@ -98,7 +126,9 @@ describe('Users module', () => {
             mockRepository.findAll.mockRejectedValue(new Error('DB error'));
 
             const dto = new ListUsersDto();
-            await expect(useCase.execute(dto)).rejects.toThrow('DB error');
+            await expect(
+                useCase.execute(dto, UserRole.ADMINISTRADOR),
+            ).rejects.toThrow('DB error');
         });
     });
 });

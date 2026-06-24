@@ -5,27 +5,36 @@ RUN apt-get update -y && \
     apt-get install -y openssl netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
+# El proyecto usa pnpm (campo packageManager en package.json); corepack lo
+# habilita con la versión exacta sin instalarlo globalmente.
+RUN corepack enable
+
 FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm install
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
 COPY prisma ./prisma
 COPY prisma.config.ts nest-cli.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
-RUN npx prisma generate
-RUN npm run build
+RUN pnpm exec prisma generate
+RUN pnpm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 COPY src/modules/common/mail/templates ./dist/modules/common/mail/templates
 COPY src/modules/common/mail/templates ./src/modules/common/mail/templates
+
+# Directorio donde el compose monta (bind-mount) el service account de
+# reCAPTCHA en runtime. Se crea en la imagen para garantizar que el destino
+# del montaje exista siempre como directorio.
+RUN mkdir -p /app/credentials
 
 EXPOSE 3000
 

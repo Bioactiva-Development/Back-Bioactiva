@@ -7,13 +7,15 @@ import { Actividad } from '@/modules/activities/domain/entities/actividad';
 import { ActivityNotFoundException } from '@/modules/activities/domain/exceptions/activity-not-found.exception';
 import { InvalidActivityDateException } from '@/modules/activities/domain/exceptions/invalid-activity-date.exception';
 import { PendingActivityExistsException } from '@/modules/activities/domain/exceptions/pending-activity-exists.exception';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 /**
  * CreateActivityUseCase
  * ---------------------
  * Verifica las validaciones de creación con repositorios mockeados:
  * - Lead existente y no eliminado (RN-001) → si no, ActivityNotFoundException.
- * - Responsable existente (RN-002) → si no, ActivityNotFoundException.
+ * - El responsable es SIEMPRE el encargado del lead (no se elige): se deriva de
+ *   lead.id_encargado, no de la petición.
  * - fechaInicio < fechaFin (RN-003) → InvalidActivityDateException.
  * - Sin actividad PENDIENTE previa del lead (RN-004) → PendingActivityExistsException.
  * - La actividad creada inicia en estado PENDIENTE (RN-005).
@@ -23,13 +25,14 @@ describe('Activities module', () => {
         let useCase: CreateActivityUseCase;
         let activityRepository: any;
         let leadRepository: any;
-        let userRepository: any;
-        let calendarSync: any;
 
         const validLeadId = 1;
-        const validResponsableId = 5;
-        const fechaInicio = new Date('2026-06-01T10:00:00.000Z');
-        const fechaFin = new Date('2026-06-01T11:00:00.000Z');
+        const leadEncargadoId = 5;
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        // Fechas relativas a "ahora" para que las pruebas no caduquen y respeten
+        // la regla de que la actividad no puede programarse en el pasado.
+        const fechaInicio = new Date(Date.now() + DAY_MS);
+        const fechaFin = new Date(Date.now() + DAY_MS + 60 * 60 * 1000);
 
         const buildDto = (
             overrides?: Partial<CreateActivityDto>,
@@ -41,29 +44,6 @@ describe('Activities module', () => {
                 overrides?.fechaFin ?? fechaFin,
                 overrides?.tipo ?? TipoActividad.LLAMADA,
                 overrides?.notas !== undefined ? overrides.notas : null,
-                overrides?.idResponsable ?? validResponsableId,
-                overrides?.syncWithMicrosoft ?? false,
-                overrides?.createTeamsMeeting ?? false,
-            );
-
-        const buildSavedActivity = (tipo = TipoActividad.LLAMADA) =>
-            new Actividad(
-                1,
-                'Llamada de seguimiento',
-                fechaInicio,
-                fechaFin,
-                tipo,
-                EstadoActividad.PENDIENTE,
-                null,
-                null,
-                false,
-                null,
-                false,
-                validLeadId,
-                validResponsableId,
-                new Date(),
-                new Date(),
-                null,
             );
 
         beforeEach(() => {
@@ -73,39 +53,35 @@ describe('Activities module', () => {
                 save: jest.fn(),
             };
             leadRepository = { findById: jest.fn() };
-            userRepository = { findById: jest.fn() };
-            calendarSync = {
-                isUserConnected: jest.fn(),
-                createCalendarEvent: jest.fn(),
-                updateCalendarEvent: jest.fn(),
-                deleteCalendarEvent: jest.fn(),
-            };
 
             useCase = new CreateActivityUseCase(
                 activityRepository,
                 leadRepository,
-                userRepository,
-                calendarSync,
+                { timeZone: 'America/Lima' } as unknown as AppTimeConfig,
             );
         });
 
-        it('should create activity with valid data', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+        it('should create activity assigning the lead encargado as responsable', async () => {
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
-            activityRepository.saveWithRelations.mockResolvedValue({
-                activity: {},
-            });
+
+            let savedResponsable: number | null = null;
+            activityRepository.saveWithRelations.mockImplementation(
+                (activity: Actividad) => {
+                    savedResponsable = activity.id_responsable;
+                    return { activity };
+                },
+            );
 
             const result = await useCase.execute(buildDto());
 
             expect(result).toBeDefined();
             expect(leadRepository.findById).toHaveBeenCalledWith(validLeadId);
-            expect(userRepository.findById).toHaveBeenCalledWith(
-                validResponsableId,
-            );
+            // El responsable se deriva del encargado del lead, no de la petición.
+            expect(savedResponsable).toBe(leadEncargadoId);
             expect(activityRepository.findPendingByLead).toHaveBeenCalledWith(
                 validLeadId,
             );
@@ -121,24 +97,15 @@ describe('Activities module', () => {
             expect(activityRepository.saveWithRelations).not.toHaveBeenCalled();
         });
 
-        it('should throw when responsable does not exist', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue(null);
-
-            await expect(useCase.execute(buildDto())).rejects.toThrow(
-                ActivityNotFoundException,
-            );
-        });
-
         it('should throw when fechaFin is before or equal to fechaInicio', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
 
             const dto = buildDto({
-                fechaInicio: new Date('2026-06-01T11:00:00.000Z'),
-                fechaFin: new Date('2026-06-01T10:00:00.000Z'),
+                fechaInicio: new Date(Date.now() + 2 * DAY_MS),
+                fechaFin: new Date(Date.now() + DAY_MS),
             });
 
             await expect(useCase.execute(dto)).rejects.toThrow(
@@ -146,10 +113,28 @@ describe('Activities module', () => {
             );
         });
 
+        // Mantis #441: no se puede programar una actividad en el pasado.
+        it('should throw when fechaInicio is before the current date', async () => {
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
+            });
+
+            const dto = buildDto({
+                fechaInicio: new Date(Date.now() - DAY_MS),
+                fechaFin: new Date(Date.now() + DAY_MS),
+            });
+
+            await expect(useCase.execute(dto)).rejects.toThrow(
+                InvalidActivityDateException,
+            );
+            expect(activityRepository.saveWithRelations).not.toHaveBeenCalled();
+        });
+
         it('should throw when a pending activity already exists for the lead', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue({
                 id: 99,
@@ -163,9 +148,9 @@ describe('Activities module', () => {
         });
 
         it('should assign PENDIENTE as initial state', async () => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
 
@@ -182,132 +167,20 @@ describe('Activities module', () => {
             expect(savedState).toBe(EstadoActividad.PENDIENTE);
         });
 
-        const arrangeValidCreate = (saved: Actividad) => {
-            leadRepository.findById.mockResolvedValue({ id: validLeadId });
-            userRepository.findById.mockResolvedValue({
-                id: validResponsableId,
+        it('no longer creates the Outlook/Teams event on creation', async () => {
+            leadRepository.findById.mockResolvedValue({
+                id: validLeadId,
+                id_encargado: leadEncargadoId,
             });
             activityRepository.findPendingByLead.mockResolvedValue(null);
             activityRepository.saveWithRelations.mockResolvedValue({
-                activity: saved,
-            });
-        };
-
-        // Caso 1: usuario sin Microsoft conectado
-        it('should create the activity without Outlook/Teams when user is not connected', async () => {
-            const saved = buildSavedActivity();
-            arrangeValidCreate(saved);
-            calendarSync.isUserConnected.mockResolvedValue(false);
-
-            await useCase.execute(buildDto({ syncWithMicrosoft: true }));
-
-            expect(calendarSync.createCalendarEvent).not.toHaveBeenCalled();
-            expect(saved.outlook_event_id).toBeNull();
-            expect(saved.teams_meeting_url).toBeNull();
-        });
-
-        it('should not sync at all when syncWithMicrosoft is false', async () => {
-            const saved = buildSavedActivity();
-            arrangeValidCreate(saved);
-
-            await useCase.execute(buildDto({ syncWithMicrosoft: false }));
-
-            expect(calendarSync.isUserConnected).not.toHaveBeenCalled();
-            expect(calendarSync.createCalendarEvent).not.toHaveBeenCalled();
-        });
-
-        // Caso 2: usuario conectado -> evento Outlook creado
-        it('should create the Outlook event when user is connected', async () => {
-            const saved = buildSavedActivity();
-            arrangeValidCreate(saved);
-            calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue({
-                outlookEventId: 'evt-1',
-                teamsJoinUrl: null,
+                activity: {},
             });
 
-            await useCase.execute(buildDto({ syncWithMicrosoft: true }));
+            await useCase.execute(buildDto({ tipo: TipoActividad.REUNION }));
 
-            expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
-                validResponsableId,
-                expect.objectContaining({ subject: 'Llamada de seguimiento' }),
-                { onlineMeeting: false },
-            );
-            expect(saved.outlook_event_id).toBe('evt-1');
-            expect(saved.teams_meeting_url).toBeNull();
-            expect(activityRepository.save).toHaveBeenCalledWith(saved);
-        });
-
-        // Caso 3: usuario conectado + Teams (tipo REUNION)
-        it('should create Outlook event and Teams meeting for a REUNION', async () => {
-            const saved = buildSavedActivity(TipoActividad.REUNION);
-            arrangeValidCreate(saved);
-            calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue({
-                outlookEventId: 'evt-1',
-                teamsJoinUrl: 'https://teams.microsoft.com/l/meetup-join/xyz',
-            });
-
-            await useCase.execute(
-                buildDto({
-                    tipo: TipoActividad.REUNION,
-                    syncWithMicrosoft: true,
-                    createTeamsMeeting: true,
-                }),
-            );
-
-            expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
-                validResponsableId,
-                expect.any(Object),
-                { onlineMeeting: true },
-            );
-            expect(saved.outlook_event_id).toBe('evt-1');
-            expect(saved.teams_meeting_url).toBe(
-                'https://teams.microsoft.com/l/meetup-join/xyz',
-            );
-        });
-
-        // RN-004: solo REUNION puede generar Teams
-        it('should not request an online meeting for a non-REUNION activity', async () => {
-            const saved = buildSavedActivity(TipoActividad.LLAMADA);
-            arrangeValidCreate(saved);
-            calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockResolvedValue({
-                outlookEventId: 'evt-1',
-                teamsJoinUrl: null,
-            });
-
-            await useCase.execute(
-                buildDto({
-                    tipo: TipoActividad.LLAMADA,
-                    syncWithMicrosoft: true,
-                    createTeamsMeeting: true,
-                }),
-            );
-
-            expect(calendarSync.createCalendarEvent).toHaveBeenCalledWith(
-                validResponsableId,
-                expect.any(Object),
-                { onlineMeeting: false },
-            );
-            expect(saved.teams_meeting_url).toBeNull();
-        });
-
-        // RN-003: un error de Microsoft no impide crear la actividad
-        it('should keep the activity created when Outlook sync fails', async () => {
-            const saved = buildSavedActivity();
-            arrangeValidCreate(saved);
-            calendarSync.isUserConnected.mockResolvedValue(true);
-            calendarSync.createCalendarEvent.mockRejectedValue(
-                new Error('Graph API down'),
-            );
-
-            const result = await useCase.execute(
-                buildDto({ syncWithMicrosoft: true }),
-            );
-
-            expect(result).toBeDefined();
-            expect(saved.outlook_event_id).toBeNull();
+            // La creación del evento es ahora explícita desde el Calendario.
+            expect(activityRepository.save).not.toHaveBeenCalled();
         });
     });
 });

@@ -19,6 +19,12 @@ export interface UserRepositoryPort {
     count(options: { where: { role: UserRole } }): Promise<number>;
     findAll(params?: FindAllParams): Promise<User[]>;
     countAll(params?: Omit<FindAllParams, 'page' | 'limit'>): Promise<number>;
+    /**
+     * Todos los usuarios habilitados (estado ACTIVO), sin paginar, para poblar
+     * selectores de asignación (p. ej. el encargado de un lead). Accesible a
+     * cualquier rol, a diferencia del listado de gestión.
+     */
+    findEnabled(): Promise<User[]>;
 }
 
 export const USER_REPOSITORY = Symbol('USER_REPOSITORY');

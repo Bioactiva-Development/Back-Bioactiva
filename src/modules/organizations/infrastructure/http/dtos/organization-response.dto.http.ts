@@ -32,8 +32,8 @@ export class OrganizationResponseDto {
     @ApiProperty({ example: null, nullable: true })
     ubicacion: string | null;
 
-    @ApiProperty({ enum: Sector, example: 'TECNOLOGIA', nullable: true })
-    sector: Sector | null;
+    @ApiProperty({ enum: Sector, example: 'TECNOLOGIA' })
+    sector: Sector;
 
     @ApiProperty({ enum: Size, example: 'MEDIANO' })
     tamano: Size;

@@ -22,11 +22,6 @@ export class LeadResponseDto {
     })
     desafioOportunidad: string | null;
 
-    @ApiPropertyOptional({
-        example: 'Llamada inicial realizada',
-    })
-    notasContacto: string | null;
-
     @ApiPropertyOptional({ example: 'LinkedIn' })
     canalCaptacion: string | null;
 
@@ -64,9 +59,9 @@ export class LeadResponseDto {
 
     @ApiProperty({
         enum: ActivityAlertLevel,
-        example: ActivityAlertLevel.VERDE,
+        example: ActivityAlertLevel.PENDIENTE,
         description:
-            'Semáforo de actividades del lead: VERDE (al día), AMARILLO (pendientes por vencer) o ROJO (pendientes vencidas).',
+            'Semáforo de actividades del lead: SIN_ACTIVIDADES (sin pendientes), PENDIENTE, EN_RIESGO (alguna pendiente pasó la mitad de su tiempo disponible) o POR_VENCER (alguna vence en ≤4 días o ya está vencida).',
     })
     activityAlert: ActivityAlertLevel;
 
@@ -76,7 +71,6 @@ export class LeadResponseDto {
         this.servicioInteres = enriched.lead.servicio_interes;
         this.comentarios = enriched.lead.comentarios;
         this.desafioOportunidad = enriched.lead.desafio_oportunidad;
-        this.notasContacto = enriched.lead.notas_contacto;
         this.canalCaptacion = enriched.lead.canal_captacion;
         this.idOrg = enriched.lead.id_org;
         this.organizationName = enriched.organizationName;

@@ -1,17 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+    ArrayMaxSize,
+    ArrayMinSize,
+    IsArray,
     IsDate,
     IsEmail,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     Length,
     Min,
     ValidateNested,
 } from 'class-validator';
 
-export class HttpFollowUpInternalDto {
+export class HttpFollowUpEmailDto {
     @ApiProperty({ example: '2026-06-10T14:00:00.000Z' })
     @Type(() => Date)
     @IsDate()
@@ -19,12 +23,15 @@ export class HttpFollowUpInternalDto {
 
     @ApiProperty({
         example: 1,
-        description: 'ID de la plantilla del correo interno',
+        required: false,
+        nullable: true,
+        description: 'ID de la plantilla del correo (opcional)',
     })
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    idTemplate!: number;
+    idTemplate: number | null = null;
 
     @ApiProperty({ example: 'Revisión de actividad' })
     @IsString()
@@ -32,63 +39,57 @@ export class HttpFollowUpInternalDto {
     @Length(1, 255)
     asunto!: string;
 
-    @ApiProperty({ example: '<p>Por favor revisa la actividad...</p>' })
+    @ApiProperty({ example: '<p>Contenido del correo...</p>' })
     @IsString()
     @IsNotEmpty()
     cuerpo!: string;
 }
 
-export class HttpFollowUpExternalDto {
+export class HttpFollowUpInstanceDto {
+    @ApiProperty({
+        type: HttpFollowUpEmailDto,
+        description: 'Correo interno al responsable de la actividad',
+    })
+    @ValidateNested()
+    @Type(() => HttpFollowUpEmailDto)
+    internal!: HttpFollowUpEmailDto;
+
+    @ApiProperty({
+        type: HttpFollowUpEmailDto,
+        description: 'Correo externo al cliente (posterior al interno)',
+    })
+    @ValidateNested()
+    @Type(() => HttpFollowUpEmailDto)
+    external!: HttpFollowUpEmailDto;
+}
+
+export class HttpCreateFollowUpDto {
+    @ApiProperty({
+        example: 1,
+        description:
+            'ID del lead. La actividad activa (única) se resuelve en el servidor',
+    })
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    idLead!: number;
+
     @ApiProperty({
         example: 'cliente@empresa.com',
-        description: 'Correo del contacto asociado al lead',
+        description:
+            'Correo del contacto del lead; el mismo para todas las instancias',
     })
     @IsEmail()
     correoCliente!: string;
 
     @ApiProperty({
-        example: '2026-06-10T16:00:00.000Z',
-        description: 'Debe ser posterior al envío del correo interno',
+        type: [HttpFollowUpInstanceDto],
+        description: 'Una única instancia de seguimiento',
     })
-    @Type(() => Date)
-    @IsDate()
-    fechaEnvio!: Date;
-
-    @ApiProperty({
-        example: 2,
-        description: 'ID de la plantilla del correo externo',
-    })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    idTemplate!: number;
-
-    @ApiProperty({ example: 'Seguimiento de su propuesta' })
-    @IsString()
-    @IsNotEmpty()
-    @Length(1, 255)
-    asunto!: string;
-
-    @ApiProperty({ example: '<p>Estimado cliente...</p>' })
-    @IsString()
-    @IsNotEmpty()
-    cuerpo!: string;
-}
-
-export class HttpCreateFollowUpDto {
-    @ApiProperty({ example: 1, description: 'ID de la actividad asociada' })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    idActividad!: number;
-
-    @ApiProperty({ type: HttpFollowUpInternalDto })
-    @ValidateNested()
-    @Type(() => HttpFollowUpInternalDto)
-    internal!: HttpFollowUpInternalDto;
-
-    @ApiProperty({ type: HttpFollowUpExternalDto })
-    @ValidateNested()
-    @Type(() => HttpFollowUpExternalDto)
-    external!: HttpFollowUpExternalDto;
+    @IsArray()
+    @ArrayMinSize(1)
+    @ArrayMaxSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => HttpFollowUpInstanceDto)
+    instancias!: HttpFollowUpInstanceDto[];
 }

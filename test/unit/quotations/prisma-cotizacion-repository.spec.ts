@@ -1,6 +1,8 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { PrismaCotizacionRepository } from '@/modules/quotations/infrastructure/persistance/prisma-cotizacion.repository';
+import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
 import { EstadoCot } from '@/modules/quotations/domain/enums/estado-cot';
+import { TipoMoneda } from '@/modules/quotations/domain/enums/tipo-moneda';
 import { LeadState } from '@/modules/leads/domain/enums/lead-state';
 import { CotizacionConflictException } from '@/modules/quotations/domain/exceptions/cotizacion-conflict.exception';
 
@@ -51,9 +53,31 @@ describe('Quotations module', () => {
             return error;
         }
 
+        const buildCotizacion = () =>
+            new Cotizacion(
+                null,
+                new Date('2026-02-01T00:00:00.000Z'),
+                'Dr. Martinez',
+                'TechCorp SA',
+                'Licencia',
+                'Juan Perez',
+                'Desarrollo',
+                '5000.00',
+                TipoMoneda.USD,
+                EstadoCot.PENDIENTE,
+                null,
+                null,
+                10,
+                7,
+                3,
+                new Date('2026-01-01T00:00:00.000Z'),
+                new Date('2026-01-01T00:00:00.000Z'),
+                null,
+            );
+
         beforeEach(() => {
             prismaService = {
-                cotizacion: { update: jest.fn() },
+                cotizacion: { update: jest.fn(), create: jest.fn() },
                 lead: { update: jest.fn() },
                 $transaction: jest.fn(),
             };
@@ -145,6 +169,46 @@ describe('Quotations module', () => {
                     EstadoCot.PENDIENTE,
                 ),
             ).rejects.toThrow(prismaError);
+        });
+
+        describe('createAndPromoteLead', () => {
+            it('creates the quotation and updates the lead state in a single transaction', async () => {
+                prismaService.$transaction.mockResolvedValue([
+                    {},
+                    enrichedRecord('PENDIENTE'),
+                ]);
+
+                const result = await repository.createAndPromoteLead(
+                    buildCotizacion(),
+                    10,
+                    LeadState.OFERTADO,
+                );
+
+                // Una sola transacción que abarca lead.update + cotizacion.create.
+                expect(prismaService.$transaction).toHaveBeenCalledTimes(1);
+                expect(prismaService.lead.update).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: { id: 10 },
+                        data: expect.objectContaining({ estado: 'OFERTADO' }),
+                    }),
+                );
+                expect(prismaService.cotizacion.create).toHaveBeenCalledTimes(1);
+                expect(result.cotizacion.id_lead).toBe(10);
+            });
+
+            it('propagates errors so the transaction rolls back both changes', async () => {
+                prismaService.$transaction.mockRejectedValue(
+                    createPrismaError('P2002', 'Unique constraint failed.'),
+                );
+
+                await expect(
+                    repository.createAndPromoteLead(
+                        buildCotizacion(),
+                        10,
+                        LeadState.OFERTADO,
+                    ),
+                ).rejects.toBeInstanceOf(Error);
+            });
         });
     });
 });

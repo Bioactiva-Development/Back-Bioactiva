@@ -105,6 +105,17 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
         }
     }
 
+    async findByLead(leadId: number): Promise<Cotizacion | null> {
+        try {
+            const record = await this.prisma.cotizacion.findFirst({
+                where: { idLead: leadId, deletedAt: null },
+            });
+            return record ? CotizacionMapper.toDomain(record) : null;
+        } catch (error) {
+            this.handlePrismaError(error);
+        }
+    }
+
     async findByIdWithRelations(
         id: number,
     ): Promise<CotizacionWithRelations | null> {
@@ -151,10 +162,23 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
     ): Prisma.CotizacionWhereInput {
         const where: Prisma.CotizacionWhereInput = {
             deletedAt: null,
+            // No mostrar cotizaciones cuyo lead u organización fueron
+            // eliminados (soft delete).
+            lead: { deletedAt: null, organizacion: { deletedAt: null } },
         };
 
         if (params?.idLead) {
             where.idLead = params.idLead;
+        }
+
+        if (params?.idOrg) {
+            // La cotización no guarda la organización: se filtra por la del lead
+            // asociado a través de la relación, manteniendo el soft-delete.
+            where.lead = {
+                deletedAt: null,
+                idOrg: params.idOrg,
+                organizacion: { deletedAt: null },
+            };
         }
 
         const estado = this.parseEstado(params?.estado);
@@ -226,6 +250,58 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
             this.handlePrismaError(error, {
                 operation: 'saveWithRelations',
                 cotizacionId: cotizacion.id,
+            });
+        }
+    }
+
+    async createAndPromoteLead(
+        cotizacion: Cotizacion,
+        leadId: number,
+        leadState: LeadState,
+    ): Promise<CotizacionWithRelations> {
+        const data = CotizacionMapper.toPersistence(cotizacion);
+        try {
+            // Se actualiza el lead primero y luego se crea la cotización con sus
+            // relaciones, de modo que el leadEstado incluido refleje ya el nuevo
+            // estado. Ambas operaciones van en una sola transacción.
+            const [, created] = await this.prisma.$transaction([
+                this.prisma.lead.update({
+                    where: { id: leadId },
+                    data: {
+                        estado: LeadMapper.mapStateToPrisma(leadState),
+                        updatedAt: new Date(),
+                        ultimoCambioEstado: new Date(),
+                        // Promover a OFERTADO no sella fecha de cierre; solo los
+                        // cierres con venta lo hacen (ver updateEstadoAndLead).
+                        fechaCierre:
+                            leadState === LeadState.CIERRE_CON_VENTA
+                                ? new Date()
+                                : undefined,
+                    },
+                }),
+                this.prisma.cotizacion.create({
+                    data,
+                    include: {
+                        lead: {
+                            select: {
+                                servicioInteres: true,
+                                estado: true,
+                                contacto: {
+                                    select: { nombres: true, apellidos: true },
+                                },
+                            },
+                        },
+                        remitente: {
+                            select: { nombres: true, apellidos: true },
+                        },
+                    },
+                }),
+            ]);
+            return this.mapToCotizacionWithRelations(created);
+        } catch (error) {
+            this.handlePrismaError(error, {
+                operation: 'createAndPromoteLead',
+                cotizacionId: null,
             });
         }
     }

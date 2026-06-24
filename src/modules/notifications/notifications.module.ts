@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '@/modules/common/prisma/prisma.module';
 import { MailModule } from '@/modules/common/mail/mail.module';
 import { RedisModule } from '@/modules/common/redis/redis.module';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 import { FOLLOW_UP_CANCELER } from '@/modules/activities/domain/ports/follow-up-canceler.port';
 import { NOTIFICATION_REPOSITORY } from '@/modules/notifications/domain/ports/notification-repository.port';
 import { NOTIFICATION_SCHEDULER } from '@/modules/notifications/domain/ports/notification-scheduler.port';
@@ -34,12 +35,15 @@ import { NotificationsController } from '@/modules/notifications/infrastructure/
 import { TemplatesController } from '@/modules/notifications/infrastructure/http/templates.controller';
 import { CreateReminderUseCase } from '@/modules/notifications/application/use-cases/create-reminder.use-case';
 import { CreateFollowUpUseCase } from '@/modules/notifications/application/use-cases/create-follow-up.use-case';
+import { EditFollowUpUseCase } from '@/modules/notifications/application/use-cases/edit-follow-up.use-case';
 import { CancelNotificationUseCase } from '@/modules/notifications/application/use-cases/cancel-notification.use-case';
 import { ListNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-notifications.use-case';
 import { ListActiveTemplatesUseCase } from '@/modules/notifications/application/use-cases/list-active-templates.use-case';
 import { CompleteActivityFollowUpUseCase } from '@/modules/notifications/application/use-cases/complete-activity-follow-up.use-case';
+import { CancelActivityNotificationsUseCase } from '@/modules/notifications/application/use-cases/cancel-activity-notifications.use-case';
 import { SendInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-internal-email.use-case';
-import { SendExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-external-email.use-case';
+import { SendInstanceInternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-internal-email.use-case';
+import { SendInstanceExternalEmailUseCase } from '@/modules/notifications/application/use-cases/send-instance-external-email.use-case';
 import { GenerateStaleLeadAlertsUseCase } from '@/modules/notifications/application/use-cases/generate-stale-lead-alerts.use-case';
 import { ListInAppNotificationsUseCase } from '@/modules/notifications/application/use-cases/list-in-app-notifications.use-case';
 import { MarkInAppNotificationReadUseCase } from '@/modules/notifications/application/use-cases/mark-in-app-notification-read.use-case';
@@ -59,6 +63,7 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
     ],
     controllers: [NotificationsController, TemplatesController],
     providers: [
+        AppTimeConfig,
         PrismaNotificationRepository,
         {
             provide: NOTIFICATION_REPOSITORY,
@@ -98,12 +103,15 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         },
         CreateReminderUseCase,
         CreateFollowUpUseCase,
+        EditFollowUpUseCase,
         CancelNotificationUseCase,
         ListNotificationsUseCase,
         ListActiveTemplatesUseCase,
         CompleteActivityFollowUpUseCase,
+        CancelActivityNotificationsUseCase,
         SendInternalEmailUseCase,
-        SendExternalEmailUseCase,
+        SendInstanceInternalEmailUseCase,
+        SendInstanceExternalEmailUseCase,
         GenerateStaleLeadAlertsUseCase,
         ListInAppNotificationsUseCase,
         MarkInAppNotificationReadUseCase,
@@ -118,6 +126,6 @@ import { DeleteEmailTemplateUseCase } from '@/modules/notifications/application/
         ActivityCompletionAdapter,
         { provide: FOLLOW_UP_CANCELER, useExisting: ActivityCompletionAdapter },
     ],
-    exports: [FOLLOW_UP_CANCELER],
+    exports: [FOLLOW_UP_CANCELER, IN_APP_NOTIFICATION_REPOSITORY],
 })
 export class NotificationsModule {}

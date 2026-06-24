@@ -22,10 +22,13 @@ describe('Integrations module', () => {
             );
         });
 
-        it('connect delegates with the current user id', async () => {
+        it('connect delegates with the current user id and returnTo', async () => {
             connect.execute.mockResolvedValue({ url: 'https://login' });
-            const result = await controller.connect({ id: 5 } as any);
-            expect(connect.execute).toHaveBeenCalledWith(5);
+            const result = await controller.connect(
+                { id: 5 } as any,
+                '/notificaciones',
+            );
+            expect(connect.execute).toHaveBeenCalledWith(5, '/notificaciones');
             expect(result).toEqual({ url: 'https://login' });
         });
 
@@ -55,6 +58,23 @@ describe('Integrations module', () => {
             expect(callback.execute).toHaveBeenCalledWith('auth-code', 42);
             expect(res.redirect).toHaveBeenCalledWith(
                 expect.stringContaining('microsoft=connected'),
+            );
+        });
+
+        it('callback redirects to the returnTo path encoded in the state', async () => {
+            callback.execute.mockResolvedValue(undefined);
+            const res: any = { redirect: jest.fn() };
+
+            await controller.callback(
+                {
+                    state: `42:nonce:${encodeURIComponent('/notificaciones')}`,
+                    code: 'auth-code',
+                } as any,
+                res,
+            );
+
+            expect(res.redirect).toHaveBeenCalledWith(
+                expect.stringContaining('/notificaciones?microsoft=connected'),
             );
         });
 

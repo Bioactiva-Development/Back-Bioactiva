@@ -68,7 +68,7 @@ export class HttpUpdateOrganizationDto {
 
     @IsEnum(Sector, { message: 'El sector no es un valor válido.' })
     @IsOptional()
-    sector?: Sector | null;
+    sector?: Sector;
 
     @IsEnum(Size, { message: 'El tamaño no es un valor válido.' })
     @IsOptional()

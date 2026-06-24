@@ -7,6 +7,7 @@ import { ListLeadsUseCase } from '@/modules/leads/application/use-cases/list-lea
 import { UpdateLeadUseCase } from '@/modules/leads/application/use-cases/update-lead.use-case';
 import { ChangeLeadStatusUseCase } from '@/modules/leads/application/use-cases/change-lead-status.use-case';
 import { DeleteLeadUseCase } from '@/modules/leads/application/use-cases/delete-lead.use-case';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
 
 describe('LeadController', () => {
     let controller: LeadController;
@@ -26,7 +27,6 @@ describe('LeadController', () => {
             servicio_interes: 'Consultoría',
             comentarios: null,
             desafio_oportunidad: null,
-            notas_contacto: null,
             canal_captacion: null,
             id_org: 'org-1',
             id_contacto: null,
@@ -56,6 +56,10 @@ describe('LeadController', () => {
                     useValue: mocks.changeStatus,
                 },
                 { provide: DeleteLeadUseCase, useValue: mocks.del },
+                {
+                    provide: AppTimeConfig,
+                    useValue: { timeZone: 'America/Lima' },
+                },
             ],
         }).compile();
         controller = moduleRef.get(LeadController);
@@ -75,9 +79,32 @@ describe('LeadController', () => {
 
     it('findAll returns a paginated response', async () => {
         mocks.list.execute.mockResolvedValue({ data: [enriched], total: 1 });
-        const result = await controller.findAll({ page: 1, limit: 10 } as any);
+        const result = await controller.findAll(
+            { page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
         expect(result.data).toHaveLength(1);
         expect(result.meta.total).toBe(1);
+    });
+
+    it('findAll maps misLeads to the authenticated user id as encargado', async () => {
+        mocks.list.execute.mockResolvedValue({ data: [], total: 0 });
+        await controller.findAll(
+            { misLeads: true, page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
+        expect(mocks.list.execute.mock.calls[0][0].idEncargado).toBe(9);
+    });
+
+    it('findAll forwards conActividadesPendientes', async () => {
+        mocks.list.execute.mockResolvedValue({ data: [], total: 0 });
+        await controller.findAll(
+            { conActividadesPendientes: true, page: 1, limit: 10 } as any,
+            { id: 9 } as any,
+        );
+        expect(
+            mocks.list.execute.mock.calls[0][0].conActividadesPendientes,
+        ).toBe(true);
     });
 
     it('findOne delegates to the get use case', async () => {

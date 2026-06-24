@@ -67,12 +67,14 @@ describe('OrganizationController', () => {
         expect(result.nombre).toBe('Empresa SAC');
     });
 
-    it('should find all organizations', async () => {
-        getAllOrganizationsUseCase.execute.mockResolvedValue([
-            { id: 'org-1', nombre: 'Empresa SAC' },
-        ]);
-        const result = await controller.findAll();
-        expect(result).toHaveLength(1);
+    it('should find all organizations (paginated)', async () => {
+        getAllOrganizationsUseCase.execute.mockResolvedValue({
+            data: [{ id: 'org-1', nombre: 'Empresa SAC' }],
+            total: 1,
+        });
+        const result = await controller.findAll({ page: 1, limit: 10 } as any);
+        expect(result.data).toHaveLength(1);
+        expect(result.meta.total).toBe(1);
     });
 
     it('should find organization by id with embedded contacts', async () => {

@@ -30,6 +30,11 @@ import { PaginatedCotizacionResponseDto } from '@/modules/quotations/infrastruct
 import { CreateCotizacionDto } from '@/modules/quotations/application/dto/create-cotizacion.dto';
 import { UpdateCotizacionDto } from '@/modules/quotations/application/dto/update-cotizacion.dto';
 import { ListCotizacionesDto } from '@/modules/quotations/application/dto/list-cotizaciones.dto';
+import { AppTimeConfig } from '@/shared/infrastructure/config/app-time.config';
+import {
+    startOfDayInZone,
+    endOfDayInZone,
+} from '@/shared/infrastructure/datetime/range-in-zone';
 
 @ApiTags('quotations')
 @ApiBearerAuth()
@@ -45,6 +50,7 @@ export class CotizacionController {
         private readonly acceptCotizacionUseCase: AcceptCotizacionUseCase,
         private readonly rejectCotizacionUseCase: RejectCotizacionUseCase,
         private readonly deleteCotizacionUseCase: DeleteCotizacionUseCase,
+        private readonly appTime: AppTimeConfig,
     ) {}
 
     @Post()
@@ -53,9 +59,7 @@ export class CotizacionController {
         @CurrentUser() user: User,
     ): Promise<CotizacionResponseDto> {
         const dto = new CreateCotizacionDto(
-            new Date(httpDto.fechaCot),
-            httpDto.dirigido,
-            httpDto.cliente ?? null,
+            startOfDayInZone(httpDto.fechaCot, this.appTime.timeZone),
             httpDto.producto ?? null,
             httpDto.nombreServicio,
             httpDto.monto,
@@ -78,11 +82,16 @@ export class CotizacionController {
             query.idLead,
             query.estado,
             query.idRemitente,
-            query.fechaDesde ? new Date(query.fechaDesde) : undefined,
-            query.fechaHasta ? new Date(query.fechaHasta) : undefined,
+            query.fechaDesde
+                ? startOfDayInZone(query.fechaDesde, this.appTime.timeZone)
+                : undefined,
+            query.fechaHasta
+                ? endOfDayInZone(query.fechaHasta, this.appTime.timeZone)
+                : undefined,
             query.page,
             query.limit,
             query.tipo,
+            query.idOrg,
         );
         const { data, total } = await this.listCotizacionesUseCase.execute(dto);
         return new PaginatedCotizacionResponseDto(
@@ -107,7 +116,9 @@ export class CotizacionController {
         @Body() httpDto: HttpUpdateCotizacionDto,
     ): Promise<CotizacionResponseDto> {
         const dto = new UpdateCotizacionDto(
-            httpDto.fechaCot ? new Date(httpDto.fechaCot) : undefined,
+            httpDto.fechaCot
+                ? startOfDayInZone(httpDto.fechaCot, this.appTime.timeZone)
+                : undefined,
             httpDto.dirigido,
             httpDto.cliente,
             httpDto.producto,
