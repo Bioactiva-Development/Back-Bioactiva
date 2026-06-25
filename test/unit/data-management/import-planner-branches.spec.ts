@@ -143,7 +143,7 @@ describe('Data management module', () => {
                                 nombre: 'Juan',
                                 'correo electronico 1': 'a@x.com',
                                 vocativo: 'sr',
-                                'organizacion abreviado': 'OrgTest',
+                                organizacion: 'OrgTest',
                             },
                         ],
                     }),

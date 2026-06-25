@@ -190,7 +190,7 @@ describe('Data management module', () => {
                             __rowNumber: 2,
                             nombre: 'Juan',
                             'correo electronico 1': 'a@x.com',
-                            'organizacion abreviado': 'OrgTest',
+                            organizacion: 'OrgTest',
                             // sin vocativo -> rama if(vocativoRaw) falsy
                         },
                     ],
