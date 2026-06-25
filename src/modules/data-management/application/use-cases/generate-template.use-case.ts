@@ -109,7 +109,7 @@ export class GenerateTemplateUseCase {
                     note: 'Obligatorio. Nombres del contacto.',
                 }),
                 col('Apellidos'),
-                col('Organización abreviado', {
+                col('Organización', {
                     required: true,
                     dropdownFormula: 'Organizaciones!$B$2:$B$301',
                     note: 'Obligatorio. Selecciona de la lista (los nombres comerciales de la hoja Organizaciones). La organización debe existir en esa hoja o en el CRM.',
@@ -226,7 +226,7 @@ export class GenerateTemplateUseCase {
             '4. Pasa el cursor sobre cada encabezado (esquina con triángulo rojo) para ver la ayuda y ejemplos.',
             '',
             'CONTACTOS',
-            '· Organización abreviado es OBLIGATORIA. Selecciona de la lista (nombre comercial de la hoja Organizaciones).',
+            '· Organización es OBLIGATORIA. Selecciona de la lista (nombre comercial de la hoja Organizaciones).',
             '· Teléfono: formato internacional (ej: +51987654321). Debe iniciar con + seguido del código de país.',
             '· Correo electrónico 1 es la clave única: si ya existe en el CRM, el contacto se omite.',
             '',
