@@ -15,7 +15,6 @@ import { LeadsModule } from '@/modules/leads/leads.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { OrganizationsModule } from '@/modules/organizations/organizations.module';
 import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
-import { ResetModule } from '@/modules/reset/reset.module';
 import { ResetPasswordQueueModule } from '@/modules/reset_password/infrastructure/queue/reset-password-queue.module';
 import { ResetPasswordModule } from '@/modules/reset_password/reset-password.module';
 import { UsersModule } from '@/modules/users/user.module';
@@ -45,7 +44,6 @@ describe('Module definitions', () => {
         ['NotificationsModule', NotificationsModule],
         ['OrganizationsModule', OrganizationsModule],
         ['CotizacionesModule', CotizacionesModule],
-        ['ResetModule', ResetModule],
         ['ResetPasswordQueueModule', ResetPasswordQueueModule],
         ['ResetPasswordModule', ResetPasswordModule],
         ['UsersModule', UsersModule],
