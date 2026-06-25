@@ -353,7 +353,7 @@ export class ImportPlannerService {
                 continue;
             }
             const vocativo = vocativoResult;
-            const orgNombreComercial = str(row, 'organizacion abreviado');
+            const orgNombreComercial = str(row, 'organizacion');
             if (!orgNombreComercial) {
                 errors.push({
                     sheet,

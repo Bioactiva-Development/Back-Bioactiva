@@ -200,7 +200,7 @@ export class ExportWorkbookUseCase {
                     width: 30,
                 },
                 {
-                    header: 'Organización abreviado',
+                    header: 'Organización',
                     key: 'orgAbrev',
                     width: 26,
                 },
