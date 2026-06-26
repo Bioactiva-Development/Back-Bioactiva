@@ -126,13 +126,14 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Listar notificaciones (Programadas o Vencidas)' })
     async list(
         @Query() query: ListNotificationsQueryDto,
+        @CurrentUser() user: User,
     ): Promise<PaginatedNotificationResponseDto> {
         const page = query.page ?? 1;
         const limit = query.limit ?? 10;
         const { data, total } = await this.listNotificationsUseCase.execute({
             estado: query.estado,
             idLead: query.idLead,
-            idResponsable: query.idResponsable,
+            idResponsable: user.id!,
             page,
             limit,
         });
