@@ -22,6 +22,7 @@ import {
     DEFAULT_RETURN_PATH,
     sanitizeReturnPath,
 } from '@/modules/integrations/application/microsoft-return-path';
+import { verifyOAuthState } from '@/modules/integrations/application/oauth-state';
 
 const FRONTEND_URL =
     process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3120';
@@ -49,9 +50,13 @@ export class MicrosoftIntegrationController {
         @Query() query: OAuthCallbackQueryDto,
         @Res() res: Response,
     ): Promise<void> {
-        const stateParts = query.state.split(':');
-        const userId = Number.parseInt(stateParts[0], 10);
-        const returnPath = this.resolveReturnPath(stateParts[2]);
+        const userId = verifyOAuthState(query.state);
+        if (!userId) {
+            return res.redirect(
+                `${FRONTEND_URL}${DEFAULT_RETURN_PATH}?microsoft=error`,
+            );
+        }
+        const returnPath = this.resolveReturnPath(query.state.split(':')[2]);
         try {
             await this.callbackUseCase.execute(query.code, userId);
             return res.redirect(
