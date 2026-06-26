@@ -24,6 +24,7 @@ import {
 import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
 import { User } from '@/modules/users/domain/entities/user';
 import { LoginDto } from '@/modules/auth/infrastructure/http/dtos/login.dto.http';
+import { MeResponseDto } from '@/modules/auth/application/dto/me-response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -81,8 +82,8 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
-    me(@CurrentUser() user: User): User {
-        return user;
+    me(@CurrentUser() user: User): MeResponseDto {
+        return new MeResponseDto(user);
     }
 
     private setRefreshTokenCookie(response: Response, refreshToken: string) {
