@@ -100,9 +100,11 @@ export class NotificationsController {
     async editFollowUp(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: HttpEditFollowUpDto,
+        @CurrentUser() user: User,
     ): Promise<NotificationResponseDto> {
         const notification = await this.editFollowUpUseCase.execute({
             notificationId: id,
+            requesterId: user.id!,
             correoCliente: dto.correoCliente,
             internal: {
                 fechaEnvio: dto.internal.fechaEnvio,

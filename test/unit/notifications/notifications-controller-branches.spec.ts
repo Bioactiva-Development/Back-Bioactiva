@@ -112,27 +112,32 @@ describe('Notifications module', () => {
             expect(result.id).toBe(10);
         });
 
-        it('editFollowUp maps internal and external blocks', async () => {
+        it('editFollowUp maps internal and external blocks passing the current user', async () => {
             editFollowUp.execute.mockResolvedValue(sampleReminder());
 
-            await controller.editFollowUp(10, {
-                correoCliente: 'cliente@x.com',
-                internal: {
-                    fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
-                    idTemplate: 5,
-                    asunto: 'Int',
-                    cuerpo: 'IntBody',
-                },
-                external: {
-                    fechaEnvio: new Date('2099-01-01T15:00:00.000Z'),
-                    idTemplate: 6,
-                    asunto: 'Ext',
-                    cuerpo: 'ExtBody',
-                },
-            } as any);
+            await controller.editFollowUp(
+                10,
+                {
+                    correoCliente: 'cliente@x.com',
+                    internal: {
+                        fechaEnvio: new Date('2099-01-01T14:00:00.000Z'),
+                        idTemplate: 5,
+                        asunto: 'Int',
+                        cuerpo: 'IntBody',
+                    },
+                    external: {
+                        fechaEnvio: new Date('2099-01-01T15:00:00.000Z'),
+                        idTemplate: 6,
+                        asunto: 'Ext',
+                        cuerpo: 'ExtBody',
+                    },
+                } as any,
+                { id: 7 } as any,
+            );
 
             const payload = editFollowUp.execute.mock.calls[0][0];
             expect(payload.notificationId).toBe(10);
+            expect(payload.requesterId).toBe(7);
             expect(payload.internal.asunto).toBe('Int');
             expect(payload.external.asunto).toBe('Ext');
         });

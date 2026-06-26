@@ -3,6 +3,8 @@ import { FollowUpEmailInput } from '@/modules/notifications/application/dto/crea
 export interface EditFollowUpCommand {
     /** ID de la notificación de seguimiento a editar. */
     notificationId: number;
+    /** ID del usuario que solicita la edición; debe coincidir con el responsable. */
+    requesterId: number;
     /**
      * Nuevo correo del cliente. Opcional: si se omite, se conserva el actual.
      * Si se envía, debe pertenecer al contacto del lead.
