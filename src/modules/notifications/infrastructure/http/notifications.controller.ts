@@ -180,8 +180,9 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Cancelar una notificación programada' })
     async cancel(
         @Param('id', ParseIntPipe) id: number,
+        @CurrentUser() user: User,
     ): Promise<NotificationResponseDto> {
-        const notification = await this.cancelNotificationUseCase.execute(id);
+        const notification = await this.cancelNotificationUseCase.execute(id, user.id!);
         return new NotificationResponseDto(notification);
     }
 }

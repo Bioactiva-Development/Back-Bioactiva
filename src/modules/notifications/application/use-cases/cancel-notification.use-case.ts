@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
     NOTIFICATION_REPOSITORY,
@@ -18,11 +19,16 @@ export class CancelNotificationUseCase {
         private readonly scheduler: NotificationSchedulerPort,
     ) {}
 
-    async execute(id: number): Promise<ScheduledNotification> {
+    async execute(id: number, requesterId: number): Promise<ScheduledNotification> {
         const notification = await this.notificationRepository.findById(id);
         if (!notification) {
             throw new NotificationNotFoundException(
                 `Notificación con id ${id} no encontrada`,
+            );
+        }
+        if (notification.id_responsable !== requesterId) {
+            throw new ForbiddenException(
+                'No tienes permiso para cancelar esta notificación',
             );
         }
 

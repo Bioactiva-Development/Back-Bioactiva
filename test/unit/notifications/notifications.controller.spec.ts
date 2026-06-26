@@ -148,14 +148,14 @@ describe('Notifications module', () => {
             });
         });
 
-        it('cancels a notification by id', async () => {
+        it('cancels a notification by id passing the current user', async () => {
             const cancelled = sampleReminder();
             cancelled.cancel();
             cancelNotification.execute.mockResolvedValue(cancelled);
 
-            const result = await controller.cancel(10);
+            const result = await controller.cancel(10, { id: 3 } as any);
 
-            expect(cancelNotification.execute).toHaveBeenCalledWith(10);
+            expect(cancelNotification.execute).toHaveBeenCalledWith(10, 3);
             expect(result.estado).toBe(NotificationStatus.CANCELADA);
         });
     });
