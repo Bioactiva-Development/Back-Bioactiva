@@ -68,6 +68,7 @@ describe('Notifications module', () => {
 
         const command = () => ({
             notificationId: 20,
+            requesterId: 3,
             internal: {
                 fechaEnvio: new Date(2099, 0, 2, 10, 0, 0),
                 idTemplate: 5 as number | null,

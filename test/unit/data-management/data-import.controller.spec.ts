@@ -148,9 +148,12 @@ describe('Data management module', () => {
         });
 
         describe('jobStatus', () => {
+            const currentUser = { id: 42 } as any;
+
             it('returns the job state and result when found', async () => {
                 const job = {
                     id: 'job-7',
+                    data: { userId: 42 },
                     progress: 50,
                     returnvalue: { valid: true },
                     failedReason: null,
@@ -158,7 +161,7 @@ describe('Data management module', () => {
                 };
                 queue.getJob.mockResolvedValue(job);
 
-                const result = await controller.jobStatus('job-7');
+                const result = await controller.jobStatus('job-7', currentUser);
 
                 expect(queue.getJob).toHaveBeenCalledWith('job-7');
                 expect(result).toEqual({
@@ -173,6 +176,7 @@ describe('Data management module', () => {
             it('defaults result and failedReason to null when absent', async () => {
                 const job = {
                     id: 'job-8',
+                    data: { userId: 42 },
                     progress: 0,
                     returnvalue: undefined,
                     failedReason: undefined,
@@ -180,7 +184,7 @@ describe('Data management module', () => {
                 };
                 queue.getJob.mockResolvedValue(job);
 
-                const result = await controller.jobStatus('job-8');
+                const result = await controller.jobStatus('job-8', currentUser);
 
                 expect(result.result).toBeNull();
                 expect(result.failedReason).toBeNull();
@@ -190,9 +194,25 @@ describe('Data management module', () => {
             it('throws NotFound when the job does not exist', async () => {
                 queue.getJob.mockResolvedValue(null);
 
-                await expect(controller.jobStatus('missing')).rejects.toThrow(
-                    NotFoundException,
-                );
+                await expect(
+                    controller.jobStatus('missing', currentUser),
+                ).rejects.toThrow(NotFoundException);
+            });
+
+            it('throws NotFound when the job belongs to another user', async () => {
+                const job = {
+                    id: 'job-9',
+                    data: { userId: 99 },
+                    progress: 0,
+                    returnvalue: null,
+                    failedReason: null,
+                    getState: jest.fn().mockResolvedValue('completed'),
+                };
+                queue.getJob.mockResolvedValue(job);
+
+                await expect(
+                    controller.jobStatus('job-9', currentUser),
+                ).rejects.toThrow(NotFoundException);
             });
         });
     });

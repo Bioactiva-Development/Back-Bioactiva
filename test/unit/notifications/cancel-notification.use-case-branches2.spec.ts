@@ -43,7 +43,7 @@ describe('Notifications module — CancelNotificationUseCase branches2', () => {
         const n = buildReminder();
         repository.findById.mockResolvedValue(n);
 
-        await useCase.execute(30);
+        await useCase.execute(30, 3);
 
         expect(scheduler.cancel).not.toHaveBeenCalled();
         expect(n.estado).toBe(NotificationStatus.CANCELADA);
@@ -57,7 +57,7 @@ describe('Notifications module — CancelNotificationUseCase branches2', () => {
         (n as any).enviado_interno = true;
         repository.findById.mockResolvedValue(n);
 
-        await useCase.execute(30);
+        await useCase.execute(30, 3);
 
         expect(scheduler.cancel).not.toHaveBeenCalled();
         expect(n.estado).toBe(NotificationStatus.CANCELADA);
@@ -68,7 +68,7 @@ describe('Notifications module — CancelNotificationUseCase branches2', () => {
         n.assignInternalJob('rec-job-1');
         repository.findById.mockResolvedValue(n);
 
-        await useCase.execute(30);
+        await useCase.execute(30, 3);
 
         expect(scheduler.cancel).toHaveBeenCalledWith('rec-job-1');
     });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { UserRole } from '@/shared/domain/enums/rol';
@@ -8,12 +9,14 @@ import { renderResetPasswordEmailTemplate } from '@/modules/common/mail/reset-pa
 
 @Injectable()
 export class GraphMailProvider implements MailProviderPort {
+    constructor(private readonly configService: ConfigService) {}
+
     private createGraphClient() {
         const msal = new ConfidentialClientApplication({
             auth: {
-                clientId: process.env.AZURE_CLIENT_ID ?? '',
-                authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}`,
-                clientSecret: process.env.AZURE_CLIENT_SECRET ?? '',
+                clientId: this.configService.getOrThrow<string>('AZURE_CLIENT_ID'),
+                authority: `https://login.microsoftonline.com/${this.configService.getOrThrow<string>('AZURE_TENANT_ID')}`,
+                clientSecret: this.configService.getOrThrow<string>('AZURE_CLIENT_SECRET'),
             },
         });
 
@@ -38,7 +41,7 @@ export class GraphMailProvider implements MailProviderPort {
     }): Promise<void> {
         const client = this.createGraphClient();
 
-        await client.api(`/users/${process.env.MAIL_FROM}/sendMail`).post({
+        await client.api(`/users/${this.configService.getOrThrow<string>('MAIL_FROM')}/sendMail`).post({
             message: {
                 subject: 'Invitación a Back Bioactiva',
                 body: {
@@ -63,7 +66,7 @@ export class GraphMailProvider implements MailProviderPort {
     }): Promise<void> {
         const client = this.createGraphClient();
 
-        await client.api(`/users/${process.env.MAIL_FROM}/sendMail`).post({
+        await client.api(`/users/${this.configService.getOrThrow<string>('MAIL_FROM')}/sendMail`).post({
             message: {
                 subject: 'Restablecer contraseña - Bioactiva',
                 body: {
@@ -89,7 +92,7 @@ export class GraphMailProvider implements MailProviderPort {
     }): Promise<void> {
         const client = this.createGraphClient();
 
-        await client.api(`/users/${process.env.MAIL_FROM}/sendMail`).post({
+        await client.api(`/users/${this.configService.getOrThrow<string>('MAIL_FROM')}/sendMail`).post({
             message: {
                 subject: input.subject,
                 body: {

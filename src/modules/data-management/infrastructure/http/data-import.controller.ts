@@ -92,9 +92,12 @@ export class DataImportController {
 
     @Get('jobs/:id')
     @ApiOperation({ summary: 'Consultar el estado/resultado de una importación' })
-    async jobStatus(@Param('id') id: string) {
+    async jobStatus(
+        @Param('id') id: string,
+        @CurrentUser() user: User,
+    ) {
         const job = await this.importPublisher.getQueue().getJob(id);
-        if (!job) {
+        if (!job || (job.data as { userId?: number }).userId !== user.id) {
             throw new NotFoundException(`Job de importación ${id} no encontrado`);
         }
         const state = await job.getState();

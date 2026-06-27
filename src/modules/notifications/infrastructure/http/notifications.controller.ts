@@ -100,9 +100,11 @@ export class NotificationsController {
     async editFollowUp(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: HttpEditFollowUpDto,
+        @CurrentUser() user: User,
     ): Promise<NotificationResponseDto> {
         const notification = await this.editFollowUpUseCase.execute({
             notificationId: id,
+            requesterId: user.id!,
             correoCliente: dto.correoCliente,
             internal: {
                 fechaEnvio: dto.internal.fechaEnvio,
@@ -124,13 +126,14 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Listar notificaciones (Programadas o Vencidas)' })
     async list(
         @Query() query: ListNotificationsQueryDto,
+        @CurrentUser() user: User,
     ): Promise<PaginatedNotificationResponseDto> {
         const page = query.page ?? 1;
         const limit = query.limit ?? 10;
         const { data, total } = await this.listNotificationsUseCase.execute({
             estado: query.estado,
             idLead: query.idLead,
-            idResponsable: query.idResponsable,
+            idResponsable: user.id!,
             page,
             limit,
         });
@@ -180,8 +183,9 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Cancelar una notificación programada' })
     async cancel(
         @Param('id', ParseIntPipe) id: number,
+        @CurrentUser() user: User,
     ): Promise<NotificationResponseDto> {
-        const notification = await this.cancelNotificationUseCase.execute(id);
+        const notification = await this.cancelNotificationUseCase.execute(id, user.id!);
         return new NotificationResponseDto(notification);
     }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { MicrosoftIntegrationController } from '@/modules/integrations/infrastructure/http/microsoft-integration.controller';
+import { signOAuthState } from '@/modules/integrations/application/oauth-state';
 
 describe('Integrations module', () => {
     describe('MicrosoftIntegrationController', () => {
@@ -46,14 +47,13 @@ describe('Integrations module', () => {
             expect(result).toEqual({ ok: true });
         });
 
-        it('callback parses the user id from state and redirects on success', async () => {
+        it('callback parses the user id from a valid signed state and redirects on success', async () => {
             callback.execute.mockResolvedValue(undefined);
             const res: any = { redirect: jest.fn() };
+            const payload = '42:nonce:%2F';
+            const state = `${payload}:${signOAuthState(payload)}`;
 
-            await controller.callback(
-                { state: '42:nonce', code: 'auth-code' } as any,
-                res,
-            );
+            await controller.callback({ state, code: 'auth-code' } as any, res);
 
             expect(callback.execute).toHaveBeenCalledWith('auth-code', 42);
             expect(res.redirect).toHaveBeenCalledWith(
@@ -64,14 +64,11 @@ describe('Integrations module', () => {
         it('callback redirects to the returnTo path encoded in the state', async () => {
             callback.execute.mockResolvedValue(undefined);
             const res: any = { redirect: jest.fn() };
+            const encoded = encodeURIComponent('/notificaciones');
+            const payload = `42:nonce:${encoded}`;
+            const state = `${payload}:${signOAuthState(payload)}`;
 
-            await controller.callback(
-                {
-                    state: `42:nonce:${encodeURIComponent('/notificaciones')}`,
-                    code: 'auth-code',
-                } as any,
-                res,
-            );
+            await controller.callback({ state, code: 'auth-code' } as any, res);
 
             expect(res.redirect).toHaveBeenCalledWith(
                 expect.stringContaining('/notificaciones?microsoft=connected'),
@@ -81,12 +78,26 @@ describe('Integrations module', () => {
         it('callback redirects to error when the use case throws', async () => {
             callback.execute.mockRejectedValue(new Error('oauth failed'));
             const res: any = { redirect: jest.fn() };
+            const payload = '42:nonce:%2F';
+            const state = `${payload}:${signOAuthState(payload)}`;
+
+            await controller.callback({ state, code: 'bad' } as any, res);
+
+            expect(res.redirect).toHaveBeenCalledWith(
+                expect.stringContaining('microsoft=error'),
+            );
+        });
+
+        it('callback redirects to error immediately when state signature is invalid', async () => {
+            callback.execute.mockResolvedValue(undefined);
+            const res: any = { redirect: jest.fn() };
 
             await controller.callback(
-                { state: '42:nonce', code: 'bad' } as any,
+                { state: '42:nonce:%2F:invalidsig', code: 'auth-code' } as any,
                 res,
             );
 
+            expect(callback.execute).not.toHaveBeenCalled();
             expect(res.redirect).toHaveBeenCalledWith(
                 expect.stringContaining('microsoft=error'),
             );

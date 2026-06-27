@@ -7,6 +7,7 @@ import {
     HttpCode,
     Res,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { type Response } from 'express';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
@@ -22,9 +23,11 @@ import {
     DEFAULT_RETURN_PATH,
     sanitizeReturnPath,
 } from '@/modules/integrations/application/microsoft-return-path';
+import { verifyOAuthState } from '@/modules/integrations/application/oauth-state';
 
 const FRONTEND_URL =
-    process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3120';
+    process.env.FRONTEND_URL?.trim().replace(/\/$/, '') ||
+    'http://localhost:5173';
 
 @Controller('microsoft')
 export class MicrosoftIntegrationController {
@@ -44,14 +47,19 @@ export class MicrosoftIntegrationController {
         return await this.connectUseCase.execute(user.id!, returnTo);
     }
 
+    @SkipThrottle()
     @Get('callback')
     async callback(
         @Query() query: OAuthCallbackQueryDto,
         @Res() res: Response,
     ): Promise<void> {
-        const stateParts = query.state.split(':');
-        const userId = Number.parseInt(stateParts[0], 10);
-        const returnPath = this.resolveReturnPath(stateParts[2]);
+        const userId = verifyOAuthState(query.state);
+        if (!userId) {
+            return res.redirect(
+                `${FRONTEND_URL}${DEFAULT_RETURN_PATH}?microsoft=error`,
+            );
+        }
+        const returnPath = this.resolveReturnPath(query.state.split(':')[2]);
         try {
             await this.callbackUseCase.execute(query.code, userId);
             return res.redirect(

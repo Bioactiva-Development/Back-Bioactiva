@@ -54,7 +54,7 @@ describe('Notifications module', () => {
         it('cancels a scheduled follow-up and removes its instance jobs', async () => {
             repository.findById.mockResolvedValue(buildFollowUp());
 
-            const result = await useCase.execute(20);
+            const result = await useCase.execute(20, 3);
 
             expect(result.estado).toBe(NotificationStatus.CANCELADA);
             expect(scheduler.cancel).toHaveBeenCalledWith('seg-internal-100');
@@ -64,9 +64,17 @@ describe('Notifications module', () => {
 
         it('throws when the notification is not found', async () => {
             repository.findById.mockResolvedValue(null);
-            await expect(useCase.execute(99)).rejects.toThrow(
+            await expect(useCase.execute(99, 3)).rejects.toThrow(
                 NotificationNotFoundException,
             );
+        });
+
+        it('throws ForbiddenException when the requester is not the responsable', async () => {
+            repository.findById.mockResolvedValue(buildFollowUp());
+            await expect(useCase.execute(20, 99)).rejects.toThrow(
+                'No tienes permiso para cancelar esta notificación',
+            );
+            expect(scheduler.cancel).not.toHaveBeenCalled();
         });
 
         it('throws when the follow-up was already executed', async () => {
@@ -76,7 +84,7 @@ describe('Notifications module', () => {
             n.closeIfAllInstancesSent();
             repository.findById.mockResolvedValue(n);
 
-            await expect(useCase.execute(20)).rejects.toThrow(
+            await expect(useCase.execute(20, 3)).rejects.toThrow(
                 NotificationCannotBeCancelledException,
             );
             expect(scheduler.cancel).not.toHaveBeenCalled();

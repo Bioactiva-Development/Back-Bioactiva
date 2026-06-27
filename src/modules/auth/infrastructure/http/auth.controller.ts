@@ -8,6 +8,7 @@ import {
     UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ApiHeader } from '@nestjs/swagger';
 import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/authenticate-user.use-case';
@@ -24,6 +25,7 @@ import {
 import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
 import { User } from '@/modules/users/domain/entities/user';
 import { LoginDto } from '@/modules/auth/infrastructure/http/dtos/login.dto.http';
+import { MeResponseDto } from '@/modules/auth/application/dto/me-response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +34,7 @@ export class AuthController {
         private readonly refreshSessionUseCase: RefreshSessionUseCase,
     ) {}
 
+    @Throttle({ default: { ttl: 15 * 60_000, limit: 5 } })
     @Post('login')
     @HttpCode(200)
     @UseGuards(RecaptchaGuard)
@@ -56,6 +59,7 @@ export class AuthController {
         );
     }
 
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @Post('refresh')
     @HttpCode(200)
     async refresh(
@@ -81,8 +85,8 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
-    me(@CurrentUser() user: User): User {
-        return user;
+    me(@CurrentUser() user: User): MeResponseDto {
+        return new MeResponseDto(user);
     }
 
     private setRefreshTokenCookie(response: Response, refreshToken: string) {
