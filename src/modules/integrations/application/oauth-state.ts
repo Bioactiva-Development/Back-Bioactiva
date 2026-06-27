@@ -1,7 +1,14 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const STATE_SECRET =
-    process.env.MICROSOFT_STATE_SECRET ?? process.env.JWT_SECRET ?? 'change-me';
+const STATE_SECRET = (() => {
+    const secret = process.env.MICROSOFT_STATE_SECRET ?? process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error(
+            'Falta MICROSOFT_STATE_SECRET (o JWT_SECRET como fallback) — requerido para firmar el OAuth state',
+        );
+    }
+    return secret;
+})();
 
 /** Firma el payload del state OAuth con HMAC-SHA256. */
 export function signOAuthState(payload: string): string {

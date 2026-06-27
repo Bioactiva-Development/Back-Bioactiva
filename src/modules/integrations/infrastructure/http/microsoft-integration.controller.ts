@@ -7,6 +7,7 @@ import {
     HttpCode,
     Res,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { type Response } from 'express';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
@@ -25,7 +26,8 @@ import {
 import { verifyOAuthState } from '@/modules/integrations/application/oauth-state';
 
 const FRONTEND_URL =
-    process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:3120';
+    process.env.FRONTEND_URL?.trim().replace(/\/$/, '') ||
+    'http://localhost:5173';
 
 @Controller('microsoft')
 export class MicrosoftIntegrationController {
@@ -45,6 +47,7 @@ export class MicrosoftIntegrationController {
         return await this.connectUseCase.execute(user.id!, returnTo);
     }
 
+    @SkipThrottle()
     @Get('callback')
     async callback(
         @Query() query: OAuthCallbackQueryDto,

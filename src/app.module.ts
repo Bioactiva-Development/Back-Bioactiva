@@ -1,5 +1,6 @@
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Module } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.interceptor';
@@ -44,6 +45,7 @@ import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
         ConfigModule.forRoot({
             isGlobal: true,
         }),
+        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     ],
     controllers: [AppController],
     providers: [
@@ -55,6 +57,10 @@ import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
         {
             provide: APP_FILTER,
             useClass: GlobalExceptionFilter,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
         },
     ],
 })

@@ -8,6 +8,7 @@ import {
     UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ApiHeader } from '@nestjs/swagger';
 import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/authenticate-user.use-case';
@@ -33,6 +34,7 @@ export class AuthController {
         private readonly refreshSessionUseCase: RefreshSessionUseCase,
     ) {}
 
+    @Throttle({ default: { ttl: 15 * 60_000, limit: 5 } })
     @Post('login')
     @HttpCode(200)
     @UseGuards(RecaptchaGuard)
@@ -57,6 +59,7 @@ export class AuthController {
         );
     }
 
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @Post('refresh')
     @HttpCode(200)
     async refresh(
