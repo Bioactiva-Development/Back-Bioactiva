@@ -24,13 +24,9 @@ import {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * Solo las actividades pendientes y no eliminadas determinan el semáforo; se
- * traen su fecha de creación y de fin (EN_RIESGO depende de ambas).
- */
 const PENDING_ACTIVITIES_INCLUDE = {
     where: { deletedAt: null, estado: PrismaEstadoActividad.PENDIENTE },
-    select: { createdAt: true, fechaFin: true },
+    select: { fechaFin: true },
 } as const;
 
 type PrismaLeadWithRelations = Prisma.LeadGetPayload<{
@@ -38,7 +34,7 @@ type PrismaLeadWithRelations = Prisma.LeadGetPayload<{
         organizacion: { select: { nombre: true } };
         encargado: { select: { nombres: true; apellidos: true } };
         contacto: { select: { nombres: true; apellidos: true } };
-        actividades: { select: { createdAt: true; fechaFin: true } };
+        actividades: { select: { fechaFin: true } };
     };
 }>;
 
@@ -51,10 +47,7 @@ export class PrismaLeadRepository implements LeadRepository {
         now: Date = new Date(),
     ): LeadWithRelations {
         const pendingActivities = (record.actividades ?? []).map(
-            (actividad) => ({
-                createdAt: actividad.createdAt,
-                fechaFin: actividad.fechaFin,
-            }),
+            (actividad) => ({ fechaFin: actividad.fechaFin }),
         );
 
         return {
@@ -222,7 +215,7 @@ export class PrismaLeadRepository implements LeadRepository {
         }
         // alertaActividad es más específico: si llega, sobrescribe el filtro
         // anterior de actividades pendientes.
-        await this.applyActivityAlertFilter(where, params?.alertaActividad, now);
+        this.applyActivityAlertFilter(where, params?.alertaActividad, now);
 
         return where;
     }
@@ -230,17 +223,16 @@ export class PrismaLeadRepository implements LeadRepository {
     /**
      * Traduce el filtro del semáforo a condiciones sobre las actividades
      * PENDIENTES del lead, alineadas con computeActivityAlert (severidad
-     * POR_VENCER > EN_RIESGO > PENDIENTE > SIN_ACTIVIDADES):
+     * POR_VENCER > PENDIENTE > SIN_ACTIVIDADES):
      * - SIN_ACTIVIDADES: sin actividades pendientes.
-     * - PENDIENTE: tiene pendientes, ninguna en riesgo ni por vencer.
-     * - EN_RIESGO: alguna pendiente pasó la mitad de su tiempo, ninguna por vencer.
-     * - POR_VENCER: alguna pendiente vence en ≤4 días (incluye vencidas).
+     * - PENDIENTE: tiene pendientes, pero ninguna vence en ≤2 días.
+     * - POR_VENCER: alguna pendiente vence en ≤2 días (incluye vencidas).
      */
-    private async applyActivityAlertFilter(
+    private applyActivityAlertFilter(
         where: Prisma.LeadWhereInput,
         filter: ActivityAlertLevel | undefined,
         now: Date,
-    ): Promise<void> {
+    ): void {
         if (!filter) {
             return;
         }
@@ -252,52 +244,19 @@ export class PrismaLeadRepository implements LeadRepository {
             deletedAt: null,
             estado: PrismaEstadoActividad.PENDIENTE,
         };
-        // "Por vencer" incluye vencidas: fechaFin <= ahora + umbral.
         const dueSoon = { ...pending, fechaFin: { lte: dueSoonCutoff } };
 
         switch (filter) {
             case ActivityAlertLevel.SIN_ACTIVIDADES:
-                // Sin actividades pendientes.
                 where.actividades = { none: pending };
                 break;
             case ActivityAlertLevel.POR_VENCER:
-                // Alguna pendiente vencida o próxima a vencer.
                 where.actividades = { some: dueSoon };
                 break;
-            case ActivityAlertLevel.EN_RIESGO: {
-                // Alguna pendiente pasó el punto medio, pero ninguna por vencer.
-                const ids = await this.leadIdsWithMidpointPassedActivity(now);
-                where.id = { in: ids };
-                where.actividades = { none: dueSoon };
-                break;
-            }
-            case ActivityAlertLevel.PENDIENTE: {
-                // Tiene pendientes, pero ninguna en riesgo ni por vencer.
-                const ids = await this.leadIdsWithMidpointPassedActivity(now);
-                where.id = { notIn: ids };
+            case ActivityAlertLevel.PENDIENTE:
                 where.actividades = { some: pending, none: dueSoon };
                 break;
-            }
         }
-    }
-
-    /**
-     * IDs de leads con alguna actividad PENDIENTE que ya superó la mitad de su
-     * tiempo disponible (createdAt + (fechaFin - createdAt) / 2 <= ahora). La
-     * comparación involucra dos columnas, algo no expresable en el `where` de
-     * Prisma, por lo que se resuelve en SQL.
-     */
-    private async leadIdsWithMidpointPassedActivity(
-        now: Date,
-    ): Promise<number[]> {
-        const rows = await this.prisma.$queryRaw<{ idLead: number }[]>`
-            SELECT DISTINCT "idLead"
-            FROM "Actividad"
-            WHERE "deletedAt" IS NULL
-              AND "estado" = 'PENDIENTE'
-              AND "createdAt" + ("fechaFin" - "createdAt") / 2 <= ${now}
-        `;
-        return rows.map((row) => row.idLead);
     }
 
     async save(lead: Lead): Promise<Lead> {
