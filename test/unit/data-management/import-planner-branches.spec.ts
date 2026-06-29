@@ -28,7 +28,10 @@ describe('Data management module', () => {
                     wb({ organizaciones: [{ __rowNumber: 2 }] }),
                 );
                 expect(plan.organizaciones).toHaveLength(0);
-                expect(validation.errors).toHaveLength(0);
+                // Sin filas útiles el archivo queda vacío → error de nivel general.
+                expect(errorsFor('Organizaciones', validation)).toHaveLength(0);
+                expect(validation.errors).toHaveLength(1);
+                expect(validation.errors[0].message).toMatch(/no contiene registros/);
             });
 
             it('reporta falta de Organización, Nombre completo, Tipo, Tamaño y Sector', () => {
@@ -346,9 +349,11 @@ describe('Data management module', () => {
             expect(plan.organizaciones[0].ruc).toBeNull();
         });
 
-        it('libro vacío -> plan válido con conteos en cero', () => {
+        it('libro vacío -> inválido con error de registros vacíos', () => {
             const { plan, validation } = planner.plan(wb({}));
-            expect(validation.valid).toBe(true);
+            expect(validation.valid).toBe(false);
+            expect(validation.errors).toHaveLength(1);
+            expect(validation.errors[0].message).toMatch(/no contiene registros/);
             expect(plan.organizaciones).toHaveLength(0);
             expect(validation.parsedCounts).toEqual({
                 organizaciones: 0,
