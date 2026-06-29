@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
 import {
+    type CotizacionActiva,
     type LeadRepository,
     type LeadWithRelations,
     type ListLeadsParams,
@@ -8,6 +9,7 @@ import {
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import {
     EstadoActividad as PrismaEstadoActividad,
+    EstadoCot as PrismaEstadoCot,
     LeadState as PrismaLeadState,
     Sector as PrismaSector,
     TipoEmpresa as PrismaTipoEmpresa,
@@ -29,18 +31,47 @@ const PENDING_ACTIVITIES_INCLUDE = {
     select: { fechaFin: true },
 } as const;
 
+// Cotizaciones no rechazadas ni eliminadas — a lo sumo 1 por lead (invariante de negocio).
+const ACTIVE_COTIZACION_INCLUDE = {
+    where: { deletedAt: null, estado: { not: PrismaEstadoCot.RECHAZADA } },
+    select: { id: true, monto: true, tipo: true, estado: true },
+} as const;
+
+// Orden de prioridad para elegir la cotización activa cuando hubiera varias.
+const COTIZACION_PRIORITY: Record<string, number> = {
+    ACEPTADA: 0,
+    ENVIADA: 1,
+    PENDIENTE: 2,
+};
+
 type PrismaLeadWithRelations = Prisma.LeadGetPayload<{
     include: {
         organizacion: { select: { nombre: true } };
         encargado: { select: { nombres: true; apellidos: true } };
         contacto: { select: { nombres: true; apellidos: true } };
         actividades: { select: { fechaFin: true } };
+        cotizaciones: {
+            select: { id: true; monto: true; tipo: true; estado: true };
+        };
     };
 }>;
 
 @Injectable()
 export class PrismaLeadRepository implements LeadRepository {
     constructor(private readonly prisma: PrismaService) {}
+
+    private pickCotizacionActiva(
+        cotizaciones: PrismaLeadWithRelations['cotizaciones'],
+    ): CotizacionActiva | null {
+        if (!cotizaciones?.length) return null;
+        const best = cotizaciones.reduce((a, b) =>
+            (COTIZACION_PRIORITY[a.estado] ?? 99) <=
+            (COTIZACION_PRIORITY[b.estado] ?? 99)
+                ? a
+                : b,
+        );
+        return { id: best.id, monto: Number(best.monto), tipo: best.tipo, estado: best.estado };
+    }
 
     private mapToLeadWithRelations(
         record: PrismaLeadWithRelations,
@@ -59,6 +90,7 @@ export class PrismaLeadRepository implements LeadRepository {
                 ? `${record.contacto.nombres} ${record.contacto.apellidos ?? ''}`.trim()
                 : null,
             activityAlert: computeActivityAlert(pendingActivities, now),
+            cotizacionActiva: this.pickCotizacionActiva(record.cotizaciones),
         };
     }
 
@@ -139,6 +171,7 @@ export class PrismaLeadRepository implements LeadRepository {
                     encargado: { select: { nombres: true, apellidos: true } },
                     contacto: { select: { nombres: true, apellidos: true } },
                     actividades: PENDING_ACTIVITIES_INCLUDE,
+                    cotizaciones: ACTIVE_COTIZACION_INCLUDE,
                 },
             });
             return record ? this.mapToLeadWithRelations(record) : null;
@@ -328,6 +361,7 @@ export class PrismaLeadRepository implements LeadRepository {
                     encargado: { select: { nombres: true, apellidos: true } },
                     contacto: { select: { nombres: true, apellidos: true } },
                     actividades: PENDING_ACTIVITIES_INCLUDE,
+                    cotizaciones: ACTIVE_COTIZACION_INCLUDE,
                 },
             });
 

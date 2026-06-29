@@ -1,6 +1,14 @@
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
+/** Resumen de la cotización activa (no rechazada) de un lead. */
+export interface CotizacionActiva {
+    id: number;
+    monto: number;
+    tipo: string;
+    estado: string;
+}
+
 export interface LeadWithRelations {
     lead: Lead;
     organizationName: string;
@@ -9,6 +17,8 @@ export interface LeadWithRelations {
     contactName: string | null;
     /** Semáforo de actividades del lead (libre / pendiente / crítico / por vencer). */
     activityAlert: ActivityAlertLevel;
+    /** Cotización activa (no rechazada) del lead, o null si no tiene ninguna. */
+    cotizacionActiva: CotizacionActiva | null;
 }
 
 export interface ListLeadsParams {

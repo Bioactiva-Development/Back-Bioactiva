@@ -331,6 +331,7 @@ describe('Leads module', () => {
                 organizacion: { nombre: 'Bioactiva SAC' },
                 encargado: { nombres: 'Carlos', apellidos: 'López' },
                 contacto: null,
+                cotizaciones: [],
             };
 
             it('should apply a case-insensitive search on servicioInteres', async () => {

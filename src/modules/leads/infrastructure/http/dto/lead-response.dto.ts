@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { LeadWithRelations } from '@/modules/leads/domain/ports/lead-repository.port';
+import type { CotizacionActiva, LeadWithRelations } from '@/modules/leads/domain/ports/lead-repository.port';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
 export class LeadResponseDto {
@@ -65,6 +65,13 @@ export class LeadResponseDto {
     })
     activityAlert: ActivityAlertLevel;
 
+    @ApiPropertyOptional({
+        nullable: true,
+        description: 'Cotización activa (no rechazada) del lead. null si no tiene ninguna.',
+        example: { id: 12, monto: 4500.00, tipo: 'PEN', estado: 'ENVIADA' },
+    })
+    cotizacionActiva: CotizacionActiva | null;
+
     constructor(enriched: LeadWithRelations) {
         this.id = enriched.lead.id!;
         this.estado = enriched.lead.estado;
@@ -83,5 +90,6 @@ export class LeadResponseDto {
         this.updatedAt = enriched.lead.updated_at;
         this.ultimoCambioEstado = enriched.lead.ultimo_cambio;
         this.activityAlert = enriched.activityAlert;
+        this.cotizacionActiva = enriched.cotizacionActiva;
     }
 }
