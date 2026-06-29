@@ -23,6 +23,9 @@ import { ImportPublisher } from '@/modules/data-management/infrastructure/queue/
 const XLSX_MIME =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+/** Tamaño máximo permitido para un archivo de importación (10 MB). */
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
 /** Forma mínima del archivo subido por multer (evita depender de @types/multer). */
 interface UploadedExcel {
     buffer: Buffer;
@@ -66,7 +69,13 @@ export class DataImportController {
     })
     async validate(@UploadedFile() file: UploadedExcel) {
         this.assertFile(file);
-        return this.validateImportUseCase.execute(file.buffer);
+        try {
+            return await this.validateImportUseCase.execute(file.buffer);
+        } catch (err) {
+            throw new BadRequestException(
+                err instanceof Error ? err.message : 'El archivo no es un Excel válido.',
+            );
+        }
     }
 
     @Post('commit')
@@ -84,7 +93,7 @@ export class DataImportController {
         }
         const jobId = await this.importPublisher.enqueue({
             fileBase64: file.buffer.toString('base64'),
-            filename: file.originalname,
+            filename: this.sanitizeFilename(file.originalname),
             userId: user.id,
         });
         return { jobId };
@@ -116,5 +125,20 @@ export class DataImportController {
                 'Debe adjuntar un archivo .xlsx en el campo "file".',
             );
         }
+        if (file.mimetype !== XLSX_MIME) {
+            throw new BadRequestException(
+                `Tipo de archivo no permitido ("${file.mimetype}"). Solo se aceptan archivos .xlsx.`,
+            );
+        }
+        if (file.size > MAX_FILE_BYTES) {
+            throw new BadRequestException(
+                `El archivo supera el tamaño máximo permitido (${MAX_FILE_BYTES / 1024 / 1024} MB).`,
+            );
+        }
+    }
+
+    /** Elimina caracteres peligrosos del nombre de archivo antes de loguearlo o encolarlo. */
+    private sanitizeFilename(name: string): string {
+        return name.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 255);
     }
 }

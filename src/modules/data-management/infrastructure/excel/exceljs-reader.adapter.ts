@@ -7,6 +7,9 @@ import {
 } from '@/modules/data-management/domain/ports/excel-reader.port';
 import { normalizeCell } from '@/modules/data-management/domain/constants/normalize';
 
+/** Máximo de filas de datos (sin cabecera) que se procesan por hoja. */
+const MAX_ROWS_PER_SHEET = 10_000;
+
 /** Extrae un valor primitivo de una celda de exceljs (texto enriquecido, fórmula, hipervínculo). */
 function plainValue(value: CellValue): unknown {
     if (value === null || value === undefined) {
@@ -40,7 +43,13 @@ function plainValue(value: CellValue): unknown {
 export class ExceljsReader implements IExcelReader {
     async read(buffer: Buffer): Promise<ParsedWorkbook> {
         const workbook = new Workbook();
-        await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+        try {
+            await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+        } catch {
+            throw new Error(
+                'El archivo no pudo leerse como Excel (.xlsx). Verifica que no esté corrupto y que sea el formato correcto.',
+            );
+        }
 
         const result: ParsedWorkbook = {};
 
@@ -57,9 +66,13 @@ export class ExceljsReader implements IExcelReader {
             });
 
             const rows: ParsedRow[] = [];
+            let dataRowCount = 0;
             worksheet.eachRow((row: Row, rowNumber: number) => {
                 if (rowNumber === 1) {
                     return; // cabecera
+                }
+                if (dataRowCount >= MAX_ROWS_PER_SHEET) {
+                    return; // ignora filas por encima del límite
                 }
                 const obj: ParsedRow = {};
                 let hasData = false;
@@ -74,6 +87,7 @@ export class ExceljsReader implements IExcelReader {
                 obj.__rowNumber = rowNumber;
                 if (hasData) {
                     rows.push(obj);
+                    dataRowCount++;
                 }
             });
 
