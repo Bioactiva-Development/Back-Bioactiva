@@ -177,6 +177,9 @@ export class PrismaLeadRepository implements LeadRepository {
         if (params?.idEncargado) {
             where.idEncargado = params.idEncargado;
         }
+        if (params?.idContacto) {
+            where.idContacto = params.idContacto;
+        }
         if (params?.search) {
             where.servicioInteres = {
                 contains: params.search,

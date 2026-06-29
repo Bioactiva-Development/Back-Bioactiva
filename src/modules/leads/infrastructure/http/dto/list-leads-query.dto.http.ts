@@ -45,6 +45,16 @@ export class ListLeadsQueryDto {
     idEncargado?: number;
 
     @ApiPropertyOptional({
+        description: 'Filtrar por ID de contacto asignado al lead',
+        example: 5,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    idContacto?: number;
+
+    @ApiPropertyOptional({
         description: 'Búsqueda textual en servicio de interés',
     })
     @IsOptional()

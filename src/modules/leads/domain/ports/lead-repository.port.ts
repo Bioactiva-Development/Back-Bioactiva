@@ -17,6 +17,8 @@ export interface ListLeadsParams {
     idEncargado?: number;
     /** Búsqueda textual sobre el servicio de interés del lead. */
     search?: string;
+    /** Filtra leads asignados a un contacto concreto. */
+    idContacto?: number;
     /** Sector de la organización del lead (valor del enum Sector). */
     sector?: string;
     /** Tipo de organización del lead (valor del enum EnterpriseType). */
