@@ -3,6 +3,7 @@ import { PrismaService } from '@/modules/common/prisma/prisma.service';
 import {
     type DashboardMetrics,
     type DashboardRepositoryPort,
+    type DistItem,
     type MetricsQuery,
     type MoneyByCurrency,
 } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
@@ -54,13 +55,14 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                 totalLeads > 0 ? activityCount / totalLeads : 0,
             pipelineTotalAmount: quotationAgg.pipelineTotal,
             closedRevenue: quotationAgg.closedTotal,
-            // averageTicket/pipelineTotal/closedTotal ya vienen separados PEN/USD.
             stalledLeadPercentage:
                 totalLeads > 0
                     ? (leadAgg.stalledCount / totalLeads) * 100
                     : 0,
             periodStart: startDate,
             periodEnd: endDate,
+            distribucionPipeline: leadAgg.distribucionPipeline,
+            distribucionCotizaciones: quotationAgg.distribucionCotizaciones,
         };
     }
 
@@ -82,8 +84,8 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         avgClosingDays: number;
         avgProposalDays: number;
         stalledCount: number;
+        distribucionPipeline: DistItem[];
     }> {
-        // $1..$4 fijos; $5 opcional (idEncargado).
         const params: unknown[] = [
             CIERRE_CON_VENTA,
             CIERRE_SIN_VENTA,
@@ -111,7 +113,11 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                 COUNT(*) FILTER (
                     WHERE l."ultimoCambioEstado" < $6
                       AND l.estado NOT IN ($1, $2)
-                ) AS stalled_count
+                ) AS stalled_count,
+                COUNT(*) FILTER (WHERE l.estado = 'EN_PROSPECTO')      AS dist_prospecto,
+                COUNT(*) FILTER (WHERE l.estado = 'OFERTADO')          AS dist_ofertado,
+                COUNT(*) FILTER (WHERE l.estado = 'CIERRE_CON_VENTA')  AS dist_cierre_venta,
+                COUNT(*) FILTER (WHERE l.estado = 'CIERRE_SIN_VENTA')  AS dist_cierre_sin_venta
             FROM "Lead" l
             INNER JOIN "Organizacion" o ON o.id = l."idOrg"
             WHERE l."deletedAt" IS NULL
@@ -131,6 +137,12 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
             avgClosingDays: Number(row.avg_closing_days ?? 0),
             avgProposalDays: Number(row.avg_proposal_days ?? 0),
             stalledCount: Number(row.stalled_count ?? 0),
+            distribucionPipeline: [
+                { estado: 'EN_PROSPECTO',    cantidad: Number(row.dist_prospecto ?? 0) },
+                { estado: 'OFERTADO',        cantidad: Number(row.dist_ofertado ?? 0) },
+                { estado: 'CIERRE_CON_VENTA', cantidad: Number(row.dist_cierre_venta ?? 0) },
+                { estado: 'CIERRE_SIN_VENTA', cantidad: Number(row.dist_cierre_sin_venta ?? 0) },
+            ],
         };
     }
 
@@ -151,6 +163,7 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
         pipelineTotal: MoneyByCurrency;
         closedTotal: MoneyByCurrency;
         averageTicket: MoneyByCurrency;
+        distribucionCotizaciones: DistItem[];
     }> {
         const params: unknown[] = [
             CIERRE_CON_VENTA,
@@ -202,7 +215,23 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                       AND c."createdAt" >= $3
                       AND c."createdAt" <= $4
                       AND c.tipo = 'USD'
-                ), 0) AS ticket_usd
+                ), 0) AS ticket_usd,
+                COUNT(*) FILTER (
+                    WHERE c.estado = 'PENDIENTE'
+                      AND c."createdAt" >= $3 AND c."createdAt" <= $4
+                ) AS dist_cot_pendiente,
+                COUNT(*) FILTER (
+                    WHERE c.estado = 'ENVIADA'
+                      AND c."createdAt" >= $3 AND c."createdAt" <= $4
+                ) AS dist_cot_enviada,
+                COUNT(*) FILTER (
+                    WHERE c.estado = 'ACEPTADA'
+                      AND c."createdAt" >= $3 AND c."createdAt" <= $4
+                ) AS dist_cot_aceptada,
+                COUNT(*) FILTER (
+                    WHERE c.estado = 'RECHAZADA'
+                      AND c."createdAt" >= $3 AND c."createdAt" <= $4
+                ) AS dist_cot_rechazada
             FROM "Cotizacion" c
             INNER JOIN "Lead" l ON l.id = c."idLead"
             INNER JOIN "Organizacion" o ON o.id = l."idOrg"
@@ -228,6 +257,12 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
                 pen: Number(row.ticket_pen ?? 0),
                 usd: Number(row.ticket_usd ?? 0),
             },
+            distribucionCotizaciones: [
+                { estado: 'PENDIENTE',  cantidad: Number(row.dist_cot_pendiente ?? 0) },
+                { estado: 'ENVIADA',    cantidad: Number(row.dist_cot_enviada ?? 0) },
+                { estado: 'ACEPTADA',   cantidad: Number(row.dist_cot_aceptada ?? 0) },
+                { estado: 'RECHAZADA',  cantidad: Number(row.dist_cot_rechazada ?? 0) },
+            ],
         };
     }
 

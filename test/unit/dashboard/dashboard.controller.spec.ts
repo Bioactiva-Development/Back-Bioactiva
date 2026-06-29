@@ -24,6 +24,18 @@ describe('Dashboard module', () => {
             stalledLeadPercentage: 10,
             periodStart: new Date('2026-01-01'),
             periodEnd: new Date('2026-06-05'),
+            distribucionPipeline: [
+                { estado: 'EN_PROSPECTO', cantidad: 50 },
+                { estado: 'OFERTADO', cantidad: 30 },
+                { estado: 'CIERRE_CON_VENTA', cantidad: 15 },
+                { estado: 'CIERRE_SIN_VENTA', cantidad: 5 },
+            ],
+            distribucionCotizaciones: [
+                { estado: 'PENDIENTE', cantidad: 10 },
+                { estado: 'ENVIADA', cantidad: 8 },
+                { estado: 'ACEPTADA', cantidad: 5 },
+                { estado: 'RECHAZADA', cantidad: 3 },
+            ],
         };
 
         beforeEach(async () => {
