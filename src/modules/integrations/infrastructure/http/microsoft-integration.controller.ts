@@ -25,10 +25,6 @@ import {
 } from '@/modules/integrations/application/microsoft-return-path';
 import { verifyOAuthState } from '@/modules/integrations/application/oauth-state';
 
-const FRONTEND_URL =
-    process.env.FRONTEND_URL?.trim().replace(/\/$/, '') ||
-    'http://localhost:5173';
-
 @Controller('microsoft')
 export class MicrosoftIntegrationController {
     constructor(
@@ -56,18 +52,25 @@ export class MicrosoftIntegrationController {
         const userId = verifyOAuthState(query.state);
         if (!userId) {
             return res.redirect(
-                `${FRONTEND_URL}${DEFAULT_RETURN_PATH}?microsoft=error`,
+                `${this.frontendUrl}${DEFAULT_RETURN_PATH}?microsoft=error`,
             );
         }
         const returnPath = this.resolveReturnPath(query.state.split(':')[2]);
         try {
             await this.callbackUseCase.execute(query.code, userId);
             return res.redirect(
-                `${FRONTEND_URL}${returnPath}?microsoft=connected`,
+                `${this.frontendUrl}${returnPath}?microsoft=connected`,
             );
         } catch {
-            return res.redirect(`${FRONTEND_URL}${returnPath}?microsoft=error`);
+            return res.redirect(`${this.frontendUrl}${returnPath}?microsoft=error`);
         }
+    }
+
+    private get frontendUrl(): string {
+        return (
+            process.env.FRONTEND_URL?.trim().replace(/\/$/, '') ||
+            'http://localhost:5173'
+        );
     }
 
     /** Reconstruye la ruta de retorno guardada en el `state` (saneada). */
