@@ -10,12 +10,13 @@ import {
     ParseIntPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
 import { CreateCotizacionUseCase } from '@/modules/quotations/application/use-cases/create-cotizacion.use-case';
 import { GetCotizacionByIdUseCase } from '@/modules/quotations/application/use-cases/get-cotizacion-by-id.use-case';
+import { GetKpisCotizacionesUseCase } from '@/modules/quotations/application/use-cases/get-kpis-cotizaciones.use-case';
 import { ListCotizacionesUseCase } from '@/modules/quotations/application/use-cases/list-cotizaciones.use-case';
 import { UpdateCotizacionUseCase } from '@/modules/quotations/application/use-cases/update-cotizacion.use-case';
 import { SendCotizacionUseCase } from '@/modules/quotations/application/use-cases/send-cotizacion.use-case';
@@ -24,6 +25,8 @@ import { RejectCotizacionUseCase } from '@/modules/quotations/application/use-ca
 import { DeleteCotizacionUseCase } from '@/modules/quotations/application/use-cases/delete-cotizacion.use-case';
 import { HttpCreateCotizacionDto } from '@/modules/quotations/infrastructure/http/dto/create-cotizacion.dto.http';
 import { HttpUpdateCotizacionDto } from '@/modules/quotations/infrastructure/http/dto/update-cotizacion.dto.http';
+import { KpisCotizacionesQueryDto } from '@/modules/quotations/infrastructure/http/dto/kpis-cotizaciones-query.dto.http';
+import { KpisCotizacionesResponseDto } from '@/modules/quotations/infrastructure/http/dto/kpis-cotizaciones-response.dto';
 import { ListCotizacionesQueryDto } from '@/modules/quotations/infrastructure/http/dto/list-cotizaciones-query.dto.http';
 import { CotizacionResponseDto } from '@/modules/quotations/infrastructure/http/dto/cotizacion-response.dto';
 import { PaginatedCotizacionResponseDto } from '@/modules/quotations/infrastructure/http/dto/paginated-cotizacion-response.dto';
@@ -44,6 +47,7 @@ export class CotizacionController {
     constructor(
         private readonly createCotizacionUseCase: CreateCotizacionUseCase,
         private readonly getCotizacionByIdUseCase: GetCotizacionByIdUseCase,
+        private readonly getKpisCotizacionesUseCase: GetKpisCotizacionesUseCase,
         private readonly listCotizacionesUseCase: ListCotizacionesUseCase,
         private readonly updateCotizacionUseCase: UpdateCotizacionUseCase,
         private readonly sendCotizacionUseCase: SendCotizacionUseCase,
@@ -100,6 +104,29 @@ export class CotizacionController {
             dto.page,
             dto.limit,
         );
+    }
+
+    @Get('kpis')
+    @ApiOperation({
+        summary: 'KPIs de cotizaciones (conteos y monto activo)',
+        description:
+            'Devuelve conteos por estado y la suma de montos de cotizaciones no rechazadas. ' +
+            'Aplica los mismos filtros de leads activos que el listado. ' +
+            'Acepta fechaDesde/fechaHasta sobre fechaCot.',
+    })
+    @ApiResponse({ status: 200, type: KpisCotizacionesResponseDto })
+    async kpis(
+        @Query() query: KpisCotizacionesQueryDto,
+    ): Promise<KpisCotizacionesResponseDto> {
+        const result = await this.getKpisCotizacionesUseCase.execute({
+            fechaDesde: query.fechaDesde
+                ? startOfDayInZone(query.fechaDesde, this.appTime.timeZone)
+                : undefined,
+            fechaHasta: query.fechaHasta
+                ? endOfDayInZone(query.fechaHasta, this.appTime.timeZone)
+                : undefined,
+        });
+        return new KpisCotizacionesResponseDto(result);
     }
 
     @Get(':id')
