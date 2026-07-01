@@ -34,19 +34,32 @@ describe('Common module', () => {
         let capturedAuthProvider: {
             getAccessToken: () => Promise<string>;
         };
+        let mockConfigService: { getOrThrow: (key: string) => string };
 
         beforeEach(() => {
             mockPost.mockReset().mockResolvedValue(undefined);
             mockApi.mockClear();
             mockAcquireTokenByClientCredential.mockReset();
-            process.env.MAIL_FROM = 'noreply@bioactiva.com';
+
+            mockConfigService = {
+                getOrThrow: (key: string) => {
+                    const values: Record<string, string> = {
+                        AZURE_CLIENT_ID: 'test-client-id',
+                        AZURE_TENANT_ID: 'test-tenant-id',
+                        AZURE_CLIENT_SECRET: 'test-client-secret',
+                        MAIL_FROM: 'noreply@bioactiva.com',
+                    };
+                    if (!(key in values)) throw new Error(`Missing env: ${key}`);
+                    return values[key];
+                },
+            };
 
             mockInitWithMiddleware.mockImplementation((opts: any) => {
                 capturedAuthProvider = opts.authProvider;
                 return { api: mockApi };
             });
 
-            provider = new GraphMailProvider();
+            provider = new GraphMailProvider(mockConfigService as any);
         });
 
         it('sends an invitation email through Graph', async () => {

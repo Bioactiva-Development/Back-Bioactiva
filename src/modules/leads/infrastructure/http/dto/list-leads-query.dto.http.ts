@@ -45,6 +45,16 @@ export class ListLeadsQueryDto {
     idEncargado?: number;
 
     @ApiPropertyOptional({
+        description: 'Filtrar por ID de contacto asignado al lead',
+        example: 5,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    idContacto?: number;
+
+    @ApiPropertyOptional({
         description: 'Búsqueda textual en servicio de interés',
     })
     @IsOptional()
@@ -88,7 +98,7 @@ export class ListLeadsQueryDto {
     @ApiPropertyOptional({
         enum: ActivityAlertLevel,
         description:
-            'Filtra leads por el nivel del semáforo de actividades: SIN_ACTIVIDADES (sin pendientes), PENDIENTE, EN_RIESGO (pasó la mitad del tiempo) o POR_VENCER (vence en ≤4 días o vencida). Si se omite, no filtra.',
+            'Filtra leads por el nivel del semáforo de actividades: SIN_ACTIVIDADES (sin pendientes), PENDIENTE (ninguna urgente) o POR_VENCER (alguna vence en ≤2 días o ya vencida). Si se omite, no filtra.',
         example: ActivityAlertLevel.POR_VENCER,
     })
     @IsOptional()

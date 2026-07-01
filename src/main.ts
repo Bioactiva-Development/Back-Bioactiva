@@ -80,7 +80,7 @@ async function bootstrap() {
     SwaggerModule.setup('swagger', app, document(), option);
 
     const allowedOrigin =
-        process.env.FRONTEND_URL?.trim() || 'http://localhost:3120';
+        process.env.FRONTEND_URL?.trim() || 'http://localhost:5173';
     app.enableCors({
         origin: allowedOrigin,
         credentials: true,

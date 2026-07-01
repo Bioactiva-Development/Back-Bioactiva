@@ -14,5 +14,6 @@ export class ListLeadsDto {
         public readonly sector?: string,
         public readonly conActividadesPendientes?: boolean,
         public readonly tipo?: string,
+        public readonly idContacto?: number,
     ) {}
 }

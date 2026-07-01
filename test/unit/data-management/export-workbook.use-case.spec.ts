@@ -188,7 +188,7 @@ describe('Data management module', () => {
         });
 
         it('resolves enum filters via uppercased label fallback and ignores unrecognized', async () => {
-            readRepository.findOrganizations.mockResolvedValue([]);
+            readRepository.findOrganizations.mockResolvedValue([orgRow()]);
 
             await useCase.execute(
                 'organizaciones',

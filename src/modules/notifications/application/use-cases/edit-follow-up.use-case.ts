@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Inject } from '@/shared/infrastructure/dependency-inyection/inyect';
 import {
     NOTIFICATION_REPOSITORY,
@@ -55,6 +56,11 @@ export class EditFollowUpUseCase {
         if (!notification) {
             throw new NotificationNotFoundException(
                 `Notificación con id ${command.notificationId} no encontrada`,
+            );
+        }
+        if (notification.id_responsable !== command.requesterId) {
+            throw new ForbiddenException(
+                'No tienes permiso para editar esta notificación',
             );
         }
 

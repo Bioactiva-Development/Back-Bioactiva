@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { CotizacionController } from '@/modules/quotations/infrastructure/http/cotizacion.controller';
 import { CreateCotizacionUseCase } from '@/modules/quotations/application/use-cases/create-cotizacion.use-case';
 import { GetCotizacionByIdUseCase } from '@/modules/quotations/application/use-cases/get-cotizacion-by-id.use-case';
+import { GetKpisCotizacionesUseCase } from '@/modules/quotations/application/use-cases/get-kpis-cotizaciones.use-case';
 import { ListCotizacionesUseCase } from '@/modules/quotations/application/use-cases/list-cotizaciones.use-case';
 import { UpdateCotizacionUseCase } from '@/modules/quotations/application/use-cases/update-cotizacion.use-case';
 import { SendCotizacionUseCase } from '@/modules/quotations/application/use-cases/send-cotizacion.use-case';
@@ -16,6 +17,7 @@ describe('CotizacionController (optional-field branches)', () => {
     const mocks = {
         create: { execute: jest.fn() as any },
         get: { execute: jest.fn() as any },
+        kpis: { execute: jest.fn() as any },
         list: { execute: jest.fn() as any },
         update: { execute: jest.fn() as any },
         send: { execute: jest.fn() as any },
@@ -59,6 +61,7 @@ describe('CotizacionController (optional-field branches)', () => {
             providers: [
                 { provide: CreateCotizacionUseCase, useValue: mocks.create },
                 { provide: GetCotizacionByIdUseCase, useValue: mocks.get },
+                { provide: GetKpisCotizacionesUseCase, useValue: mocks.kpis },
                 { provide: ListCotizacionesUseCase, useValue: mocks.list },
                 { provide: UpdateCotizacionUseCase, useValue: mocks.update },
                 { provide: SendCotizacionUseCase, useValue: mocks.send },
@@ -161,5 +164,40 @@ describe('CotizacionController (optional-field branches)', () => {
 
         const dto = mocks.update.execute.mock.calls[0][1];
         expect(dto.fechaCot).toBeUndefined();
+    });
+
+    it('kpis converts fechaDesde/fechaHasta to Date when present', async () => {
+        const kpisResult = {
+            totalActivo: 15000.5,
+            aceptadas: 3,
+            enviadas: 5,
+            rechazadas: 2,
+        };
+        mocks.kpis.execute.mockResolvedValue(kpisResult);
+
+        const result = await controller.kpis({
+            fechaDesde: '2026-01-01T00:00:00.000Z',
+            fechaHasta: '2026-02-01T00:00:00.000Z',
+        } as any);
+
+        const filters = mocks.kpis.execute.mock.calls[0][0];
+        expect(filters.fechaDesde).toBeInstanceOf(Date);
+        expect(filters.fechaHasta).toBeInstanceOf(Date);
+        expect(result).toEqual(kpisResult);
+    });
+
+    it('kpis leaves fechaDesde/fechaHasta undefined when omitted', async () => {
+        mocks.kpis.execute.mockResolvedValue({
+            totalActivo: 0,
+            aceptadas: 0,
+            enviadas: 0,
+            rechazadas: 0,
+        });
+
+        await controller.kpis({} as any);
+
+        const filters = mocks.kpis.execute.mock.calls[0][0];
+        expect(filters.fechaDesde).toBeUndefined();
+        expect(filters.fechaHasta).toBeUndefined();
     });
 });

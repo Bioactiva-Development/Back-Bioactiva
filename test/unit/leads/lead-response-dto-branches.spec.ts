@@ -27,6 +27,7 @@ describe('Leads module', () => {
                 encargadoNombre: 'Carlos',
                 encargadoApellidos: 'López',
                 activityAlert: ActivityAlertLevel.PENDIENTE,
+                cotizacionActiva: null,
                 ...rest,
             }) as any;
 

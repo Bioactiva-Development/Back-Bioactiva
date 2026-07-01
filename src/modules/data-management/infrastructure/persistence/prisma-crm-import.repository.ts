@@ -71,9 +71,33 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 });
                 const userMap = this.buildUserMap(users);
                 const orgMaps = await this.processOrgs(tx, plan, ctx, summary);
-                const contactMaps = await this.processContacts(tx, plan, ctx, summary, orgMaps);
-                const leadMaps = await this.processLeads(tx, plan, ctx, summary, users, userMap, orgMaps, contactMaps);
-                await this.processCotizaciones(tx, plan, ctx, summary, users, leadMaps, orgMaps, contactMaps);
+                const contactMaps = await this.processContacts(
+                    tx,
+                    plan,
+                    ctx,
+                    summary,
+                    orgMaps,
+                );
+                const leadMaps = await this.processLeads(
+                    tx,
+                    plan,
+                    ctx,
+                    summary,
+                    users,
+                    userMap,
+                    orgMaps,
+                    contactMaps,
+                );
+                await this.processCotizaciones(
+                    tx,
+                    plan,
+                    ctx,
+                    summary,
+                    users,
+                    leadMaps,
+                    orgMaps,
+                    contactMaps,
+                );
             },
             { timeout: 120_000, maxWait: 10_000 },
         );
@@ -153,7 +177,12 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
         }
 
         for (const org of plan.organizaciones) {
-            const dupId = this.findDupOrgId(org, orgIdByRuc, orgIdByComercial, orgIdByNombre);
+            const dupId = this.findDupOrgId(
+                org,
+                orgIdByRuc,
+                orgIdByComercial,
+                orgIdByNombre,
+            );
             if (dupId) {
                 summary.skipped.push({
                     sheet: 'Organizaciones',
@@ -169,7 +198,10 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
             let codigo = org.codigoCliente;
             let suffix = 2;
             while (usedCodigos.has(codigo)) {
-                codigo = `${org.codigoCliente.slice(0, 17)}-${suffix}`.slice(0, 20);
+                codigo = `${org.codigoCliente.slice(0, 17)}-${suffix}`.slice(
+                    0,
+                    20,
+                );
                 suffix++;
             }
             usedCodigos.add(codigo);
@@ -194,12 +226,20 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
             });
             summary.inserted.organizaciones++;
             if (org.ruc) orgIdByRuc.set(org.ruc, created.id);
-            orgIdByComercial.set(normalizeCell(org.nombreComercial), created.id);
+            orgIdByComercial.set(
+                normalizeCell(org.nombreComercial),
+                created.id,
+            );
             orgIdByNombre.set(normalizeCell(org.nombre), created.id);
             orgNombreComercialById.set(created.id, org.nombreComercial);
         }
 
-        return { orgIdByRuc, orgIdByComercial, orgIdByNombre, orgNombreComercialById };
+        return {
+            orgIdByRuc,
+            orgIdByComercial,
+            orgIdByNombre,
+            orgNombreComercialById,
+        };
     }
 
     private async processContacts(
@@ -245,7 +285,8 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 summary.skipped.push({
                     sheet: 'Contactos',
                     row: c.rowNumber,
-                    message: 'No se encontró la organización del contacto; omitido.',
+                    message:
+                        'No se encontró la organización del contacto; omitido.',
                 });
                 continue;
             }
@@ -334,7 +375,10 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
         const { contactNombreById } = contactMaps;
         const encargado = users.find((u) => u.id === encargadoId);
         const nombreRemitente = encargado
-            ? [encargado.nombres, encargado.apellidos].filter(Boolean).join(' ').trim()
+            ? [encargado.nombres, encargado.apellidos]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim()
             : 'Por asignar';
         await tx.cotizacion.create({
             data: {
@@ -387,14 +431,21 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 summary.skipped.push({
                     sheet: 'Leads',
                     row: l.rowNumber,
-                    message: 'No se encontró la organización del lead; omitido.',
+                    message:
+                        'No se encontró la organización del lead; omitido.',
                 });
                 continue;
             }
             const contactoId = l.contactoCorreo
-                ? (contactIdByCorreo.get(normalizeCell(l.contactoCorreo)) ?? null)
+                ? (contactIdByCorreo.get(normalizeCell(l.contactoCorreo)) ??
+                  null)
                 : null;
-            const encargadoId = this.resolveEncargadoId(userMap, l, ctx, summary);
+            const encargadoId = this.resolveEncargadoId(
+                userMap,
+                l,
+                ctx,
+                summary,
+            );
             const createdAt = l.createdAt ?? undefined;
             const createdLead = await tx.lead.create({
                 data: {
@@ -419,10 +470,25 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 leadIdByExcelId.set(key, createdLead.id);
                 leadMetaByExcelId.set(key, { orgId, contactoId, encargadoId });
             }
-            await this.maybeCreateActivity(tx, l, createdLead.id, encargadoId, summary);
+            await this.maybeCreateActivity(
+                tx,
+                l,
+                createdLead.id,
+                encargadoId,
+                summary,
+            );
             await this.maybeCreateAutoCotizacion(
-                tx, l, createdLead.id, orgId, contactoId, encargadoId,
-                users, orgMaps, contactMaps, ctx, summary,
+                tx,
+                l,
+                createdLead.id,
+                orgId,
+                contactoId,
+                encargadoId,
+                users,
+                orgMaps,
+                contactMaps,
+                ctx,
+                summary,
             );
         }
 
@@ -430,19 +496,32 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
     }
 
     private buildCotDerivedFields(
-        meta: { orgId: string; contactoId: number | null; encargadoId: number } | undefined,
+        meta:
+            | { orgId: string; contactoId: number | null; encargadoId: number }
+            | undefined,
         users: UserRow[],
         orgNombreComercialById: Map<string, string>,
         contactNombreById: Map<number, string>,
-    ): { cliente: string | null; dirigido: string | null; nombreRemitente: string } {
-        const cliente = meta ? (orgNombreComercialById.get(meta.orgId) ?? null) : null;
+    ): {
+        cliente: string | null;
+        dirigido: string | null;
+        nombreRemitente: string;
+    } {
+        const cliente = meta
+            ? (orgNombreComercialById.get(meta.orgId) ?? null)
+            : null;
         const dirigido =
             meta?.contactoId == null
                 ? null
                 : (contactNombreById.get(meta.contactoId) ?? null);
-        const encargado = meta ? users.find((u) => u.id === meta.encargadoId) : undefined;
+        const encargado = meta
+            ? users.find((u) => u.id === meta.encargadoId)
+            : undefined;
         const nombreRemitente = encargado
-            ? [encargado.nombres, encargado.apellidos].filter(Boolean).join(' ').trim()
+            ? [encargado.nombres, encargado.apellidos]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim()
             : 'Por asignar';
         return { cliente, dirigido, nombreRemitente };
     }
@@ -473,12 +552,13 @@ export class PrismaCrmImportRepository implements IImportCommitRepository {
                 continue;
             }
             const meta = leadKey ? leadMetaByExcelId.get(leadKey) : undefined;
-            const { cliente, dirigido, nombreRemitente } = this.buildCotDerivedFields(
-                meta,
-                users,
-                orgNombreComercialById,
-                contactNombreById,
-            );
+            const { cliente, dirigido, nombreRemitente } =
+                this.buildCotDerivedFields(
+                    meta,
+                    users,
+                    orgNombreComercialById,
+                    contactNombreById,
+                );
             await tx.cotizacion.create({
                 data: {
                     fechaCot: q.fechaCot,

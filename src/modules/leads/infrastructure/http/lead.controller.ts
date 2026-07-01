@@ -114,6 +114,7 @@ export class LeadController {
             query.sector,
             query.conActividadesPendientes,
             query.tipo,
+            query.idContacto,
         );
         const { data, total } = await this.listLeadsUseCase.execute(dto);
         const responseData = data.map((item) => new LeadResponseDto(item));

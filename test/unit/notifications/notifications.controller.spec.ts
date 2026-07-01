@@ -104,14 +104,15 @@ describe('Notifications module', () => {
                 total: 1,
             });
 
-            const result = await controller.list({
-                estado: NotificationStatus.PROGRAMADA,
-            });
+            const result = await controller.list(
+                { estado: NotificationStatus.PROGRAMADA },
+                { id: 5 } as any,
+            );
 
             expect(listNotifications.execute).toHaveBeenCalledWith({
                 estado: NotificationStatus.PROGRAMADA,
                 idLead: undefined,
-                idResponsable: undefined,
+                idResponsable: 5,
                 page: 1,
                 limit: 10,
             });
@@ -131,12 +132,12 @@ describe('Notifications module', () => {
                 total: 30,
             });
 
-            const result = await controller.list({ page: 2, limit: 5 });
+            const result = await controller.list({ page: 2, limit: 5 }, { id: 5 } as any);
 
             expect(listNotifications.execute).toHaveBeenCalledWith({
                 estado: undefined,
                 idLead: undefined,
-                idResponsable: undefined,
+                idResponsable: 5,
                 page: 2,
                 limit: 5,
             });
@@ -148,14 +149,14 @@ describe('Notifications module', () => {
             });
         });
 
-        it('cancels a notification by id', async () => {
+        it('cancels a notification by id passing the current user', async () => {
             const cancelled = sampleReminder();
             cancelled.cancel();
             cancelNotification.execute.mockResolvedValue(cancelled);
 
-            const result = await controller.cancel(10);
+            const result = await controller.cancel(10, { id: 3 } as any);
 
-            expect(cancelNotification.execute).toHaveBeenCalledWith(10);
+            expect(cancelNotification.execute).toHaveBeenCalledWith(10, 3);
             expect(result.estado).toBe(NotificationStatus.CANCELADA);
         });
     });

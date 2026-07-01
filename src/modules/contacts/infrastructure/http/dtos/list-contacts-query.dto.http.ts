@@ -12,6 +12,14 @@ export class HttpListContactsQueryDto {
     search?: string;
 
     @ApiPropertyOptional({
+        description: 'Filtrar por ID de organización',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsOptional()
+    @IsString()
+    idOrganization?: string;
+
+    @ApiPropertyOptional({
         description: 'Número de página',
         default: 1,
         example: 1,

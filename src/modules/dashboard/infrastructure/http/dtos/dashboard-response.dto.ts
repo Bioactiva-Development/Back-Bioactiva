@@ -1,8 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type {
     DashboardMetrics,
+    DistItem,
     MoneyByCurrency,
 } from '@/modules/dashboard/domain/ports/dashboard-repository.port';
+
+export class DistItemDto implements DistItem {
+    @ApiProperty({ example: 'EN_PROSPECTO' })
+    estado: string;
+
+    @ApiProperty({ example: 12 })
+    cantidad: number;
+}
 
 /** Forma Swagger de un monto separado por moneda. */
 export class MoneyByCurrencyDto {
@@ -60,6 +69,20 @@ export class DashboardResponseDto {
     @ApiProperty({ description: 'Fin del período analizado' })
     periodEnd: Date;
 
+    @ApiProperty({
+        type: [DistItemDto],
+        description:
+            'Conteo de leads por estado en el período (EN_PROSPECTO, OFERTADO, CIERRE_CON_VENTA, CIERRE_SIN_VENTA)',
+    })
+    distribucionPipeline: DistItem[];
+
+    @ApiProperty({
+        type: [DistItemDto],
+        description:
+            'Conteo de cotizaciones por estado en el período (PENDIENTE, ENVIADA, ACEPTADA, RECHAZADA)',
+    })
+    distribucionCotizaciones: DistItem[];
+
     constructor(metrics: DashboardMetrics) {
         this.totalLeads = metrics.totalLeads;
         this.averageTicketAmount = metrics.averageTicketAmount;
@@ -73,5 +96,7 @@ export class DashboardResponseDto {
         this.stalledLeadPercentage = metrics.stalledLeadPercentage;
         this.periodStart = metrics.periodStart;
         this.periodEnd = metrics.periodEnd;
+        this.distribucionPipeline = metrics.distribucionPipeline;
+        this.distribucionCotizaciones = metrics.distribucionCotizaciones;
     }
 }

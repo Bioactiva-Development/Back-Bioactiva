@@ -123,6 +123,20 @@ export class ImportPlannerService {
 
         this.crossValidateLeadsCotizaciones(leads, cotizaciones, errors, warnings);
 
+        const totalRows =
+            organizaciones.length +
+            contactos.length +
+            leads.length +
+            cotizaciones.length;
+        if (totalRows === 0 && errors.length === 0) {
+            errors.push({
+                sheet: 'General',
+                row: 0,
+                message:
+                    'El archivo no contiene registros para importar. Revisa que las hojas tengan datos.',
+            });
+        }
+
         const plan: ImportPlan = {
             organizaciones,
             contactos,
@@ -353,7 +367,7 @@ export class ImportPlannerService {
                 continue;
             }
             const vocativo = vocativoResult;
-            const orgNombreComercial = str(row, 'organizacion abreviado');
+            const orgNombreComercial = str(row, 'organizacion');
             if (!orgNombreComercial) {
                 errors.push({
                     sheet,

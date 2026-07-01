@@ -1,5 +1,6 @@
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Module } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HttpLoggingInterceptor } from '@/shared/interceptors/http-logging.interceptor';
@@ -18,7 +19,6 @@ import { ActivitiesModule } from '@/modules/activities/activities.module';
 import { MicrosoftIntegrationModule } from '@/modules/integrations/microsoft-integration.module';
 import { CotizacionesModule } from '@/modules/quotations/cotizaciones.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
-import { ResetModule } from '@/modules/reset/reset.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { DataManagementModule } from '@/modules/data-management/data-management.module';
 import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
@@ -39,13 +39,13 @@ import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
         MicrosoftIntegrationModule,
         CotizacionesModule,
         DashboardModule,
-        ResetModule,
         NotificationsModule,
         DataManagementModule,
 
         ConfigModule.forRoot({
             isGlobal: true,
         }),
+        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     ],
     controllers: [AppController],
     providers: [
@@ -57,6 +57,10 @@ import { AppTimeModule } from '@/shared/infrastructure/config/app-time.module';
         {
             provide: APP_FILTER,
             useClass: GlobalExceptionFilter,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
         },
     ],
 })

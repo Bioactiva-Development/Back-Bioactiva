@@ -26,6 +26,7 @@ import {
     LEAD_STATE_SYNONYMS,
     ESTADO_COT_SYNONYMS,
 } from '@/modules/data-management/domain/constants/enum-synonyms';
+import { EmptyExportException } from '@/modules/data-management/domain/exceptions/empty-export.exception';
 
 export type ExportTarget =
     | 'organizaciones'
@@ -103,6 +104,18 @@ export class ExportWorkbookUseCase {
         }
         if (target === 'cotizaciones' || target === 'all') {
             sheets.push(await this.buildCotizacionesSheet(options));
+        }
+
+        if (target === 'all') {
+            const totalRows = sheets.reduce((sum, s) => sum + s.rows.length, 0);
+            if (totalRows === 0) {
+                throw new EmptyExportException('CRM');
+            }
+        } else {
+            const sheet = sheets[0];
+            if (sheet.rows.length === 0) {
+                throw new EmptyExportException(sheet.name);
+            }
         }
 
         return this.workbookBuilder.build(sheets);
@@ -200,7 +213,7 @@ export class ExportWorkbookUseCase {
                     width: 30,
                 },
                 {
-                    header: 'Organización abreviado',
+                    header: 'Organización',
                     key: 'orgAbrev',
                     width: 26,
                 },

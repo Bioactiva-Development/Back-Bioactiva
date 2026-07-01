@@ -1,4 +1,10 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+
+jest.mock('@/modules/integrations/application/oauth-state', () => ({
+    signOAuthState: jest.fn().mockReturnValue('mock-hmac'),
+    verifyOAuthState: jest.fn().mockReturnValue(1),
+}));
+
 import { ConnectMicrosoftAccountUseCase } from '@/modules/integrations/application/use-cases/connect-microsoft-account.use-case';
 
 describe('Integrations module', () => {

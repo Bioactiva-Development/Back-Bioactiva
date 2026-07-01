@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { MicrosoftIntegrationController } from '@/modules/integrations/infrastructure/http/microsoft-integration.controller';
 import { DEFAULT_RETURN_PATH } from '@/modules/integrations/application/microsoft-return-path';
+import { signOAuthState } from '@/modules/integrations/application/oauth-state';
 
 describe('MicrosoftIntegrationController (branches)', () => {
     let controller: MicrosoftIntegrationController;
@@ -33,11 +34,10 @@ describe('MicrosoftIntegrationController (branches)', () => {
     it('callback falls back to the default path when state has no encoded return path', async () => {
         callback.execute.mockResolvedValue(undefined);
         const res: any = { redirect: jest.fn() };
+        const payload = '42:nonce';
+        const state = `${payload}:${signOAuthState(payload)}`;
 
-        await controller.callback(
-            { state: '42:nonce', code: 'auth-code' } as any,
-            res,
-        );
+        await controller.callback({ state, code: 'auth-code' } as any, res);
 
         expect(res.redirect).toHaveBeenCalledWith(
             expect.stringContaining(`${DEFAULT_RETURN_PATH}?microsoft=connected`),
@@ -50,10 +50,10 @@ describe('MicrosoftIntegrationController (branches)', () => {
 
         // "%E0%A4%A" is an invalid percent-encoding so decodeURIComponent throws,
         // exercising the catch branch of resolveReturnPath.
-        await controller.callback(
-            { state: '42:nonce:%E0%A4%A', code: 'auth-code' } as any,
-            res,
-        );
+        const payload = '42:nonce:%E0%A4%A';
+        const state = `${payload}:${signOAuthState(payload)}`;
+
+        await controller.callback({ state, code: 'auth-code' } as any, res);
 
         expect(res.redirect).toHaveBeenCalledWith(
             expect.stringContaining(`${DEFAULT_RETURN_PATH}?microsoft=connected`),
