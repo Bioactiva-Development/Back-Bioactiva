@@ -3,6 +3,8 @@ import {
     startOfDayInZone,
     endOfDayInZone,
     startOfCurrentDayInZone,
+    exactTimeInZone,
+    toLocalISOString,
 } from '@/shared/infrastructure/datetime/range-in-zone';
 
 const LIMA = 'America/Lima'; // UTC-5, sin horario de verano
@@ -35,6 +37,11 @@ describe('range-in-zone', () => {
             const hasta = endOfDayInZone('2026-06-22', LIMA);
             expect(cotizacion >= desde && cotizacion <= hasta).toBe(true);
         });
+
+        it('respeta un instante ISO con hora tal cual', () => {
+            const iso = '2026-06-22T10:30:00.000Z';
+            expect(endOfDayInZone(iso, LIMA).toISOString()).toBe(iso);
+        });
     });
 
     describe('startOfCurrentDayInZone', () => {
@@ -51,6 +58,23 @@ describe('range-in-zone', () => {
             expect(startOfCurrentDayInZone(instant, LIMA).toISOString()).toBe(
                 '2026-06-22T05:00:00.000Z',
             );
+        });
+    });
+
+    describe('exactTimeInZone', () => {
+        it('preserva el instante exacto (incluyendo milisegundos) razonando en la zona de negocio', () => {
+            const instant = new Date('2026-06-22T12:34:56.789Z');
+            expect(exactTimeInZone(instant, LIMA).toISOString()).toBe(
+                instant.toISOString(),
+            );
+        });
+    });
+
+    describe('toLocalISOString', () => {
+        it('devuelve la hora civil de la zona sin sufijo, para APIs externas', () => {
+            // 17:00 UTC = 12:00 en Lima (UTC-5).
+            const date = new Date('2026-06-23T17:00:00.000Z');
+            expect(toLocalISOString(date, LIMA)).toBe('2026-06-23T12:00:00');
         });
     });
 });

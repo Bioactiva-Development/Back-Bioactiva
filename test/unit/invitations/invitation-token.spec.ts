@@ -66,6 +66,22 @@ describe('Invitations module', () => {
                 expect(newInvitation.id).toBeNull();
                 expect(newInvitation.isPending()).toBe(true);
             });
+
+            it('defaults estado to PENDIENTE when omitted', () => {
+                const invitation = new InvitationToken(
+                    null,
+                    correo,
+                    token,
+                    rol,
+                    invitadorId,
+                    undefined,
+                    createdAt,
+                    null,
+                    expiredAt,
+                );
+
+                expect(invitation.estado).toBe(TokenStatus.PENDIENTE);
+            });
         });
 
         describe('isExpired', () => {

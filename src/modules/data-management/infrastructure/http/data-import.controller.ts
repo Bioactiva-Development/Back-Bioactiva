@@ -139,6 +139,6 @@ export class DataImportController {
 
     /** Elimina caracteres peligrosos del nombre de archivo antes de loguearlo o encolarlo. */
     private sanitizeFilename(name: string): string {
-        return name.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 255);
+        return name.replaceAll(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 255);
     }
 }

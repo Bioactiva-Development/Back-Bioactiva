@@ -487,6 +487,74 @@ describe('Data-management import repository', () => {
                 expect(actData.idResponsable).toBe(7);
             });
 
+            it('should auto-create a provisional cotización for an OFERTADO lead without one, naming the resolved encargado', async () => {
+                tx.usuario.findMany.mockResolvedValue([
+                    { id: 50, nombres: 'Luis', apellidos: 'Gomez' },
+                ]);
+                tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
+                tx.contacto.create.mockResolvedValue({ id: 11 });
+                tx.lead.create.mockResolvedValue({ id: 100 });
+                tx.cotizacion.create.mockResolvedValue({ id: 900 });
+                const plan = emptyPlan();
+                plan.organizaciones = [baseOrg];
+                plan.contactos = [
+                    {
+                        rowNumber: 3,
+                        nombres: 'Ana',
+                        apellidos: 'Paredes',
+                        vocativo: null,
+                        cargo: null,
+                        correo: 'ana@x.com',
+                        correo2: null,
+                        telefono: null,
+                        comentarios: null,
+                        orgRuc: '204',
+                        orgNombreComercial: null,
+                    },
+                ];
+                plan.leads = [
+                    {
+                        ...lead,
+                        estado: 'OFERTADO',
+                        contactoCorreo: 'ana@x.com',
+                        encargadoNombre: 'Luis Gomez',
+                        autoCreateCotizacion: true,
+                    } as any,
+                ];
+
+                const summary = await repository.commit(plan, ctx);
+
+                expect(summary.inserted.cotizaciones).toBe(1);
+                const cotData = tx.cotizacion.create.mock.calls[0][0].data;
+                expect(cotData.idLead).toBe(100);
+                expect(cotData.estado).toBe('PENDIENTE');
+                expect(cotData.monto).toBe('0');
+                expect(cotData.nombreRemitente).toBe('Luis Gomez');
+                expect(cotData.cliente).toBe('Altomayo SAC');
+                expect(cotData.dirigido).toBe('Ana Paredes');
+            });
+
+            it('should fall back to "Por asignar" when the auto-cotización encargado cannot be resolved', async () => {
+                tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
+                tx.lead.create.mockResolvedValue({ id: 100 });
+                tx.cotizacion.create.mockResolvedValue({ id: 900 });
+                const plan = emptyPlan();
+                plan.organizaciones = [baseOrg];
+                plan.leads = [
+                    {
+                        ...lead,
+                        estado: 'OFERTADO',
+                        autoCreateCotizacion: true,
+                    } as any,
+                ];
+
+                await repository.commit(plan, ctx);
+
+                const cotData = tx.cotizacion.create.mock.calls[0][0].data;
+                expect(cotData.nombreRemitente).toBe('Por asignar');
+                expect(cotData.dirigido).toBeNull();
+            });
+
             it('should set idContacto null when contactoCorreo cannot be resolved', async () => {
                 tx.organizacion.create.mockResolvedValue({ id: 'org-1' });
                 tx.lead.create.mockResolvedValue({ id: 100 });

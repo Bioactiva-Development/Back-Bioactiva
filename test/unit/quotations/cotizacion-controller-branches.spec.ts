@@ -165,4 +165,39 @@ describe('CotizacionController (optional-field branches)', () => {
         const dto = mocks.update.execute.mock.calls[0][1];
         expect(dto.fechaCot).toBeUndefined();
     });
+
+    it('kpis converts fechaDesde/fechaHasta to Date when present', async () => {
+        const kpisResult = {
+            totalActivo: 15000.5,
+            aceptadas: 3,
+            enviadas: 5,
+            rechazadas: 2,
+        };
+        mocks.kpis.execute.mockResolvedValue(kpisResult);
+
+        const result = await controller.kpis({
+            fechaDesde: '2026-01-01T00:00:00.000Z',
+            fechaHasta: '2026-02-01T00:00:00.000Z',
+        } as any);
+
+        const filters = mocks.kpis.execute.mock.calls[0][0];
+        expect(filters.fechaDesde).toBeInstanceOf(Date);
+        expect(filters.fechaHasta).toBeInstanceOf(Date);
+        expect(result).toEqual(kpisResult);
+    });
+
+    it('kpis leaves fechaDesde/fechaHasta undefined when omitted', async () => {
+        mocks.kpis.execute.mockResolvedValue({
+            totalActivo: 0,
+            aceptadas: 0,
+            enviadas: 0,
+            rechazadas: 0,
+        });
+
+        await controller.kpis({} as any);
+
+        const filters = mocks.kpis.execute.mock.calls[0][0];
+        expect(filters.fechaDesde).toBeUndefined();
+        expect(filters.fechaHasta).toBeUndefined();
+    });
 });
