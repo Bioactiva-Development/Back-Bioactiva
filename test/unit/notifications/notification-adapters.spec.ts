@@ -5,17 +5,30 @@ import { NotificationMailerAdapter } from '@/modules/notifications/infrastructur
 describe('Notifications adapters', () => {
     describe('ActivityCompletionAdapter', () => {
         let completeActivityFollowUp: any;
+        let cancelActivityNotifications: any;
         let adapter: ActivityCompletionAdapter;
 
         beforeEach(() => {
             completeActivityFollowUp = { execute: jest.fn() };
-            adapter = new ActivityCompletionAdapter(completeActivityFollowUp);
+            cancelActivityNotifications = { execute: jest.fn() };
+            adapter = new ActivityCompletionAdapter(
+                completeActivityFollowUp,
+                cancelActivityNotifications,
+            );
         });
 
         it('delegates activity completion to the use case', async () => {
             await adapter.onActivityCompleted(123);
 
             expect(completeActivityFollowUp.execute).toHaveBeenCalledWith(123);
+        });
+
+        it('delegates activity deletion to the cancel-notifications use case', async () => {
+            await adapter.onActivityDeleted(123);
+
+            expect(cancelActivityNotifications.execute).toHaveBeenCalledWith(
+                123,
+            );
         });
     });
 

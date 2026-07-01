@@ -97,6 +97,28 @@ describe('Data management module', () => {
                 expect(plan.organizaciones[0].sector).toBe('TECNOLOGIA');
                 expect(plan.organizaciones[0].ruc).toBeNull();
             });
+
+            it('convierte a texto una celda de tipo Date pegada por error en un campo de texto', () => {
+                const cellDate = new Date('2026-03-15T00:00:00.000Z');
+                const { plan, validation } = planner.plan(
+                    wb({
+                        organizaciones: [
+                            {
+                                __rowNumber: 2,
+                                organizacion: cellDate,
+                                'nombre completo': 'Org Completa',
+                                'tipo de organizacion': 'empresa nacional',
+                                tamano: 'grande',
+                                sector: 'tecnologia',
+                            },
+                        ],
+                    }),
+                );
+                expect(validation.valid).toBe(true);
+                expect(plan.organizaciones[0].nombreComercial).toBe(
+                    cellDate.toISOString(),
+                );
+            });
         });
 
         describe('Contactos', () => {
@@ -155,6 +177,44 @@ describe('Data management module', () => {
                 expect(plan.contactos[0].vocativo).toBe('SR');
                 expect(plan.contactos[0].orgNombreComercial).toBe('OrgTest');
                 expect(plan.contactos[0].orgRuc).toBeNull();
+            });
+
+            it('acepta un teléfono con formato internacional válido, tolerando separadores', () => {
+                const { plan, validation } = planner.plan(
+                    wb({
+                        contactos: [
+                            {
+                                __rowNumber: 2,
+                                nombre: 'Juan',
+                                'correo electronico 1': 'a@x.com',
+                                organizacion: 'OrgTest',
+                                telefono: '+51 (987) 654-321',
+                            },
+                        ],
+                    }),
+                );
+                expect(validation.valid).toBe(true);
+                expect(plan.contactos[0].telefono).toBe('+51 (987) 654-321');
+            });
+
+            it('rechaza un teléfono sin código de país y omite la fila', () => {
+                const { plan, validation } = planner.plan(
+                    wb({
+                        contactos: [
+                            {
+                                __rowNumber: 2,
+                                nombre: 'Juan',
+                                'correo electronico 1': 'a@x.com',
+                                organizacion: 'OrgTest',
+                                telefono: '987654321',
+                            },
+                        ],
+                    }),
+                );
+                expect(plan.contactos).toHaveLength(0);
+                const errs = errorsFor('Contactos', validation);
+                expect(errs).toHaveLength(1);
+                expect(errs[0].message).toContain('Teléfono inválido');
             });
         });
 
@@ -224,6 +284,154 @@ describe('Data management module', () => {
                 expect(validation.warnings).toHaveLength(0);
                 expect(plan.leads[0].actividad).toBeNull();
                 expect(plan.leads[0].createdAt).toBeInstanceOf(Date);
+            });
+        });
+
+        describe('Leads x Cotizaciones — validación cruzada', () => {
+            const cotRow = (over: Partial<ParsedRow> = {}): ParsedRow => ({
+                __rowNumber: 10,
+                'id de lead': 'L1',
+                'nombre del servicio': 'Consultoría',
+                monto: '1000',
+                moneda: 'usd',
+                'estado del proceso': 'pendiente',
+                'fecha de cotizacion': '2026-01-01',
+                ...over,
+            });
+
+            const leadRow = (over: Partial<ParsedRow> = {}): ParsedRow => ({
+                __rowNumber: 2,
+                'id lead': 'L1',
+                'servicio de interes': 'S',
+                organizacion: 'OrgTest',
+                encargado: 'Maria',
+                ...over,
+            });
+
+            it('EN_PROSPECTO con cotizaciones asociadas reporta error', () => {
+                const { validation } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'en_prospecto' })],
+                        cotizaciones: [cotRow()],
+                    }),
+                );
+                const errs = errorsFor('Leads', validation);
+                expect(errs).toHaveLength(1);
+                expect(errs[0].message).toContain(
+                    'no puede tener cotizaciones',
+                );
+            });
+
+            it('OFERTADO sin cotizaciones genera aviso y marca autoCreateCotizacion', () => {
+                const { plan, validation } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'ofertado' })],
+                    }),
+                );
+                expect(errorsFor('Leads', validation)).toHaveLength(0);
+                expect(plan.leads[0].autoCreateCotizacion).toBe(true);
+                expect(
+                    validation.warnings.some((w) =>
+                        w.message.includes('se creará automáticamente'),
+                    ),
+                ).toBe(true);
+            });
+
+            it('OFERTADO con una cotización PENDIENTE es válido, sin autoCreateCotizacion', () => {
+                const { plan, validation } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'ofertado' })],
+                        cotizaciones: [cotRow()],
+                    }),
+                );
+                expect(validation.valid).toBe(true);
+                expect(plan.leads[0].autoCreateCotizacion).toBeFalsy();
+            });
+
+            it('OFERTADO con una cotización en estado distinto de PENDIENTE/ENVIADA reporta error', () => {
+                const { validation } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'ofertado' })],
+                        cotizaciones: [cotRow({ 'estado del proceso': 'aceptada' })],
+                    }),
+                );
+                const errs = errorsFor('Leads', validation);
+                expect(errs).toHaveLength(1);
+                expect(errs[0].message).toContain(
+                    'la cotización debe estar en PENDIENTE o ENVIADA',
+                );
+            });
+
+            it('OFERTADO con más de una cotización reporta error', () => {
+                const { validation } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'ofertado' })],
+                        cotizaciones: [
+                            cotRow({ __rowNumber: 10 }),
+                            cotRow({ __rowNumber: 11 }),
+                        ],
+                    }),
+                );
+                const errs = errorsFor('Leads', validation);
+                expect(errs).toHaveLength(1);
+                expect(errs[0].message).toContain(
+                    'solo puede tener 1 cotización',
+                );
+            });
+
+            it('CIERRE_CON_VENTA exige exactamente una cotización ACEPTADA', () => {
+                const { validation: sinCots } = planner.plan(
+                    wb({ leads: [leadRow({ estado: 'cierre_con_venta' })] }),
+                );
+                expect(errorsFor('Leads', sinCots)[0].message).toContain(
+                    'debe tener exactamente 1 cotización',
+                );
+
+                const { validation: estadoInvalido } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'cierre_con_venta' })],
+                        cotizaciones: [
+                            cotRow({ 'estado del proceso': 'pendiente' }),
+                        ],
+                    }),
+                );
+                expect(
+                    errorsFor('Leads', estadoInvalido)[0].message,
+                ).toContain('debe estar en ACEPTADA');
+
+                const { validation: valido } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'cierre_con_venta' })],
+                        cotizaciones: [
+                            cotRow({ 'estado del proceso': 'aceptada' }),
+                        ],
+                    }),
+                );
+                expect(errorsFor('Leads', valido)).toHaveLength(0);
+            });
+
+            it('CIERRE_SIN_VENTA exige exactamente una cotización RECHAZADA', () => {
+                const { validation: estadoInvalido } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'cierre_sin_venta' })],
+                        cotizaciones: [
+                            cotRow({ 'estado del proceso': 'pendiente' }),
+                        ],
+                    }),
+                );
+                expect(
+                    errorsFor('Leads', estadoInvalido)[0].message,
+                ).toContain('debe estar en RECHAZADA');
+
+                const { validation: valido } = planner.plan(
+                    wb({
+                        leads: [leadRow({ estado: 'cierre_sin_venta' })],
+                        cotizaciones: [
+                            cotRow({ 'estado del proceso': 'rechazada' }),
+                        ],
+                    }),
+                );
+                expect(errorsFor('Leads', valido)).toHaveLength(0);
             });
         });
 

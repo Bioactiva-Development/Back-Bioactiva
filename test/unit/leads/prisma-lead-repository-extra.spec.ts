@@ -124,6 +124,62 @@ describe('Leads module', () => {
                     repository.findByIdWithRelations(1),
                 ).rejects.toThrow(LeadNotFoundException);
             });
+
+            it('maps organization/encargado/contacto and picks the highest-priority cotización', async () => {
+                prismaService.lead.findFirst.mockResolvedValue({
+                    ...baseRecord,
+                    organizacion: { nombre: 'Bioactiva SAC' },
+                    encargado: { nombres: 'Carlos', apellidos: 'López' },
+                    contacto: { nombres: 'María', apellidos: 'Gómez' },
+                    actividades: [],
+                    cotizaciones: [
+                        { id: 1, monto: '1000.00', tipo: 'USD', estado: 'PENDIENTE' },
+                        { id: 2, monto: '2000.00', tipo: 'USD', estado: 'ACEPTADA' },
+                        { id: 3, monto: '3000.00', tipo: 'USD', estado: 'ENVIADA' },
+                    ],
+                });
+
+                const result = await repository.findByIdWithRelations(1);
+
+                expect(result?.organizationName).toBe('Bioactiva SAC');
+                expect(result?.encargadoNombre).toBe('Carlos');
+                expect(result?.encargadoApellidos).toBe('López');
+                expect(result?.contactName).toBe('María Gómez');
+                // ACEPTADA (prioridad 0) gana sobre ENVIADA (1) y PENDIENTE (2).
+                expect(result?.cotizacionActiva).toEqual({
+                    id: 2,
+                    monto: 2000,
+                    tipo: 'USD',
+                    estado: 'ACEPTADA',
+                });
+            });
+
+            it('treats an unrecognized cotización estado as lowest priority', async () => {
+                prismaService.lead.findFirst.mockResolvedValue({
+                    ...baseRecord,
+                    organizacion: null,
+                    encargado: null,
+                    contacto: null,
+                    actividades: [],
+                    cotizaciones: [
+                        { id: 1, monto: '500.00', tipo: 'PEN', estado: 'DESCONOCIDO' },
+                        { id: 2, monto: '700.00', tipo: 'PEN', estado: 'PENDIENTE' },
+                    ],
+                });
+
+                const result = await repository.findByIdWithRelations(1);
+
+                expect(result?.organizationName).toBe('');
+                expect(result?.encargadoNombre).toBe('');
+                expect(result?.encargadoApellidos).toBe('');
+                expect(result?.contactName).toBeNull();
+                expect(result?.cotizacionActiva).toEqual({
+                    id: 2,
+                    monto: 700,
+                    tipo: 'PEN',
+                    estado: 'PENDIENTE',
+                });
+            });
         });
 
         describe('buildWhere (estado / idOrg / idEncargado filters)', () => {
