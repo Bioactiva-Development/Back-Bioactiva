@@ -25,6 +25,19 @@ export interface ListCotizacionesParams {
     limit?: number;
 }
 
+export interface KpisCotizacionesParams {
+    fechaDesde?: Date;
+    fechaHasta?: Date;
+}
+
+export interface CotizacionKpis {
+    /** Suma de montos de cotizaciones no rechazadas. */
+    totalActivo: number;
+    aceptadas: number;
+    enviadas: number;
+    rechazadas: number;
+}
+
 export interface CotizacionRepositoryPort {
     findById(id: number): Promise<Cotizacion | null>;
     findByIdWithRelations(id: number): Promise<CotizacionWithRelations | null>;
@@ -57,6 +70,7 @@ export interface CotizacionRepositoryPort {
     count(
         params?: Omit<ListCotizacionesParams, 'page' | 'limit'>,
     ): Promise<number>;
+    getKpis(params?: KpisCotizacionesParams): Promise<CotizacionKpis>;
 }
 
 export const COTIZACION_REPOSITORY = Symbol('COTIZACION_REPOSITORY');

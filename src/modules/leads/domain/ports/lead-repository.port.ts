@@ -1,6 +1,14 @@
 import { Lead } from '@/modules/leads/domain/entities/lead';
 import { ActivityAlertLevel } from '@/modules/leads/domain/enums/activity-alert-level';
 
+/** Resumen de la cotización activa (no rechazada) de un lead. */
+export interface CotizacionActiva {
+    id: number;
+    monto: number;
+    tipo: string;
+    estado: string;
+}
+
 export interface LeadWithRelations {
     lead: Lead;
     organizationName: string;
@@ -9,6 +17,8 @@ export interface LeadWithRelations {
     contactName: string | null;
     /** Semáforo de actividades del lead (libre / pendiente / crítico / por vencer). */
     activityAlert: ActivityAlertLevel;
+    /** Cotización activa (no rechazada) del lead, o null si no tiene ninguna. */
+    cotizacionActiva: CotizacionActiva | null;
 }
 
 export interface ListLeadsParams {
@@ -17,6 +27,8 @@ export interface ListLeadsParams {
     idEncargado?: number;
     /** Búsqueda textual sobre el servicio de interés del lead. */
     search?: string;
+    /** Filtra leads asignados a un contacto concreto. */
+    idContacto?: number;
     /** Sector de la organización del lead (valor del enum Sector). */
     sector?: string;
     /** Tipo de organización del lead (valor del enum EnterpriseType). */
@@ -26,7 +38,7 @@ export interface ListLeadsParams {
     fechaHasta?: Date;
     /**
      * Filtra por el nivel del semáforo de actividades del lead. Si se omite, no
-     * filtra. Valores: SIN_ACTIVIDADES, PENDIENTE, EN_RIESGO, POR_VENCER.
+     * filtra. Valores: SIN_ACTIVIDADES, PENDIENTE, POR_VENCER.
      */
     alertaActividad?: ActivityAlertLevel;
     /** Si es true, solo leads con al menos una actividad PENDIENTE no eliminada. */

@@ -18,7 +18,7 @@ describe('Leads module', () => {
         it('returns POR_VENCER when a pending activity is overdue', () => {
             expect(
                 computeActivityAlert(
-                    [{ createdAt: days(-10), fechaFin: days(-1) }],
+                    [{ fechaFin: days(-1) }],
                     now,
                 ),
             ).toBe(ActivityAlertLevel.POR_VENCER);
@@ -27,12 +27,7 @@ describe('Leads module', () => {
         it('returns POR_VENCER when a pending activity is due within the threshold', () => {
             expect(
                 computeActivityAlert(
-                    [
-                        {
-                            createdAt: days(-1),
-                            fechaFin: days(ACTIVITY_ALERT_DUE_SOON_DAYS - 1),
-                        },
-                    ],
+                    [{ fechaFin: days(ACTIVITY_ALERT_DUE_SOON_DAYS - 1) }],
                     now,
                 ),
             ).toBe(ActivityAlertLevel.POR_VENCER);
@@ -41,59 +36,40 @@ describe('Leads module', () => {
         it('includes the threshold boundary as POR_VENCER', () => {
             expect(
                 computeActivityAlert(
-                    [
-                        {
-                            createdAt: days(-1),
-                            fechaFin: days(ACTIVITY_ALERT_DUE_SOON_DAYS),
-                        },
-                    ],
+                    [{ fechaFin: days(ACTIVITY_ALERT_DUE_SOON_DAYS) }],
                     now,
                 ),
             ).toBe(ActivityAlertLevel.POR_VENCER);
         });
 
-        it('returns EN_RIESGO when a pending activity passed its midpoint but is not due soon', () => {
-            // createdAt hace 10 días, vence en 6 días: punto medio hace 2 días.
+        it('returns PENDIENTE when a pending activity is beyond the threshold', () => {
             expect(
                 computeActivityAlert(
-                    [{ createdAt: days(-10), fechaFin: days(6) }],
-                    now,
-                ),
-            ).toBe(ActivityAlertLevel.EN_RIESGO);
-        });
-
-        it('returns PENDIENTE when a pending activity is before its midpoint and not due soon', () => {
-            // createdAt ayer, vence en 20 días: punto medio dentro de ~9 días.
-            expect(
-                computeActivityAlert(
-                    [{ createdAt: days(-1), fechaFin: days(20) }],
+                    [{ fechaFin: days(ACTIVITY_ALERT_DUE_SOON_DAYS + 1) }],
                     now,
                 ),
             ).toBe(ActivityAlertLevel.PENDIENTE);
         });
 
-        it('prioritizes POR_VENCER over EN_RIESGO', () => {
+        it('returns PENDIENTE when a pending activity is far in the future', () => {
+            expect(
+                computeActivityAlert(
+                    [{ fechaFin: days(20) }],
+                    now,
+                ),
+            ).toBe(ActivityAlertLevel.PENDIENTE);
+        });
+
+        it('prioritizes POR_VENCER over PENDIENTE when mixed', () => {
             expect(
                 computeActivityAlert(
                     [
-                        { createdAt: days(-10), fechaFin: days(6) }, // en riesgo
-                        { createdAt: days(-1), fechaFin: days(2) }, // por vencer
+                        { fechaFin: days(20) },  // pendiente
+                        { fechaFin: days(1) },   // por vencer
                     ],
                     now,
                 ),
             ).toBe(ActivityAlertLevel.POR_VENCER);
-        });
-
-        it('prioritizes EN_RIESGO over PENDIENTE', () => {
-            expect(
-                computeActivityAlert(
-                    [
-                        { createdAt: days(-1), fechaFin: days(20) }, // pendiente
-                        { createdAt: days(-10), fechaFin: days(6) }, // en riesgo
-                    ],
-                    now,
-                ),
-            ).toBe(ActivityAlertLevel.EN_RIESGO);
         });
     });
 });

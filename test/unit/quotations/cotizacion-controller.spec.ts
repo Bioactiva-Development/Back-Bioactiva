@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { CotizacionController } from '@/modules/quotations/infrastructure/http/cotizacion.controller';
 import { CreateCotizacionUseCase } from '@/modules/quotations/application/use-cases/create-cotizacion.use-case';
 import { GetCotizacionByIdUseCase } from '@/modules/quotations/application/use-cases/get-cotizacion-by-id.use-case';
+import { GetKpisCotizacionesUseCase } from '@/modules/quotations/application/use-cases/get-kpis-cotizaciones.use-case';
 import { ListCotizacionesUseCase } from '@/modules/quotations/application/use-cases/list-cotizaciones.use-case';
 import { UpdateCotizacionUseCase } from '@/modules/quotations/application/use-cases/update-cotizacion.use-case';
 import { SendCotizacionUseCase } from '@/modules/quotations/application/use-cases/send-cotizacion.use-case';
@@ -16,6 +17,7 @@ describe('CotizacionController', () => {
     const mocks = {
         create: { execute: jest.fn() as any },
         get: { execute: jest.fn() as any },
+        kpis: { execute: jest.fn() as any },
         list: { execute: jest.fn() as any },
         update: { execute: jest.fn() as any },
         send: { execute: jest.fn() as any },
@@ -59,6 +61,7 @@ describe('CotizacionController', () => {
             providers: [
                 { provide: CreateCotizacionUseCase, useValue: mocks.create },
                 { provide: GetCotizacionByIdUseCase, useValue: mocks.get },
+                { provide: GetKpisCotizacionesUseCase, useValue: mocks.kpis },
                 { provide: ListCotizacionesUseCase, useValue: mocks.list },
                 { provide: UpdateCotizacionUseCase, useValue: mocks.update },
                 { provide: SendCotizacionUseCase, useValue: mocks.send },

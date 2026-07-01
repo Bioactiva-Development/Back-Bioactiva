@@ -226,14 +226,15 @@ describe('Security module', () => {
         });
 
         describe('me endpoint', () => {
-            it('should return the authenticated user', () => {
+            it('should return the authenticated user without sensitive fields', () => {
                 const user = buildUser();
 
                 const result = controller.me(user);
 
-                expect(result).toEqual(user);
                 expect(result.correo).toBe('ana@bioactiva.com');
                 expect(result.estado).toBe(UserState.ACTIVO);
+                expect((result as any).password).toBeUndefined();
+                expect((result as any).tokenVersion).toBeUndefined();
             });
         });
     });

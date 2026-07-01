@@ -39,8 +39,11 @@ describe('Data management module', () => {
                 }),
             );
             // Las tres celdas en blanco -> null, por lo que la fila se omite.
+            // Al quedar 0 registros útiles el planner marca el archivo como inválido.
             expect(plan.organizaciones).toHaveLength(0);
-            expect(validation.errors).toHaveLength(0);
+            expect(errorsFor('Organizaciones', validation)).toHaveLength(0);
+            expect(validation.errors).toHaveLength(1);
+            expect(validation.errors[0].message).toMatch(/no contiene registros/);
         });
 
         it('mensajes de error usan "" cuando el valor crudo es null (tipo/tamaño)', () => {

@@ -34,6 +34,14 @@ export class AdminInitializerService implements OnApplicationBootstrap {
         });
 
         if (adminCount === 0) {
+            const adminEmail = process.env.ADMIN_EMAIL;
+            const adminPassword = process.env.ADMIN_PASSWORD;
+            if (!adminEmail || !adminPassword) {
+                throw new Error(
+                    'ADMIN_EMAIL y ADMIN_PASSWORD son requeridos para crear el administrador inicial',
+                );
+            }
+
             console.log(
                 'No se encontró administrador. Creando admin por defecto...',
             );
@@ -42,10 +50,8 @@ export class AdminInitializerService implements OnApplicationBootstrap {
                 data: {
                     nombres: 'Admin Bioactiva',
                     apellidos: 'Por Defecto',
-                    correo: process.env.ADMIN_EMAIL || '',
-                    password: await this.passwordHasher.hash(
-                        process.env.ADMIN_PASSWORD || '',
-                    ),
+                    correo: adminEmail,
+                    password: await this.passwordHasher.hash(adminPassword),
                     rol: 'ADMINISTRADOR',
                     estado: 'ACTIVO',
                 },

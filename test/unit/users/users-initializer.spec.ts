@@ -10,6 +10,9 @@ describe('Users module', () => {
         let mockPrismaService: any;
 
         beforeEach(() => {
+            process.env.ADMIN_EMAIL = 'admin@bioactiva.com';
+            process.env.ADMIN_PASSWORD = 'test-admin-password';
+
             mockUserRepository = {
                 count: jest.fn(),
             };
@@ -27,6 +30,11 @@ describe('Users module', () => {
                 mockPasswordHasher,
                 mockPrismaService,
             );
+        });
+
+        afterEach(() => {
+            delete process.env.ADMIN_EMAIL;
+            delete process.env.ADMIN_PASSWORD;
         });
 
         it('should create default admin when no admin exists', async () => {
@@ -59,19 +67,15 @@ describe('Users module', () => {
             expect(mockPrismaService.usuario.create).not.toHaveBeenCalled();
         });
 
-        it('should handle empty env vars for admin credentials', async () => {
+        it('should throw when ADMIN_EMAIL or ADMIN_PASSWORD are missing', async () => {
+            delete process.env.ADMIN_EMAIL;
+            delete process.env.ADMIN_PASSWORD;
             mockUserRepository.count.mockResolvedValue(0);
 
-            await service.onApplicationBootstrap();
-
-            expect(mockPrismaService.usuario.create).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    data: expect.objectContaining({
-                        correo: '',
-                        password: 'hashed-admin-password',
-                    }),
-                }),
+            await expect(service.onApplicationBootstrap()).rejects.toThrow(
+                'ADMIN_EMAIL y ADMIN_PASSWORD son requeridos para crear el administrador inicial',
             );
+            expect(mockPrismaService.usuario.create).not.toHaveBeenCalled();
         });
 
         it('should propagate repository errors', async () => {

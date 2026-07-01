@@ -5,6 +5,7 @@ import {
 } from '@modules/integrations/domain/ports/microsoft-provider.port';
 import { ConnectUrlDto } from '@/modules/integrations/application/dto/connect-url.dto';
 import { sanitizeReturnPath } from '@/modules/integrations/application/microsoft-return-path';
+import { signOAuthState } from '@/modules/integrations/application/oauth-state';
 import { randomUUID } from 'node:crypto';
 
 export class ConnectMicrosoftAccountUseCase {
@@ -20,7 +21,8 @@ export class ConnectMicrosoftAccountUseCase {
      */
     async execute(userId: number, returnTo?: string): Promise<ConnectUrlDto> {
         const returnPath = sanitizeReturnPath(returnTo);
-        const state = `${userId}:${randomUUID()}:${encodeURIComponent(returnPath)}`;
+        const payload = `${userId}:${randomUUID()}:${encodeURIComponent(returnPath)}`;
+        const state = `${payload}:${signOAuthState(payload)}`;
         const url = await this.microsoftProvider.getAuthUrl(state);
         return new ConnectUrlDto(url);
     }

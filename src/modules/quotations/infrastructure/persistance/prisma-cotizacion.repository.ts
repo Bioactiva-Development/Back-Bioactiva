@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
 import {
     type CotizacionRepositoryPort,
+    type CotizacionKpis,
     type CotizacionWithRelations,
+    type KpisCotizacionesParams,
     type ListCotizacionesParams,
 } from '@/modules/quotations/domain/ports/cotizacion-repository.port';
 import { Cotizacion } from '@/modules/quotations/domain/entities/cotizacion';
@@ -450,5 +452,54 @@ export class PrismaCotizacionRepository implements CotizacionRepositoryPort {
         } catch (error) {
             this.handlePrismaError(error);
         }
+    }
+
+    async getKpis(params?: KpisCotizacionesParams): Promise<CotizacionKpis> {
+        const baseWhere: Prisma.CotizacionWhereInput = {
+            deletedAt: null,
+            lead: { deletedAt: null, organizacion: { deletedAt: null } },
+        };
+
+        if (params?.fechaDesde || params?.fechaHasta) {
+            const fechaCot: Prisma.DateTimeFilter = {};
+            if (params.fechaDesde) fechaCot.gte = params.fechaDesde;
+            if (params.fechaHasta) fechaCot.lte = params.fechaHasta;
+            baseWhere.fechaCot = fechaCot;
+        }
+
+        const rows = await this.prisma.cotizacion.groupBy({
+            by: ['estado'],
+            where: baseWhere,
+            _count: { id: true },
+            _sum: { monto: true },
+        });
+
+        let totalActivo = 0;
+        let aceptadas = 0;
+        let enviadas = 0;
+        let rechazadas = 0;
+
+        for (const row of rows) {
+            const count = row._count.id;
+            const sum = Number(row._sum.monto ?? 0);
+            switch (row.estado) {
+                case PrismaEstadoCot.ACEPTADA:
+                    aceptadas = count;
+                    totalActivo += sum;
+                    break;
+                case PrismaEstadoCot.ENVIADA:
+                    enviadas = count;
+                    totalActivo += sum;
+                    break;
+                case PrismaEstadoCot.RECHAZADA:
+                    rechazadas = count;
+                    break;
+                case PrismaEstadoCot.PENDIENTE:
+                    totalActivo += sum;
+                    break;
+            }
+        }
+
+        return { totalActivo, aceptadas, enviadas, rechazadas };
     }
 }

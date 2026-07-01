@@ -331,6 +331,7 @@ describe('Leads module', () => {
                 organizacion: { nombre: 'Bioactiva SAC' },
                 encargado: { nombres: 'Carlos', apellidos: 'López' },
                 contacto: null,
+                cotizaciones: [],
             };
 
             it('should apply a case-insensitive search on servicioInteres', async () => {
@@ -384,21 +385,18 @@ describe('Leads module', () => {
                 expect(result[0].activityAlert).toBe('POR_VENCER');
             });
 
-            it('should compute EN_RIESGO alert when a pending activity passed its midpoint but is far from due', async () => {
-                const createdAt = new Date(
-                    Date.now() - 10 * 24 * 60 * 60 * 1000,
-                );
+            it('should compute PENDIENTE alert when a pending activity is beyond the 2-day threshold', async () => {
                 const fechaFin = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
                 prismaService.lead.findMany.mockResolvedValue([
                     {
                         ...baseRecord,
-                        actividades: [{ createdAt, fechaFin }],
+                        actividades: [{ fechaFin }],
                     },
                 ]);
 
                 const result = await repository.list();
 
-                expect(result[0].activityAlert).toBe('EN_RIESGO');
+                expect(result[0].activityAlert).toBe('PENDIENTE');
             });
 
             it('should compute SIN_ACTIVIDADES alert when the lead has no pending activities', async () => {
@@ -470,47 +468,16 @@ describe('Leads module', () => {
                 );
             });
 
-            it('should filter EN_RIESGO using midpoint lead ids and excluding due-soon activities', async () => {
-                prismaService.$queryRaw.mockResolvedValue([
-                    { idLead: 7 },
-                    { idLead: 9 },
-                ]);
-                prismaService.lead.findMany.mockResolvedValue([]);
-
-                await repository.list({
-                    alertaActividad: ActivityAlertLevel.EN_RIESGO,
-                });
-
-                expect(prismaService.$queryRaw).toHaveBeenCalled();
-                expect(prismaService.lead.findMany).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        where: expect.objectContaining({
-                            id: { in: [7, 9] },
-                            actividades: {
-                                none: {
-                                    deletedAt: null,
-                                    estado: 'PENDIENTE',
-                                    fechaFin: { lte: expect.any(Date) },
-                                },
-                            },
-                        }),
-                    }),
-                );
-            });
-
-            it('should filter PENDIENTE excluding midpoint lead ids and due-soon activities', async () => {
-                prismaService.$queryRaw.mockResolvedValue([{ idLead: 7 }]);
+            it('should filter PENDIENTE as leads with pending activities but none due within threshold', async () => {
                 prismaService.lead.findMany.mockResolvedValue([]);
 
                 await repository.list({
                     alertaActividad: ActivityAlertLevel.PENDIENTE,
                 });
 
-                expect(prismaService.$queryRaw).toHaveBeenCalled();
                 expect(prismaService.lead.findMany).toHaveBeenCalledWith(
                     expect.objectContaining({
                         where: expect.objectContaining({
-                            id: { notIn: [7] },
                             actividades: {
                                 some: { deletedAt: null, estado: 'PENDIENTE' },
                                 none: {

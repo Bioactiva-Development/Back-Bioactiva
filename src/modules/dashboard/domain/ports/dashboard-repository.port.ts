@@ -9,6 +9,11 @@ export interface MoneyByCurrency {
     usd: number;
 }
 
+export interface DistItem {
+    estado: string;
+    cantidad: number;
+}
+
 export interface DashboardMetrics {
     totalLeads: number;
     averageTicketAmount: MoneyByCurrency;
@@ -22,6 +27,10 @@ export interface DashboardMetrics {
     stalledLeadPercentage: number;
     periodStart: Date;
     periodEnd: Date;
+    /** Conteo de leads por estado en el período, para el gráfico de pipeline. */
+    distribucionPipeline: DistItem[];
+    /** Conteo de cotizaciones por estado en el período, para el gráfico. */
+    distribucionCotizaciones: DistItem[];
 }
 
 export interface MetricsQuery {

@@ -69,6 +69,7 @@ describe('Notifications module', () => {
 
         const command = () => ({
             notificationId: 20,
+            requesterId: 3,
             internal: {
                 fechaEnvio: new Date(2099, 0, 2, 10, 0, 0),
                 idTemplate: 5 as number | null,
@@ -175,6 +176,15 @@ describe('Notifications module', () => {
             await expect(useCase.execute(command())).rejects.toThrow(
                 NotificationNotFoundException,
             );
+        });
+
+        it('throws ForbiddenException when requesterId does not match the responsable', async () => {
+            const instance = buildInstance();
+            repository.findById.mockResolvedValue(buildNotification(instance));
+
+            await expect(
+                useCase.execute({ ...command(), requesterId: 99 }),
+            ).rejects.toThrow('No tienes permiso para editar esta notificación');
         });
 
         it('rejects editing when an email was already sent', async () => {
