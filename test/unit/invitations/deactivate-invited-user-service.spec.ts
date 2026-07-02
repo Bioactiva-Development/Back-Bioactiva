@@ -32,6 +32,7 @@ describe('Invitations module', () => {
             userRepository = {
                 findByCorreo: jest.fn(() => Promise.resolve(null)),
                 save: jest.fn(() => Promise.resolve()),
+                deleteProvisional: jest.fn(() => Promise.resolve(true)),
             };
             service = new DeactivateInvitedUserService(userRepository);
         });
@@ -73,6 +74,84 @@ describe('Invitations module', () => {
 
             await service.execute('invited@bioactiva.com');
 
+            expect(userRepository.save).not.toHaveBeenCalled();
+        });
+    });
+
+    /**
+     * DeactivateInvitedUserService.executeHardDelete
+     * ----------
+     * Elimina físicamente al usuario provisional de una invitación REVOCADA
+     * (a diferencia de execute(), que solo lo suspende). Degrada a suspender
+     * si el DELETE es bloqueado por una FK inesperada.
+     */
+    describe('DeactivateInvitedUserService.executeHardDelete', () => {
+        let service: DeactivateInvitedUserService;
+        let userRepository: any;
+
+        const buildUser = (estado: UserState, password: string) =>
+            new User(
+                3,
+                'Nombre',
+                'Apellido',
+                'invited@bioactiva.com',
+                password,
+                new Date(),
+                UserRole.TRABAJADOR,
+                estado,
+                new Date(),
+            );
+
+        beforeEach(() => {
+            userRepository = {
+                findByCorreo: jest.fn(() => Promise.resolve(null)),
+                save: jest.fn(() => Promise.resolve()),
+                deleteProvisional: jest.fn(() => Promise.resolve(true)),
+            };
+            service = new DeactivateInvitedUserService(userRepository);
+        });
+
+        it('hard-deletes a provisional pending user', async () => {
+            userRepository.findByCorreo.mockResolvedValue(
+                buildUser(UserState.PENDIENTE, ''),
+            );
+
+            await service.executeHardDelete('invited@bioactiva.com');
+
+            expect(userRepository.deleteProvisional).toHaveBeenCalledWith(3);
+            expect(userRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('falls back to suspending when the delete is blocked by a FK', async () => {
+            userRepository.findByCorreo.mockResolvedValue(
+                buildUser(UserState.PENDIENTE, ''),
+            );
+            userRepository.deleteProvisional.mockResolvedValue(false);
+
+            await service.executeHardDelete('invited@bioactiva.com');
+
+            expect(userRepository.save).toHaveBeenCalledWith(
+                expect.objectContaining({ estado: UserState.SUSPENDIDO }),
+            );
+        });
+
+        it('does nothing when the user does not exist', async () => {
+            userRepository.findByCorreo.mockResolvedValue(null);
+
+            await service.executeHardDelete('missing@bioactiva.com');
+
+            expect(userRepository.deleteProvisional).not.toHaveBeenCalled();
+            expect(userRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('does not touch a fully registered (non-provisional) user', async () => {
+            userRepository.findByCorreo.mockResolvedValue(
+                buildUser(UserState.ACTIVO, 'hashed-password'),
+            );
+
+            await service.executeHardDelete('invited@bioactiva.com');
+
+            expect(userRepository.deleteProvisional).not.toHaveBeenCalled();
             expect(userRepository.save).not.toHaveBeenCalled();
         });
     });

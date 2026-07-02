@@ -19,7 +19,6 @@ import {
 import { HashServicePort } from '@/shared/domain/ports/hash-service.port';
 import { PasswordResetToken } from '@/modules/reset_password/domain/entities/password-reset-token';
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
-import { ActiveResetTokenException } from '@/modules/reset_password/domain/exeptions/active-reset-token.exception';
 import { AllowedEmailDomainsConfig } from '@/shared/infrastructure/config/allowed-email-domains.config';
 
 const RESET_TOKEN_TTL_MS = 2 * 60 * 60 * 1000;
@@ -61,7 +60,9 @@ export class RequestPasswordResetUseCase {
         if (existingToken) {
             const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_MS);
             if (existingToken.created_at > rateLimitCutoff) {
-                throw new ActiveResetTokenException();
+                // Anti-enumeración: misma respuesta que para un correo
+                // inexistente; un error aquí revelaría que la cuenta existe.
+                return { ok: true };
             }
             existingToken.expire();
             await this.passwordResetRepository.save(existingToken);

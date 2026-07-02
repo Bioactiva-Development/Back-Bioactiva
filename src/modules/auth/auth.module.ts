@@ -40,6 +40,15 @@ import { RecaptchaGuard } from '@/modules/auth/infrastructure/http/guards/recapt
             useExisting: PrismaUserAuthRepository,
         },
     ],
-    exports: [PASSWORD_HASHER, JwtAuthGuard, RolesGuard, TOKEN_SERVICE],
+    exports: [
+        PASSWORD_HASHER,
+        JwtAuthGuard,
+        RolesGuard,
+        TOKEN_SERVICE,
+        // RecaptchaGuard se instancia en el contexto del módulo consumidor
+        // (@UseGuards), así que sus dependencias deben ser visibles fuera.
+        RecaptchaConfig,
+        RECAPTCHA_VERIFIER,
+    ],
 })
 export class AuthModule {}

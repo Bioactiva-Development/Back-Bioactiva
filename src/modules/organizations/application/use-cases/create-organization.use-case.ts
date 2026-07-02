@@ -5,6 +5,7 @@ import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/
 import { Organization } from '@/modules/organizations/domain/entities/organization';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
 import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
+import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 
 export class CreateOrganizationUseCase {
     constructor(
@@ -22,13 +23,16 @@ export class CreateOrganizationUseCase {
             }
 
             // El RUC se preserva incluso en orgs eliminadas (findByRuc ve todas
-            // las filas). Si ya existe un registro con ese RUC, no se duplica:
-            // se reutiliza ese registro, se restaura si estaba eliminado y se
-            // sobrescriben sus datos con el nuevo payload.
+            // las filas). Solo se reutiliza el registro cuando estaba eliminado
+            // (soft-delete): se restaura y se sobrescribe con el nuevo payload.
+            // Si la org con ese RUC sigue activa, crear es un conflicto.
             const existingOrg = await this.organizationRepository.findByRuc(
                 dto.ruc,
             );
             if (existingOrg) {
+                if (!existingOrg.isDeleted()) {
+                    throw new OrganizationAlreadyExistsException(dto.ruc);
+                }
                 return this.reuseExistingOrganization(existingOrg, dto);
             }
         }
@@ -65,10 +69,10 @@ export class CreateOrganizationUseCase {
     }
 
     /**
-     * Reutiliza un registro existente identificado por su RUC: lo restaura si
-     * estaba eliminado (soft-delete) y sobrescribe todos sus campos con el
-     * nuevo payload. El nuevo `codigoCliente` no puede pertenecer a OTRA
-     * organización distinta de la que se está reutilizando.
+     * Reutiliza un registro soft-deleted identificado por su RUC: lo restaura
+     * y sobrescribe todos sus campos con el nuevo payload. El nuevo
+     * `codigoCliente` no puede pertenecer a OTRA organización distinta de la
+     * que se está reutilizando.
      */
     private async reuseExistingOrganization(
         existing: Organization,

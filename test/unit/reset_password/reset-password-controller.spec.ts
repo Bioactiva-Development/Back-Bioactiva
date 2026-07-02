@@ -6,6 +6,7 @@ import { RequestPasswordResetUseCase } from '@/modules/reset_password/applicatio
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
 import { ObtainResetInfoUseCase } from '@/modules/reset_password/application/use-cases/obtain-reset-info.use-case';
+import { RecaptchaGuard } from '@/modules/auth/infrastructure/http/guards/recaptcha.guard';
 
 describe('ResetPasswordController', () => {
     let controller: ResetPasswordController;
@@ -40,7 +41,12 @@ describe('ResetPasswordController', () => {
                     useValue: obtainResetInfoUseCase,
                 },
             ],
-        }).compile();
+        })
+            // El guard se prueba por separado (recaptcha-guard.spec); aquí solo
+            // interesa el comportamiento del controller.
+            .overrideGuard(RecaptchaGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
 
         controller = module.get(ResetPasswordController);
     });

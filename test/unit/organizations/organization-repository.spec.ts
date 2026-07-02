@@ -5,6 +5,8 @@ import { EnterpriseType } from '@/modules/organizations/domain/enums/organizatio
 import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { PrismaService } from '@/modules/common/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 
 describe('Organizations module', () => {
     /**
@@ -192,6 +194,65 @@ describe('Organizations module', () => {
                     orgUpdateOp,
                     contactUpdateOp,
                 ]);
+            });
+        });
+
+        describe('save — conflicto de RUC (índice único)', () => {
+            const makeOrg = () =>
+                new Organization(
+                    '',
+                    'CLI-001',
+                    'Tech Corp Peru',
+                    'TechCorp',
+                    'Technology',
+                    '20123456789',
+                    EnterpriseType.EMPRESA_NACIONAL,
+                    null,
+                    null,
+                    Sector.TECNOLOGIA,
+                    Size.GRANDE,
+                    null,
+                    null,
+                    null,
+                    1,
+                    new Date(),
+                    new Date(),
+                );
+
+            it('translates P2002 on ruc into OrganizationAlreadyExistsException', async () => {
+                const p2002 = new Prisma.PrismaClientKnownRequestError(
+                    'Unique constraint failed',
+                    {
+                        code: 'P2002',
+                        clientVersion: 'test',
+                        meta: { target: ['ruc'] },
+                    },
+                );
+                (mockPrisma.organizacion!.create as jest.Mock).mockRejectedValue(
+                    p2002,
+                );
+
+                await expect(repository.save(makeOrg())).rejects.toThrow(
+                    OrganizationAlreadyExistsException,
+                );
+            });
+
+            it('rethrows P2002 on other columns untouched', async () => {
+                const p2002 = new Prisma.PrismaClientKnownRequestError(
+                    'Unique constraint failed',
+                    {
+                        code: 'P2002',
+                        clientVersion: 'test',
+                        meta: { target: ['codigoCliente'] },
+                    },
+                );
+                (mockPrisma.organizacion!.create as jest.Mock).mockRejectedValue(
+                    p2002,
+                );
+
+                await expect(repository.save(makeOrg())).rejects.toThrow(
+                    Prisma.PrismaClientKnownRequestError,
+                );
             });
         });
 

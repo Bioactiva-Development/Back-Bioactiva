@@ -6,6 +6,7 @@ import { Size } from '@/modules/organizations/domain/enums/size';
 import { Sector } from '@/modules/organizations/domain/enums/sector';
 import { InvalidRucException } from '@/modules/organizations/domain/exceptions/invalid-ruc.exception';
 import { DuplicateClientCodeException } from '@/modules/organizations/domain/exceptions/duplicate-client-code.exception';
+import { OrganizationAlreadyExistsException } from '@/modules/organizations/domain/exceptions/organization-already-exists.exception';
 import { IOrganizationRepository } from '@/modules/organizations/domain/ports/organization.repository';
 import { CreateOrganizationDto } from '@/modules/organizations/application/dtos/create-organization.dto';
 
@@ -105,7 +106,39 @@ describe('Organizations module', () => {
             expect(mockRepository.findByRuc).not.toHaveBeenCalled();
         });
 
-        it('reuses and restores the existing record when the RUC already exists', async () => {
+        it('rejects creation when an ACTIVE org already has the RUC', async () => {
+            const activeOrg = new Organization(
+                'org-active',
+                'CLI-002',
+                'Existing Company',
+                'ExistingCorp',
+                'Area',
+                validDto.ruc,
+                EnterpriseType.EMPRESA_NACIONAL,
+                '',
+                '',
+                Sector.TECNOLOGIA,
+                Size.PEQUENO,
+                null,
+                null,
+                null,
+                1,
+                new Date(),
+                new Date(),
+                null, // activa: no soft-deleted
+            );
+
+            (mockRepository.findByRuc as jest.Mock).mockResolvedValue(
+                activeOrg,
+            );
+
+            await expect(useCase.execute(validDto)).rejects.toThrow(
+                OrganizationAlreadyExistsException,
+            );
+            expect(mockRepository.save).not.toHaveBeenCalled();
+        });
+
+        it('reuses and restores the existing record when the RUC belongs to a soft-deleted org', async () => {
             const existingOrg = new Organization(
                 'org-existing',
                 'CLI-002',
@@ -173,6 +206,7 @@ describe('Organizations module', () => {
                 1,
                 new Date(),
                 new Date(),
+                new Date(), // soft-deleted: única vía que llega a la reutilización
             );
             const otherWithCode = new Organization(
                 'org-other',
