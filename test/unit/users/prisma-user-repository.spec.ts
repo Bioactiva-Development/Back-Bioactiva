@@ -1,4 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { Prisma } from '@prisma/client';
 import { PrismaUserRepository } from '@/modules/users/infrastructure/persistance/prisma-user.repository';
 import { User } from '@/modules/users/domain/entities/user';
 import { UserRole } from '@/shared/domain/enums/rol';
@@ -46,9 +47,47 @@ describe('Users module', () => {
                     create: jest.fn(),
                     update: jest.fn(),
                     count: jest.fn(),
+                    delete: jest.fn(),
                 },
             };
             repository = new PrismaUserRepository(mockPrisma as any);
+        });
+
+        describe('deleteProvisional', () => {
+            it('deletes the user and returns true', async () => {
+                mockPrisma.usuario.delete.mockResolvedValue(mockRecord);
+
+                const result = await repository.deleteProvisional(7);
+
+                expect(mockPrisma.usuario.delete).toHaveBeenCalledWith({
+                    where: { id: 7 },
+                });
+                expect(result).toBe(true);
+            });
+
+            it('returns false when blocked by a foreign key (P2003)', async () => {
+                const p2003 = new Prisma.PrismaClientKnownRequestError(
+                    'Foreign key constraint failed',
+                    { code: 'P2003', clientVersion: 'test' },
+                );
+                mockPrisma.usuario.delete.mockRejectedValue(p2003);
+
+                const result = await repository.deleteProvisional(7);
+
+                expect(result).toBe(false);
+            });
+
+            it('rethrows errors that are not P2003', async () => {
+                const otherError = new Prisma.PrismaClientKnownRequestError(
+                    'Record not found',
+                    { code: 'P2025', clientVersion: 'test' },
+                );
+                mockPrisma.usuario.delete.mockRejectedValue(otherError);
+
+                await expect(repository.deleteProvisional(7)).rejects.toThrow(
+                    Prisma.PrismaClientKnownRequestError,
+                );
+            });
         });
 
         describe('findByCorreo', () => {

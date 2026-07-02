@@ -22,7 +22,7 @@ export class RevokeInvitationUseCase {
 
         invitation.revoke();
         const saved = await this.invitationsRepository.save(invitation);
-        await this.deactivateInvitedUser.execute(invitation.correo);
+        await this.deactivateInvitedUser.executeHardDelete(invitation.correo);
         return saved;
     }
 }

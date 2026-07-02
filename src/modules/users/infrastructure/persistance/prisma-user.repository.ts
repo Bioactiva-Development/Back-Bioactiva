@@ -4,7 +4,7 @@ import {
     UserRepositoryPort,
 } from '@/modules/users/domain/ports/user-repository.port';
 import { Inject, Injectable } from '@nestjs/common';
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { UserMapper } from '@/modules/users/infrastructure/mappers/user.mapper';
 import { UserRole } from '@/shared/domain/enums/rol';
 import { UserState } from '@/modules/users/domain/enums/estado';
@@ -117,6 +117,24 @@ export class PrismaUserRepository implements UserRepositoryPort {
             orderBy: [{ nombres: 'asc' }, { apellidos: 'asc' }],
         });
         return records.map((r) => UserMapper.toDomain(r));
+    }
+
+    async deleteProvisional(id: number): Promise<boolean> {
+        try {
+            await this.prismaClient.usuario.delete({ where: { id } });
+            return true;
+        } catch (error) {
+            // P2003: alguna otra tabla referencia a este usuario (no debería
+            // ocurrir con un provisional, pero si pasa no queremos reventar
+            // el revoke con un 500; el caller decide el fallback).
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2003'
+            ) {
+                return false;
+            }
+            throw error;
+        }
     }
 
     private buildWhereInput(
