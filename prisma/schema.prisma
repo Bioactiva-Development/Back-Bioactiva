@@ -190,7 +190,7 @@ model Organizacion {
   nombre              String   @unique @db.VarChar(120)
   nombreComercial     String   @db.VarChar(100)
   subArea             String?  @db.VarChar(60)
-  ruc                 String?  @db.VarChar(11)
+  ruc                 String?  @unique @db.VarChar(11)
   tipo                TipoEmpresa
   linkedin            String?  @db.VarChar(255)
   ubicacion           String?  @db.VarChar(100)
