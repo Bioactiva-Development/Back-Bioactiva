@@ -36,6 +36,7 @@ describe('Reset Password module', () => {
                     findUnique: jest.fn(),
                     findFirst: jest.fn(),
                     upsert: jest.fn(),
+                    updateMany: jest.fn(),
                 },
                 usuario: {
                     findUnique: jest.fn(),
@@ -152,6 +153,39 @@ describe('Reset Password module', () => {
                     await repository.findPendingByEmail('john@bioactiva.com');
 
                 expect(result).toBeNull();
+            });
+        });
+
+        describe('consumePending', () => {
+            it('should consume a pending token in a single conditional update', async () => {
+                prismaMock.userToken.updateMany.mockResolvedValue({
+                    count: 1,
+                } as never);
+
+                const result = await repository.consumePending(1);
+
+                expect(prismaMock.userToken.updateMany).toHaveBeenCalledWith({
+                    where: {
+                        id: 1,
+                        estado: 'PENDIENTE',
+                        proposito: 'RESET_PASSWORD',
+                    },
+                    data: expect.objectContaining({
+                        estado: 'CONSUMIDO',
+                        consumedAt: expect.any(Date),
+                    }),
+                });
+                expect(result).toBe(true);
+            });
+
+            it('should return false when the token is no longer pending', async () => {
+                prismaMock.userToken.updateMany.mockResolvedValue({
+                    count: 0,
+                } as never);
+
+                const result = await repository.consumePending(1);
+
+                expect(result).toBe(false);
             });
         });
 

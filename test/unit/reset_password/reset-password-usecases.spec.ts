@@ -11,7 +11,6 @@ import { PasswordResetToken } from '@/modules/reset_password/domain/entities/pas
 import { TokenStatus } from '@/shared/domain/enums/token_estado';
 import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
 import { ResetTokenExpiredException } from '@/modules/reset_password/domain/exeptions/reset-token-expired.exception';
-import { ActiveResetTokenException } from '@/modules/reset_password/domain/exeptions/active-reset-token.exception';
 
 describe('Reset Password module', () => {
     /**
@@ -141,7 +140,9 @@ describe('Reset Password module', () => {
             expect(passwordResetRepository.save).not.toHaveBeenCalled();
         });
 
-        it('should reject when a reset token was requested less than 5 minutes ago (409)', async () => {
+        // Anti-enumeración: el rate limit responde igual que un correo
+        // inexistente; un error revelaría que la cuenta existe.
+        it('should silently succeed (ok:true) without issuing a token when requested less than 5 minutes ago', async () => {
             userRepository.findByCorreo.mockResolvedValue(makeUser());
             const recentToken = new PasswordResetToken(
                 1,
@@ -156,11 +157,15 @@ describe('Reset Password module', () => {
                 recentToken,
             );
 
-            await expect(useCase.execute('john@bioactiva.com')).rejects.toThrow(
-                ActiveResetTokenException,
-            );
+            const result = await useCase.execute('john@bioactiva.com');
+
+            expect(result).toEqual({ ok: true });
+            expect(passwordResetRepository.save).not.toHaveBeenCalled();
             expect(
                 expirationScheduler.scheduleExpiration,
+            ).not.toHaveBeenCalled();
+            expect(
+                passwordResetNotification.sendResetPasswordEmail,
             ).not.toHaveBeenCalled();
         });
 
@@ -413,6 +418,9 @@ describe('Reset Password module', () => {
             passwordResetRepository = {
                 findByToken: jest.fn(),
                 save: jest.fn(),
+                consumePending: jest
+                    .fn<() => Promise<boolean>>()
+                    .mockResolvedValue(true),
             };
             userRepository = {
                 findById: jest.fn(),
@@ -497,7 +505,7 @@ describe('Reset Password module', () => {
             ).rejects.toThrow(ResetTokenExpiredException);
         });
 
-        it('should consume token after password reset', async () => {
+        it('should consume token atomically before updating the password', async () => {
             const user = new User(
                 1,
                 'John',
@@ -522,16 +530,54 @@ describe('Reset Password module', () => {
 
             passwordResetRepository.findByToken.mockResolvedValue(resetToken);
             userRepository.findById.mockResolvedValue(user);
-            passwordResetRepository.save.mockResolvedValue(resetToken);
             userRepository.save.mockResolvedValue(user);
 
             await useCase.execute('raw-token', 'newpassword123');
 
-            expect(passwordResetRepository.save).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    estado: TokenStatus.CONSUMIDO,
-                }),
+            expect(passwordResetRepository.consumePending).toHaveBeenCalledWith(
+                1,
             );
+            // El consumo debe ocurrir antes del cambio de contraseña: si el
+            // orden se invierte, un fallo posterior deja el token reutilizable.
+            expect(
+                passwordResetRepository.consumePending.mock
+                    .invocationCallOrder[0],
+            ).toBeLessThan(userRepository.save.mock.invocationCallOrder[0]);
+        });
+
+        it('should reject and keep the password when the token was already consumed concurrently', async () => {
+            const user = new User(
+                1,
+                'John',
+                'Doe',
+                'john@bioactiva.com',
+                'old-password',
+                new Date(),
+                UserRole.TRABAJADOR,
+                UserState.ACTIVO,
+                new Date(),
+            );
+
+            const resetToken = new PasswordResetToken(
+                1,
+                1,
+                'hashed-token',
+                TokenStatus.PENDIENTE,
+                new Date(),
+                null,
+                new Date(Date.now() + 60 * 60 * 1000),
+            );
+
+            passwordResetRepository.findByToken.mockResolvedValue(resetToken);
+            userRepository.findById.mockResolvedValue(user);
+            // Otro request ganó la carrera y consumió el token primero.
+            passwordResetRepository.consumePending.mockResolvedValue(false);
+
+            await expect(
+                useCase.execute('raw-token', 'newpassword123'),
+            ).rejects.toThrow(InvalidResetTokenException);
+            expect(userRepository.save).not.toHaveBeenCalled();
+            expect(passwordHasher.hash).not.toHaveBeenCalled();
         });
 
         it('should throw if user not found', async () => {

@@ -44,6 +44,21 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
         return record ? PasswordResetMapper.toDomain(record) : null;
     }
 
+    async consumePending(id: number): Promise<boolean> {
+        const result = await this.prisma.userToken.updateMany({
+            where: {
+                id,
+                estado: 'PENDIENTE',
+                proposito: PrismaTokenPurpose.RESET_PASSWORD,
+            },
+            data: {
+                estado: 'CONSUMIDO',
+                consumedAt: new Date(),
+            },
+        });
+        return result.count === 1;
+    }
+
     async save(resetToken: PasswordResetToken): Promise<PasswordResetToken> {
         const user = await this.prisma.usuario.findUnique({
             where: { id: resetToken.user_id },
