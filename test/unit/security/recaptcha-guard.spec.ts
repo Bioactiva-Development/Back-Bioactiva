@@ -1,5 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 
 import {
     RecaptchaGuard,
@@ -13,12 +14,15 @@ describe('Security module', () => {
         let guard: RecaptchaGuard;
         let verifier: jest.Mocked<RecaptchaVerifierPort>;
         let config: RecaptchaConfig;
+        let reflector: jest.Mocked<Reflector>;
 
         const buildContext = (headers: Record<string, unknown>) =>
             ({
                 switchToHttp: () => ({
                     getRequest: () => ({ headers }),
                 }),
+                getHandler: () => ({}),
+                getClass: () => ({}),
             }) as unknown as ExecutionContext;
 
         beforeEach(() => {
@@ -31,7 +35,13 @@ describe('Security module', () => {
                 loginAction: 'login',
             } as unknown as RecaptchaConfig;
 
-            guard = new RecaptchaGuard(verifier, config);
+            // Sin @RecaptchaAction en el endpoint: el reflector no encuentra
+            // metadata y el guard usa la action de login.
+            reflector = {
+                getAllAndOverride: jest.fn().mockReturnValue(undefined),
+            } as unknown as jest.Mocked<Reflector>;
+
+            guard = new RecaptchaGuard(verifier, config, reflector);
         });
 
         it('permite el acceso cuando el token es válido y el score supera el umbral', async () => {
@@ -63,6 +73,21 @@ describe('Security module', () => {
 
             await expect(guard.canActivate(context)).rejects.toThrow(
                 UnauthorizedException,
+            );
+        });
+
+        it('usa la action fijada con @RecaptchaAction cuando el endpoint la define', async () => {
+            reflector.getAllAndOverride.mockReturnValue('password_reset');
+            verifier.verify.mockResolvedValue({ valid: true, score: 0.9 });
+
+            const context = buildContext({
+                [RECAPTCHA_TOKEN_HEADER]: 'valid-token',
+            });
+
+            await expect(guard.canActivate(context)).resolves.toBe(true);
+            expect(verifier.verify).toHaveBeenCalledWith(
+                'valid-token',
+                'password_reset',
             );
         });
 
