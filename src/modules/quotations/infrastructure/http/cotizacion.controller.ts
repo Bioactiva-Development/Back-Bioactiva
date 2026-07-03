@@ -10,7 +10,12 @@ import {
     ParseIntPipe,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -58,6 +63,26 @@ export class CotizacionController {
     ) {}
 
     @Post()
+    @ApiOperation({
+        summary: 'Crear una cotización para un lead',
+        description:
+            'El cliente y el dirigido se derivan del lead (organización y contacto asociados). Si el lead está EN_PROSPECTO, lo promueve a OFERTADO (requiere que no tenga actividades pendientes).',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Cotización creada exitosamente',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Lead o remitente no encontrado',
+    })
+    @ApiResponse({
+        status: 409,
+        description:
+            'El lead ya tiene una cotización, o tiene actividades pendientes que deben resolverse antes de promoverlo a OFERTADO',
+    })
     async create(
         @Body() httpDto: HttpCreateCotizacionDto,
         @CurrentUser() user: User,
@@ -79,6 +104,13 @@ export class CotizacionController {
     }
 
     @Get()
+    @ApiOperation({ summary: 'Listar cotizaciones con filtros y paginación' })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado paginado de cotizaciones',
+        type: PaginatedCotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async findAll(
         @Query() query: ListCotizacionesQueryDto,
     ): Promise<PaginatedCotizacionResponseDto> {
@@ -115,6 +147,7 @@ export class CotizacionController {
             'Acepta fechaDesde/fechaHasta sobre fechaCot.',
     })
     @ApiResponse({ status: 200, type: KpisCotizacionesResponseDto })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async kpis(
         @Query() query: KpisCotizacionesQueryDto,
     ): Promise<KpisCotizacionesResponseDto> {
@@ -130,6 +163,14 @@ export class CotizacionController {
     }
 
     @Get(':id')
+    @ApiOperation({ summary: 'Obtener una cotización por ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización encontrada',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Cotización no encontrada' })
     async findOne(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<CotizacionResponseDto> {
@@ -138,6 +179,19 @@ export class CotizacionController {
     }
 
     @Patch(':id')
+    @ApiOperation({ summary: 'Actualizar una cotización existente' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización actualizada exitosamente',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Cotización no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description:
+            'No se puede modificar una cotización ACEPTADA o RECHAZADA',
+    })
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() httpDto: HttpUpdateCotizacionDto,
@@ -160,6 +214,18 @@ export class CotizacionController {
     }
 
     @Patch(':id/send')
+    @ApiOperation({ summary: 'Marcar una cotización como enviada al cliente' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización enviada exitosamente',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Cotización no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'Solo se puede enviar una cotización en estado PENDIENTE',
+    })
     async send(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<CotizacionResponseDto> {
@@ -168,6 +234,26 @@ export class CotizacionController {
     }
 
     @Patch(':id/accept')
+    @ApiOperation({
+        summary: 'Aceptar una cotización',
+        description:
+            'Cierra el lead asociado como CIERRE_CON_VENTA (requiere que no tenga actividades pendientes).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización aceptada exitosamente',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Cotización o lead asociado no encontrado',
+    })
+    @ApiResponse({
+        status: 409,
+        description:
+            'Solo se puede aceptar una cotización en estado PENDIENTE o ENVIADA, o el lead tiene actividades pendientes',
+    })
     async accept(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<CotizacionResponseDto> {
@@ -176,6 +262,26 @@ export class CotizacionController {
     }
 
     @Patch(':id/reject')
+    @ApiOperation({
+        summary: 'Rechazar una cotización',
+        description:
+            'Cierra el lead asociado como CIERRE_SIN_VENTA (requiere que no tenga actividades pendientes).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización rechazada exitosamente',
+        type: CotizacionResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Cotización o lead asociado no encontrado',
+    })
+    @ApiResponse({
+        status: 409,
+        description:
+            'Solo se puede rechazar una cotización en estado PENDIENTE o ENVIADA, o el lead tiene actividades pendientes',
+    })
     async reject(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<CotizacionResponseDto> {
@@ -184,6 +290,14 @@ export class CotizacionController {
     }
 
     @Delete(':id')
+    @ApiOperation({ summary: 'Eliminar una cotización (eliminación lógica)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cotización eliminada exitosamente',
+        schema: { example: { ok: true } },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Cotización no encontrada' })
     async remove(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<{ ok: boolean }> {

@@ -12,7 +12,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -51,6 +58,14 @@ export class DataImportController {
         description:
             'Libro con las hojas Organizaciones, Contactos, Leads y Cotizaciones más una hoja "Valores válidos".',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx de la plantilla',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async template(@Res() res: Response): Promise<void> {
         const buffer = await this.generateTemplateUseCase.execute();
         res.set({
@@ -66,14 +81,43 @@ export class DataImportController {
     @UseInterceptors(FileInterceptor('file'))
     @ApiOperation({
         summary: 'Validar archivo de importación (dry-run, no escribe en BD)',
+        description:
+            'Parsea el archivo .xlsx (máx. 10 MB) y devuelve errores/advertencias por fila junto con los conteos de filas parseadas por hoja, sin persistir nada.',
     })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['file'],
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Archivo .xlsx a validar',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 200,
+        description:
+            'Resultado de la validación: { valid, errors[], warnings[], parsedCounts }',
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'No se adjuntó archivo, el tipo/tamaño no es válido, o el archivo no es un Excel legible',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async validate(@UploadedFile() file: UploadedExcel) {
         this.assertFile(file);
         try {
             return await this.validateImportUseCase.execute(file.buffer);
         } catch (err) {
             throw new BadRequestException(
-                err instanceof Error ? err.message : 'El archivo no es un Excel válido.',
+                err instanceof Error
+                    ? err.message
+                    : 'El archivo no es un Excel válido.',
             );
         }
     }
@@ -81,8 +125,35 @@ export class DataImportController {
     @Post('commit')
     @UseInterceptors(FileInterceptor('file'))
     @ApiOperation({
-        summary: 'Importar archivo (procesamiento asíncrono). Devuelve un jobId.',
+        summary:
+            'Importar archivo (procesamiento asíncrono). Devuelve un jobId.',
+        description:
+            'Encola el archivo para procesarlo en segundo plano. Consultar el progreso/resultado con GET /data/import/jobs/:id.',
     })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['file'],
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Archivo .xlsx a importar',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Importación encolada exitosamente',
+        schema: { example: { jobId: '1234' } },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'No se adjuntó archivo o el tipo/tamaño no es válido',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async commit(
         @UploadedFile() file: UploadedExcel,
         @CurrentUser() user: User,
@@ -100,14 +171,42 @@ export class DataImportController {
     }
 
     @Get('jobs/:id')
-    @ApiOperation({ summary: 'Consultar el estado/resultado de una importación' })
-    async jobStatus(
-        @Param('id') id: string,
-        @CurrentUser() user: User,
-    ) {
+    @ApiOperation({
+        summary: 'Consultar el estado/resultado de una importación',
+        description:
+            'Solo devuelve el job si pertenece al usuario autenticado (el que la encoló).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Estado del job de importación',
+        schema: {
+            example: {
+                id: '1234',
+                state: 'completed',
+                progress: 100,
+                result: {
+                    inserted: {
+                        organizaciones: 3,
+                        contactos: 5,
+                        leads: 2,
+                        cotizaciones: 1,
+                    },
+                },
+                failedReason: null,
+            },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'Job no encontrado o no pertenece al usuario autenticado',
+    })
+    async jobStatus(@Param('id') id: string, @CurrentUser() user: User) {
         const job = await this.importPublisher.getQueue().getJob(id);
         if (!job || (job.data as { userId?: number }).userId !== user.id) {
-            throw new NotFoundException(`Job de importación ${id} no encontrado`);
+            throw new NotFoundException(
+                `Job de importación ${id} no encontrado`,
+            );
         }
         const state = await job.getState();
         return {

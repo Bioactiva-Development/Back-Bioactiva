@@ -1,6 +1,11 @@
 import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import {
     ExportWorkbookUseCase,
@@ -33,6 +38,14 @@ export class DataExportController {
         description:
             'Filtros: nombre, ruc, sector, tipo, tamano, includeDeleted.',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx con las organizaciones exportadas',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async exportOrganizaciones(
         @Query() query: ExportOrganizacionesQueryDto,
         @Res() res: Response,
@@ -59,6 +72,14 @@ export class DataExportController {
         summary: 'Exportar contactos a Excel',
         description: 'Filtros: nombre, correo, organizacion.',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx con los contactos exportados',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async exportContactos(
         @Query() query: ExportContactosQueryDto,
         @Res() res: Response,
@@ -83,6 +104,14 @@ export class DataExportController {
         summary: 'Exportar leads a Excel',
         description: 'Filtros: estado, servicio, organizacion.',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx con los leads exportados',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async exportLeads(
         @Query() query: ExportLeadsQueryDto,
         @Res() res: Response,
@@ -107,6 +136,14 @@ export class DataExportController {
         summary: 'Exportar cotizaciones a Excel',
         description: 'Filtros: cliente, servicio, estado.',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx con las cotizaciones exportadas',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async exportCotizaciones(
         @Query() query: ExportCotizacionesQueryDto,
         @Res() res: Response,
@@ -132,6 +169,14 @@ export class DataExportController {
         description:
             'Genera Organizaciones, Contactos, Leads y Cotizaciones en el formato del archivo de importación. Sin filtros por entidad (solo includeDeleted).',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Archivo .xlsx con las 4 hojas del CRM exportadas',
+        content: {
+            [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
+        },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async exportAll(
         @Query() query: ExportAllQueryDto,
         @Res() res: Response,

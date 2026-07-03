@@ -13,6 +13,7 @@ import {
 import {
     ApiBearerAuth,
     ApiOperation,
+    ApiQuery,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
@@ -47,6 +48,21 @@ export class OrganizationController {
     ) {}
 
     @Post()
+    @ApiOperation({ summary: 'Registrar una nueva organización' })
+    @ApiResponse({
+        status: 201,
+        description: 'Organización creada exitosamente',
+        type: OrganizationResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Datos inválidos',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 409,
+        description: 'El código de cliente o el RUC ya existen',
+    })
     async create(
         @Body() httpDto: HttpCreateOrganizationDto,
     ): Promise<OrganizationResponseDto> {
@@ -65,6 +81,7 @@ export class OrganizationController {
         description: 'Listado paginado de organizaciones',
         type: PaginatedOrganizationResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async findAll(
         @Query() query: ListOrganizationsQueryDto,
     ): Promise<PaginatedOrganizationResponseDto> {
@@ -90,6 +107,29 @@ export class OrganizationController {
     }
 
     @Get('sunat')
+    @ApiOperation({
+        summary: 'Consultar organizaciones en SUNAT por RUC o razón social',
+        description:
+            'Reenvía la consulta al servicio de SUNAT. Si `query` es un RUC (11 dígitos) devuelve un único resultado; si es un nombre, puede devolver varias coincidencias.',
+    })
+    @ApiQuery({
+        name: 'query',
+        required: true,
+        type: String,
+        description: 'RUC (11 dígitos) o razón social a buscar en SUNAT',
+        example: '20123456789',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Resultado(s) de la consulta a SUNAT',
+        type: SunatCompanyResponseDto,
+        isArray: false,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description: 'No se encontraron resultados en SUNAT',
+    })
     async querySunat(
         @Query('query') query: string,
     ): Promise<SunatCompanyResponseDto | SunatCompanyResponseDto[]> {
@@ -106,6 +146,18 @@ export class OrganizationController {
     }
 
     @Get(':id')
+    @ApiOperation({
+        summary: 'Obtener el detalle de una organización por ID',
+        description:
+            'Incluye la lista de contactos asociados y el total de contactos.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Detalle de la organización',
+        type: OrganizationDetailResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Organización no encontrada' })
     async findOne(
         @Param('id') id: string,
     ): Promise<OrganizationDetailResponseDto> {
@@ -121,6 +173,20 @@ export class OrganizationController {
     }
 
     @Patch(':id')
+    @ApiOperation({ summary: 'Actualizar una organización existente' })
+    @ApiResponse({
+        status: 200,
+        description: 'Organización actualizada exitosamente',
+        type: OrganizationResponseDto,
+    })
+    @ApiResponse({ status: 400, description: 'Datos inválidos' })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Organización no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description:
+            'El código de cliente o el RUC ya pertenecen a otra organización',
+    })
     async update(
         @Param('id') id: string,
         @Body() httpDto: HttpUpdateOrganizationDto,
@@ -136,6 +202,7 @@ export class OrganizationController {
             'Desactiva la organización sin borrarla (preserva su código de cliente para el monitoreo anual) y marca todos sus contactos con estado de correo VENCIDO.',
     })
     @ApiResponse({ status: 200, description: 'Organización desactivada' })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Organización no encontrada' })
     async remove(@Param('id') id: string): Promise<{ ok: true }> {
         return await this.deleteOrganizationUseCase.execute(id);

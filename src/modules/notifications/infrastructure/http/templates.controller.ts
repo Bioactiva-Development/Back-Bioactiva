@@ -11,7 +11,12 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CreateEmailTemplateUseCase } from '@/modules/notifications/application/use-cases/create-email-template.use-case';
 import { UpdateEmailTemplateUseCase } from '@/modules/notifications/application/use-cases/update-email-template.use-case';
@@ -38,6 +43,16 @@ export class TemplatesController {
 
     @Post()
     @ApiOperation({ summary: 'Crear una plantilla de correo' })
+    @ApiResponse({
+        status: 201,
+        description: 'Plantilla creada exitosamente',
+        type: EmailTemplateResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 409,
+        description: 'Ya existe una plantilla con ese nombre',
+    })
     async create(
         @Body() dto: HttpCreateEmailTemplateDto,
     ): Promise<EmailTemplateResponseDto> {
@@ -52,6 +67,12 @@ export class TemplatesController {
 
     @Get()
     @ApiOperation({ summary: 'Listar plantillas de correo' })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado de plantillas',
+        type: [EmailTemplateResponseDto],
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async list(
         @Query() query: ListTemplatesQueryDto,
     ): Promise<EmailTemplateResponseDto[]> {
@@ -65,6 +86,13 @@ export class TemplatesController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Obtener el detalle de una plantilla' })
+    @ApiResponse({
+        status: 200,
+        description: 'Plantilla encontrada',
+        type: EmailTemplateResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Plantilla no encontrada' })
     async get(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<EmailTemplateResponseDto> {
@@ -74,6 +102,17 @@ export class TemplatesController {
 
     @Patch(':id')
     @ApiOperation({ summary: 'Actualizar o desactivar una plantilla' })
+    @ApiResponse({
+        status: 200,
+        description: 'Plantilla actualizada exitosamente',
+        type: EmailTemplateResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Plantilla no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'Ya existe otra plantilla con ese nombre',
+    })
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: HttpUpdateEmailTemplateDto,
@@ -92,6 +131,16 @@ export class TemplatesController {
     @ApiOperation({
         summary:
             'Eliminar una plantilla (no permitido si está asociada a una notificación)',
+    })
+    @ApiResponse({
+        status: 204,
+        description: 'Plantilla eliminada exitosamente',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({ status: 404, description: 'Plantilla no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'La plantilla está en uso por una notificación',
     })
     async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
         await this.deleteEmailTemplateUseCase.execute(id);

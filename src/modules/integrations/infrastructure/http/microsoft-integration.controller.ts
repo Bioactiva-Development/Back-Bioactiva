@@ -9,6 +9,12 @@ import {
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { type Response } from 'express';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -25,6 +31,7 @@ import {
 } from '@/modules/integrations/application/microsoft-return-path';
 import { verifyOAuthState } from '@/modules/integrations/application/oauth-state';
 
+@ApiTags('microsoft')
 @Controller('microsoft')
 export class MicrosoftIntegrationController {
     constructor(
@@ -36,6 +43,18 @@ export class MicrosoftIntegrationController {
 
     @Get('connect')
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Iniciar la conexión con una cuenta de Microsoft',
+        description:
+            'Genera la URL de autorización de Microsoft OAuth (firmada con un `state` que referencia al usuario autenticado y a `returnTo`) para redirigir al frontend.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'URL de autorización de Microsoft generada',
+        type: ConnectUrlDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async connect(
         @CurrentUser() user: User,
         @Query('returnTo') returnTo?: string,
@@ -45,6 +64,17 @@ export class MicrosoftIntegrationController {
 
     @SkipThrottle()
     @Get('callback')
+    @ApiOperation({
+        summary:
+            'Callback de OAuth de Microsoft (uso interno, no invocar manualmente)',
+        description:
+            'Endpoint al que Microsoft redirige tras la autorización. Verifica el `state`, intercambia el `code` por tokens, persiste la integración y redirige al frontend (`FRONTEND_URL` + returnPath) con `?microsoft=connected` o `?microsoft=error`. No devuelve JSON: siempre responde con una redirección 302.',
+    })
+    @ApiResponse({
+        status: 302,
+        description:
+            'Redirección al frontend con el resultado de la conexión en la query string',
+    })
     async callback(
         @Query() query: OAuthCallbackQueryDto,
         @Res() res: Response,
@@ -62,7 +92,9 @@ export class MicrosoftIntegrationController {
                 `${this.frontendUrl}${returnPath}?microsoft=connected`,
             );
         } catch {
-            return res.redirect(`${this.frontendUrl}${returnPath}?microsoft=error`);
+            return res.redirect(
+                `${this.frontendUrl}${returnPath}?microsoft=error`,
+            );
         }
     }
 
@@ -87,13 +119,39 @@ export class MicrosoftIntegrationController {
 
     @Get('status')
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary:
+            'Consultar el estado de la conexión con Microsoft del usuario autenticado',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Estado de la conexión',
+        type: ConnectionStatusDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async status(@CurrentUser() user: User): Promise<ConnectionStatusDto> {
         return await this.statusUseCase.execute(user.id!);
     }
 
     @Delete('disconnect')
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @HttpCode(200)
+    @ApiOperation({
+        summary: 'Desconectar la cuenta de Microsoft del usuario autenticado',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cuenta desconectada exitosamente',
+        schema: { example: { ok: true } },
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description:
+            'No hay una integración de Microsoft asociada a este usuario',
+    })
     async disconnect(@CurrentUser() user: User): Promise<{ ok: boolean }> {
         return await this.disconnectUseCase.execute(user.id!);
     }

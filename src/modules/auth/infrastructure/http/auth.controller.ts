@@ -10,7 +10,13 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
-import { ApiHeader } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiHeader,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { AuthenticateUserUseCase } from '@/modules/auth/application/use-cases/authenticate-user.use-case';
 import { RefreshSessionUseCase } from '@/modules/auth/application/use-cases/refresh-session.use-case';
 import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
@@ -27,6 +33,7 @@ import { User } from '@/modules/users/domain/entities/user';
 import { LoginDto } from '@/modules/auth/infrastructure/http/dtos/login.dto.http';
 import { MeResponseDto } from '@/modules/auth/application/dto/me-response.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
     constructor(
@@ -38,10 +45,29 @@ export class AuthController {
     @Post('login')
     @HttpCode(200)
     @UseGuards(RecaptchaGuard)
+    @ApiOperation({
+        summary: 'Iniciar sesión',
+        description:
+            'Autentica al usuario con correo y contraseña. Devuelve el access token en el body y setea el refresh token en una cookie httpOnly (`Set-Cookie`, path `/auth/refresh`). Limitado a 5 intentos cada 15 minutos por IP.',
+    })
     @ApiHeader({
         name: RECAPTCHA_TOKEN_HEADER,
         description: 'Token de reCAPTCHA Enterprise generado por el frontend',
         required: true,
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Autenticación exitosa',
+        type: AuthResponseDto,
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Credenciales inválidas o token de reCAPTCHA ausente/inválido',
+    })
+    @ApiResponse({
+        status: 429,
+        description: 'Demasiados intentos de inicio de sesión',
     })
     async login(
         @Body() body: LoginDto,
@@ -62,6 +88,21 @@ export class AuthController {
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @Post('refresh')
     @HttpCode(200)
+    @ApiOperation({
+        summary: 'Renovar el access token',
+        description:
+            'Usa el refresh token enviado en la cookie httpOnly `refresh_token` (path `/auth/refresh`) para emitir un nuevo par de tokens y rota la cookie. Limitado a 10 solicitudes por minuto por IP.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Token renovado exitosamente',
+        type: AuthResponseDto,
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Falta la cookie de refresh o el token es inválido/expirado',
+    })
     async refresh(
         @Res({ passthrough: true }) response: Response,
         @ExtractCookie()
@@ -84,7 +125,11 @@ export class AuthController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get('me')
+    @ApiOperation({ summary: 'Obtener los datos del usuario autenticado' })
+    @ApiResponse({ status: 200, type: MeResponseDto })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     me(@CurrentUser() user: User): MeResponseDto {
         return new MeResponseDto(user);
     }

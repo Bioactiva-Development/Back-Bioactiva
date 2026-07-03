@@ -1,5 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { GetDashboardMetricsUseCase } from '@/modules/dashboard/application/use-cases/get-dashboard-metrics.use-case';
 import { DashboardQueryDto } from '@/modules/dashboard/infrastructure/http/dtos/dashboard-query.dto';
@@ -21,6 +26,17 @@ export class DashboardController {
     ) {}
 
     @Get('metrics')
+    @ApiOperation({
+        summary: 'Obtener las métricas del dashboard',
+        description:
+            'Calcula KPIs de leads y cotizaciones (conversión, pipeline, ingresos, etc.) para el rango de fechas indicado. Sin startDate/endDate, ambos son opcionales; con idEncargado filtra por responsable.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Métricas calculadas para el período solicitado',
+        type: DashboardResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async getMetrics(
         @Query() query: DashboardQueryDto,
     ): Promise<DashboardResponseDto> {

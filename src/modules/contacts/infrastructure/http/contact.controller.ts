@@ -55,6 +55,10 @@ export class ContactController {
         type: ContactResponseDto,
     })
     @ApiResponse({
+        status: 401,
+        description: 'No autenticado',
+    })
+    @ApiResponse({
         status: 409,
         description: 'El correo electrónico ya existe',
     })
@@ -87,10 +91,16 @@ export class ContactController {
         description: 'Listado paginado de contactos obtenido',
         type: PaginatedContactResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async findAll(
         @Query() query: HttpListContactsQueryDto,
     ): Promise<PaginatedContactResponseDto> {
-        const dto = new ListContactsDto(query.search, query.page, query.limit, query.idOrganization);
+        const dto = new ListContactsDto(
+            query.search,
+            query.page,
+            query.limit,
+            query.idOrganization,
+        );
         const { data, total } = await this.getAllContactsUseCase.execute(dto);
         const responseData = data.map((r) => new ContactResponseDto(r));
         return new PaginatedContactResponseDto(
@@ -108,6 +118,7 @@ export class ContactController {
         description: 'Listado de contactos por organización obtenido',
         type: [ContactResponseDto],
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async findByOrganization(
         @Param('idOrganizacion') idOrganizacion: string,
     ): Promise<ContactResponseDto[]> {
@@ -123,6 +134,7 @@ export class ContactController {
         description: 'Detalle del contacto obtenido',
         type: ContactResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
     async findOne(
         @Param('id', ParseIntPipe) id: number,
@@ -140,6 +152,7 @@ export class ContactController {
         description: 'Estado del contacto actualizado exitosamente',
         type: ContactResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,
@@ -159,6 +172,7 @@ export class ContactController {
         description: 'Contacto actualizado exitosamente',
         type: ContactResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     @ApiResponse({ status: 404, description: 'Contacto no encontrado' })
     async update(
         @Param('id', ParseIntPipe) id: number,
