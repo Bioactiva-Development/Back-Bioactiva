@@ -184,9 +184,7 @@ describe('Data-management Excel adapters', () => {
             expect((highlightedCell.fill as { type?: string })?.type).toBe(
                 'pattern',
             );
-            expect((highlightedCell.fill as any).fgColor.argb).toBe(
-                'FFFFE08A',
-            );
+            expect((highlightedCell.fill as any).fgColor.argb).toBe('FFFFE08A');
             // Sin relleno la celda no tiene fill de patrón.
             expect((plainCell.fill as { type?: string })?.type).not.toBe(
                 'pattern',
@@ -240,6 +238,35 @@ describe('Data-management Excel adapters', () => {
             expect(listas!.state).toBe('veryHidden');
         });
 
+        it('should neutralize formula-injection prefixes in free-text cell values', async () => {
+            const buffer = await builder.build([
+                {
+                    name: 'Hoja1',
+                    columns: [{ header: 'Comentario', key: 'comentario' }],
+                    rows: [
+                        { comentario: '=HYPERLINK("https://evil.com","x")' },
+                        { comentario: '+1234' },
+                        { comentario: '-1234' },
+                        { comentario: '@SUM(A1)' },
+                        { comentario: 'texto normal' },
+                    ],
+                },
+            ]);
+
+            const wb = new Workbook();
+            await wb.xlsx.load(buffer as unknown as ArrayBuffer);
+            const ws = wb.getWorksheet('Hoja1')!;
+
+            expect(ws.getCell('A2').value).toBe(
+                '\'=HYPERLINK("https://evil.com","x")',
+            );
+            expect(ws.getCell('A3').value).toBe("'+1234");
+            expect(ws.getCell('A4').value).toBe("'-1234");
+            expect(ws.getCell('A5').value).toBe("'@SUM(A1)");
+            // Un valor sin prefijo peligroso no se toca.
+            expect(ws.getCell('A6').value).toBe('texto normal');
+        });
+
         it('should not highlight any row when highlightWhen is undefined', async () => {
             const buffer = await builder.build([
                 {
@@ -252,9 +279,9 @@ describe('Data-management Excel adapters', () => {
             const wb = new Workbook();
             await wb.xlsx.load(buffer as unknown as ArrayBuffer);
             const ws = wb.getWorksheet('Hoja1')!;
-            expect((ws.getRow(2).getCell(1).fill as { type?: string })?.type).not.toBe(
-                'pattern',
-            );
+            expect(
+                (ws.getRow(2).getCell(1).fill as { type?: string })?.type,
+            ).not.toBe('pattern');
         });
     });
 });
