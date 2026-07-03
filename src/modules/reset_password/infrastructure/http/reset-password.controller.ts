@@ -7,7 +7,14 @@ import {
     HttpStatus,
     Param,
     Post,
+    UseGuards,
 } from '@nestjs/common';
+import { ApiHeader } from '@nestjs/swagger';
+import {
+    RecaptchaGuard,
+    RECAPTCHA_TOKEN_HEADER,
+} from '@/modules/auth/infrastructure/http/guards/recaptcha.guard';
+import { RecaptchaAction } from '@/modules/auth/infrastructure/http/decorator/recaptcha-action.decorator';
 import { RequestPasswordResetUseCase } from '@/modules/reset_password/application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@/modules/reset_password/application/use-cases/reset-password.use-case';
 import { ValidateResetTokenUseCase } from '@/modules/reset_password/application/use-cases/validate-reset-token.use-case';
@@ -27,6 +34,14 @@ export class ResetPasswordController {
 
     @Post('request')
     @HttpCode(HttpStatus.OK)
+    @UseGuards(RecaptchaGuard)
+    @RecaptchaAction('password_reset')
+    @ApiHeader({
+        name: RECAPTCHA_TOKEN_HEADER,
+        description:
+            'Token de reCAPTCHA Enterprise generado por el frontend (action: password_reset)',
+        required: true,
+    })
     async requestReset(@Body() body: RequestResetDto) {
         return this.requestPasswordResetUseCase.execute(body.correo);
     }

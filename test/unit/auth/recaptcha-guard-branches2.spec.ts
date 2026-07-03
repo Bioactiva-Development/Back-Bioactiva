@@ -12,6 +12,7 @@ import {
 describe('Auth module — RecaptchaGuard branches2', () => {
     let verifier: any;
     let config: any;
+    let reflector: any;
     let guard: RecaptchaGuard;
 
     const buildContext = (headers: Record<string, unknown>) =>
@@ -19,12 +20,15 @@ describe('Auth module — RecaptchaGuard branches2', () => {
             switchToHttp: () => ({
                 getRequest: () => ({ headers }),
             }),
+            getHandler: () => ({}),
+            getClass: () => ({}),
         }) as any;
 
     beforeEach(() => {
         verifier = { verify: jest.fn() };
         config = { loginAction: 'login', minScore: 0.5 };
-        guard = new RecaptchaGuard(verifier, config);
+        reflector = { getAllAndOverride: jest.fn().mockReturnValue(undefined) };
+        guard = new RecaptchaGuard(verifier, config, reflector);
     });
 
     it('uses the first element when the recaptcha header is an array', async () => {

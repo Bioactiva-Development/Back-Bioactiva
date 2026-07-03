@@ -35,6 +35,29 @@ export class DeactivateInvitedUserService {
     }
 
     /**
+     * Elimina físicamente al usuario provisional asociado a una invitación
+     * REVOCADA (a diferencia de {@link execute}, que la suspende). Solo se
+     * usa desde `RevokeInvitationUseCase`: al revocar, a diferencia de
+     * expirar, es una acción explícita de un admin y no tiene sentido dejar
+     * el registro huérfano. Si el usuario tuviera alguna referencia inesperada
+     * en otra tabla (no debería, dado que nunca completó su registro), la FK
+     * bloquea el DELETE y se degrada al soft-delete de {@link execute} en vez
+     * de fallar la revocación.
+     */
+    async executeHardDelete(correo: string): Promise<void> {
+        const user = await this.userRepository.findByCorreo(correo);
+        if (!user || !user.isProvisional() || user.id === null) {
+            return;
+        }
+
+        const deleted = await this.userRepository.deleteProvisional(user.id);
+        if (!deleted && user.estado !== UserState.SUSPENDIDO) {
+            user.deactivate();
+            await this.userRepository.save(user);
+        }
+    }
+
+    /**
      * Versión por lotes de {@link execute}: resuelve todos los correos con una
      * sola consulta (evita el N+1 de lecturas) y desactiva solo las cuentas
      * provisionales aún no suspendidas. Mantiene la idempotencia: correos sin

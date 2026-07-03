@@ -12,6 +12,7 @@ import {
     type PasswordHasherPort,
 } from '@/modules/auth/domain/ports/password-hasher.port';
 import { ResetTokenValidatorService } from '@/modules/reset_password/application/services/reset-token-validator.service';
+import { InvalidResetTokenException } from '@/modules/reset_password/domain/exeptions/invalid-reset-token.exception';
 
 export class ResetPasswordUseCase {
     constructor(
@@ -31,13 +32,22 @@ export class ResetPasswordUseCase {
         const { resetToken, user } =
             await this.tokenValidator.resolveValidToken(token);
 
+        // Consumir el token ANTES de cambiar la contraseña, con una operación
+        // condicional: ante dos requests concurrentes con el mismo token solo
+        // una gana, y si el guardado posterior falla el token queda quemado
+        // (fail-closed) en vez de dejar la contraseña cambiada con un token
+        // aún reutilizable.
+        const consumed = await this.passwordResetRepository.consumePending(
+            resetToken.id!,
+        );
+        if (!consumed) {
+            throw new InvalidResetTokenException();
+        }
+
         const hashedPassword = await this.passwordHasher.hash(newPassword);
 
         user.updatePassword(hashedPassword);
         await this.userRepository.save(user);
-
-        resetToken.consume();
-        await this.passwordResetRepository.save(resetToken);
 
         return { ok: true };
     }

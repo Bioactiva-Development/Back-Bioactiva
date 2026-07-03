@@ -600,6 +600,7 @@ describe('Invitations module', () => {
             };
             deactivateInvitedUser = {
                 execute: jest.fn(() => Promise.resolve()),
+                executeHardDelete: jest.fn(() => Promise.resolve()),
             };
 
             useCase = new RevokeInvitationUseCase(
@@ -608,7 +609,7 @@ describe('Invitations module', () => {
             );
         });
 
-        it('should revoke pending invitation and deactivate its provisional user', async () => {
+        it('should revoke pending invitation and hard-delete its provisional user', async () => {
             const invitation = new InvitationToken(
                 1,
                 'user@bioactiva.com',
@@ -630,9 +631,10 @@ describe('Invitations module', () => {
             const result = await useCase.execute(1);
 
             expect(result.estado).toBe(TokenStatus.EXPIRADO);
-            expect(deactivateInvitedUser.execute).toHaveBeenCalledWith(
+            expect(deactivateInvitedUser.executeHardDelete).toHaveBeenCalledWith(
                 'user@bioactiva.com',
             );
+            expect(deactivateInvitedUser.execute).not.toHaveBeenCalled();
         });
 
         it('should throw if invitation not found', async () => {

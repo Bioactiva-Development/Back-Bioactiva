@@ -25,6 +25,14 @@ export interface UserRepositoryPort {
      * cualquier rol, a diferencia del listado de gestión.
      */
     findEnabled(): Promise<User[]>;
+    /**
+     * Elimina físicamente un usuario. Pensado para usuarios provisionales
+     * (invitación revocada) que nunca deberían tener referencias en otras
+     * tablas; si igual las tuviera, la FK lo impide y se devuelve `false` en
+     * vez de propagar el error, para que el caller pueda degradar a un
+     * soft-delete.
+     */
+    deleteProvisional(id: number): Promise<boolean>;
 }
 
 export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
