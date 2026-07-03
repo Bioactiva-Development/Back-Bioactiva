@@ -10,7 +10,12 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/infrastructure/jwt/guards/jwt-auth.guard';
 import { CurrentUser } from '@/modules/auth/infrastructure/jwt/decorators/current-user.decorator';
 import { User } from '@/modules/users/domain/entities/user';
@@ -29,6 +34,7 @@ import { ListNotificationsQueryDto } from '@/modules/notifications/infrastructur
 import { NotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/notification-response.dto';
 import { PaginatedNotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/paginated-notification-response.dto';
 import { InAppNotificationResponseDto } from '@/modules/notifications/infrastructure/http/dto/in-app-notification-response.dto';
+import { EmailTemplateResponseDto } from '@/modules/notifications/infrastructure/http/dto/email-template-response.dto';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -49,6 +55,28 @@ export class NotificationsController {
     @Post('reminders')
     @ApiOperation({
         summary: 'Programar un recordatorio interno al responsable',
+        description:
+            'El lead debe tener una actividad activa; el recordatorio se envía N minutos antes de que finalice.',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Recordatorio programado exitosamente',
+        type: NotificationResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'minutosAntes inválido o la fecha de envío calculada no es válida',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description:
+            'El lead no tiene una actividad activa, o la plantilla indicada no existe/está inactiva',
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'La actividad ya tiene una notificación activa',
     })
     async createReminder(
         @Body() dto: HttpCreateReminderDto,
@@ -67,6 +95,28 @@ export class NotificationsController {
     @ApiOperation({
         summary:
             'Programar un seguimiento (correo interno al responsable y externo al cliente)',
+        description:
+            'El lead debe tener una actividad activa y el correo del cliente debe pertenecer a uno de sus contactos. Cada instancia exige que el envío externo sea posterior al interno, y las instancias deben estar encadenadas en el tiempo.',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Seguimiento programado exitosamente',
+        type: NotificationResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Fechas inválidas: el correo externo debe ser posterior al interno, o las instancias no están correctamente encadenadas',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description:
+            'El lead no tiene una actividad activa, o alguna plantilla indicada no existe/está inactiva',
+    })
+    @ApiResponse({
+        status: 409,
+        description: 'La actividad ya tiene una notificación activa',
     })
     async createFollowUp(
         @Body() dto: HttpCreateFollowUpDto,
@@ -96,6 +146,33 @@ export class NotificationsController {
     @ApiOperation({
         summary:
             'Editar el seguimiento programado (su única instancia, antes de enviarse)',
+        description:
+            'Cancela los envíos programados previos y los reprograma con los nuevos datos. Solo el responsable de la notificación puede editarla.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Seguimiento editado exitosamente',
+        type: NotificationResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Fechas inválidas, o el correo de cliente no pertenece a un contacto del lead',
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 403,
+        description: 'La notificación no pertenece al usuario autenticado',
+    })
+    @ApiResponse({
+        status: 404,
+        description:
+            'Notificación, actividad activa del lead o alguna plantilla no encontrada',
+    })
+    @ApiResponse({
+        status: 409,
+        description:
+            'El seguimiento no es editable (no está PROGRAMADO o ya tiene correos enviados)',
     })
     async editFollowUp(
         @Param('id', ParseIntPipe) id: number,
@@ -123,7 +200,17 @@ export class NotificationsController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Listar notificaciones (Programadas o Vencidas)' })
+    @ApiOperation({
+        summary: 'Listar notificaciones (Programadas o Vencidas)',
+        description:
+            'Devuelve solo las notificaciones cuyo responsable es el usuario autenticado.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Listado paginado de notificaciones',
+        type: PaginatedNotificationResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async list(
         @Query() query: ListNotificationsQueryDto,
         @CurrentUser() user: User,
@@ -138,7 +225,9 @@ export class NotificationsController {
             limit,
         });
         return new PaginatedNotificationResponseDto(
-            data.map((notification) => new NotificationResponseDto(notification)),
+            data.map(
+                (notification) => new NotificationResponseDto(notification),
+            ),
             total,
             page,
             limit,
@@ -149,6 +238,12 @@ export class NotificationsController {
     @ApiOperation({
         summary: 'Listar plantillas de correo activas para el selector',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Plantillas de correo activas',
+        type: [EmailTemplateResponseDto],
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async listTemplates() {
         return this.listActiveTemplatesUseCase.execute();
     }
@@ -157,6 +252,12 @@ export class NotificationsController {
     @ApiOperation({
         summary: 'Listar las notificaciones in-app del usuario autenticado',
     })
+    @ApiResponse({
+        status: 200,
+        description: 'Notificaciones in-app del usuario',
+        type: [InAppNotificationResponseDto],
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
     async listInApp(
         @CurrentUser() user: User,
     ): Promise<InAppNotificationResponseDto[]> {
@@ -170,6 +271,17 @@ export class NotificationsController {
 
     @Patch('in-app/:id/read')
     @ApiOperation({ summary: 'Marcar una notificación in-app como leída' })
+    @ApiResponse({
+        status: 200,
+        description: 'Notificación marcada como leída',
+        type: InAppNotificationResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 404,
+        description:
+            'Notificación no encontrada o no pertenece al usuario autenticado',
+    })
     async markInAppRead(
         @Param('id', ParseIntPipe) id: number,
         @CurrentUser() user: User,
@@ -180,12 +292,34 @@ export class NotificationsController {
     }
 
     @Delete(':id')
-    @ApiOperation({ summary: 'Cancelar una notificación programada' })
+    @ApiOperation({
+        summary: 'Cancelar una notificación programada',
+        description:
+            'Cancela los envíos aún pendientes (recordatorio o instancias de seguimiento). Solo el responsable de la notificación puede cancelarla.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Notificación cancelada exitosamente',
+        type: NotificationResponseDto,
+    })
+    @ApiResponse({ status: 401, description: 'No autenticado' })
+    @ApiResponse({
+        status: 403,
+        description: 'La notificación no pertenece al usuario autenticado',
+    })
+    @ApiResponse({ status: 404, description: 'Notificación no encontrada' })
+    @ApiResponse({
+        status: 409,
+        description: 'La notificación ya está vencida o cancelada',
+    })
     async cancel(
         @Param('id', ParseIntPipe) id: number,
         @CurrentUser() user: User,
     ): Promise<NotificationResponseDto> {
-        const notification = await this.cancelNotificationUseCase.execute(id, user.id!);
+        const notification = await this.cancelNotificationUseCase.execute(
+            id,
+            user.id!,
+        );
         return new NotificationResponseDto(notification);
     }
 }
