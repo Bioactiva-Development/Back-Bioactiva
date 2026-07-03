@@ -8,7 +8,7 @@ import { ListInvitationsUseCase } from '@/modules/invitations/application/use-ca
 import { ObtainInfoUseCase } from '@/modules/invitations/application/use-cases/obtain-info-use-case';
 import { RevokeInvitationUseCase } from '@/modules/invitations/application/use-cases/revoke-invitation.use-case';
 import { AuthResponseDto } from '@/modules/auth/application/dto/auth-response.dto';
-import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
+import { getRefreshTokenCookieName } from '@/modules/auth/infrastructure/http/cookie-names';
 import { AcceptInvitationDto } from '@/modules/invitations/infrastructure/http/dto/accept-invitation.dto.htpp';
 import { PaginatedInvitationResponseDto } from '@/modules/invitations/infrastructure/http/dto/paginated-invitation-response.dto';
 import { CreateInvitationDto } from '@/modules/invitations/infrastructure/http/dto/create-invitation.dto.http';
@@ -193,7 +193,7 @@ export class InvitationController {
     private setRefreshTokenCookie(response: Response, refreshToken: string) {
         const isProduction = process.env.NODE_ENV === 'production';
 
-        response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+        response.cookie(getRefreshTokenCookieName(), refreshToken, {
             httpOnly: true,
             // Misma política que el login: en prod el front es cross-site, así
             // que la cookie necesita SameSite=None + Secure (HTTPS). En dev se

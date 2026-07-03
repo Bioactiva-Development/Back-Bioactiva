@@ -92,20 +92,6 @@ enum EstadoActividad {
   CANCELADA
 }
 
-enum EstadoSecuencia {
-  PROGRAMADA
-  EN_PROGRESO
-  COMPLETADA
-  CANCELADA
-}
-
-enum EstadoPaso {
-  PENDIENTE
-  ENVIADO
-  CANCELADO
-  FALLIDO
-}
-
 enum TipoMoneda {
   PEN
   USD
@@ -294,51 +280,12 @@ model Actividad {
   idResponsable Int
   responsable Usuario @relation("ResponsableActividad", fields: [idResponsable], references: [id])
 
-  secuencia    SecuenciaSeguimiento?
-  recordatorios RecordatorioActividad[]
   notificaciones Notificacion[]
   notificacionesProgramadas NotificacionProgramada[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
-}
-
-model SecuenciaSeguimiento {
-  id Int @id @default(autoincrement())
-
-  idActividad Int @unique
-  actividad Actividad @relation(fields: [idActividad], references: [id])
-
-  estado EstadoSecuencia @default(PROGRAMADA)
-
-  fechaActivacion DateTime?
-  fechaFinalizacion DateTime?
-
-  pasos PasoSeguimiento[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model PasoSeguimiento {
-  id Int @id @default(autoincrement())
-
-  orden Int
-  esperarDias Int
-
-  fechaProgramada DateTime?
-  fechaEnviado DateTime?
-
-  estado EstadoPaso @default(PENDIENTE)
-
-  idSecuencia Int
-  secuencia SecuenciaSeguimiento @relation(fields: [idSecuencia], references: [id])
-
-  idTemplate Int
-  template TemplateEmail @relation(fields: [idTemplate], references: [id])
-
-  createdAt DateTime @default(now())
 }
 
 model TemplateEmail {
@@ -348,23 +295,8 @@ model TemplateEmail {
   cuerpo String
   activo Boolean @default(true)
 
-  pasos PasoSeguimiento[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model RecordatorioActividad {
-  id Int @id @default(autoincrement())
-
-  minutosAntes Int
-  enviado Boolean @default(false)
-  jobId String? @db.VarChar(120)
-
-  idActividad Int
-  actividad Actividad @relation(fields: [idActividad], references: [id])
-
-  createdAt DateTime @default(now())
 }
 
 model Cotizacion {

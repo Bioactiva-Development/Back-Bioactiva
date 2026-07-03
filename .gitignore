@@ -95,3 +95,4 @@ sunat_app
 *.deploy
 
 credentials/
+.gstack/

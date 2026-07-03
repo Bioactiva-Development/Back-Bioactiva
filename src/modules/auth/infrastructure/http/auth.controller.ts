@@ -22,7 +22,7 @@ import {
     RecaptchaGuard,
     RECAPTCHA_TOKEN_HEADER,
 } from '@/modules/auth/infrastructure/http/guards/recaptcha.guard';
-import { REFRESH_TOKEN_COOKIE_NAME } from '@/modules/auth/infrastructure/http/cookie-names';
+import { getRefreshTokenCookieName } from '@/modules/auth/infrastructure/http/cookie-names';
 import { User } from '@/modules/users/domain/entities/user';
 import { LoginDto } from '@/modules/auth/infrastructure/http/dtos/login.dto.http';
 import { MeResponseDto } from '@/modules/auth/application/dto/me-response.dto';
@@ -64,7 +64,7 @@ export class AuthController {
     @HttpCode(200)
     async refresh(
         @Res({ passthrough: true }) response: Response,
-        @ExtractCookie(REFRESH_TOKEN_COOKIE_NAME)
+        @ExtractCookie()
         refreshTokenFromCookie: string | null,
     ): Promise<AuthResponseDto> {
         if (!refreshTokenFromCookie) {
@@ -92,7 +92,7 @@ export class AuthController {
     private setRefreshTokenCookie(response: Response, refreshToken: string) {
         const isProduction = process.env.NODE_ENV === 'production';
 
-        response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+        response.cookie(getRefreshTokenCookieName(), refreshToken, {
             httpOnly: true,
             // En prod el front y la API están en sitios distintos: la cookie
             // debe viajar cross-site (SameSite=None), lo que obliga a
